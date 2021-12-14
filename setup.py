@@ -24,14 +24,22 @@ with open(os.path.join(here, "requirements.txt"), "r", encoding="utf8") as f:
     install_requires = list(yield_lines(f.read()))
 
 
+def bu():
+    """build"""
+    try:
+        print("Removing previous builds...")
+        rmtree(os.path.join(here, "dist"))
+    except OSError:
+        pass
+    print("Building Source or Wheel distribution...")
+    # os.system("{0} setup.py sdist bdist_wheel".format(sys.executable))
+    os.system("{0} setup.py bdist_wheel".format(sys.executable))
+
+
 class BuildCommand(Command):
-    """support setup.py build."""
+    """support setup.py build"""
     description = "Build the package."
     user_options = []
-
-    @staticmethod
-    def status(s):
-        print("\033[32m{0}\033[0m".format(s))
 
     def initialize_options(self):
         pass
@@ -40,24 +48,14 @@ class BuildCommand(Command):
         pass
 
     def run(self):
-        try:
-            self.status("Removing previous builds...")
-            rmtree(os.path.join(here, "dist"))
-        except OSError:
-            pass
-        self.status("Building Source and Wheel distribution...")
-        os.system("{0} setup.py sdist bdist_wheel".format(sys.executable))
+        bu()
         sys.exit()
 
 
 class UploadCommand(Command):
-    """support setup.py build&upload."""
+    """support setup.py build&upload"""
     description = "Build and upload the package."
     user_options = []
-
-    @staticmethod
-    def status(s):
-        print("\033[32m{0}\033[0m".format(s))
 
     def initialize_options(self):
         pass
@@ -66,14 +64,8 @@ class UploadCommand(Command):
         pass
 
     def run(self):
-        try:
-            self.status("Removing previous builds...")
-            rmtree(os.path.join(here, "dist"))
-        except OSError:
-            pass
-        self.status("Building Source and Wheel distribution...")
-        os.system("{0} setup.py sdist bdist_wheel".format(sys.executable))
-        self.status("Uploading the package to PyPI via Twine...")
+        bu()
+        print("Uploading the package to PyPI via Twine...")
         os.system("twine upload dist/*")
         sys.exit()
 
