@@ -8,10 +8,10 @@
 """
 
 __all__ = [
-    "Utils", "DecoratorUtils", "TimeUtils", "SingletonType", "G",
+    "Utils", "DecoratorUtils", "TimeUtils", "SingletonType", "G", "ToolException",
 ]
 
 from toollib.libs.decorator_utils import DecoratorUtils
 from toollib.libs.g import G
 from toollib.libs.time_utils import TimeUtils
-from toollib.libs.utils import Utils, SingletonType
+from toollib.libs.utils import Utils, SingletonType, ToolException

@@ -7,6 +7,7 @@
 @history
 """
 import time
+import traceback
 from functools import wraps
 
 _flwidth = 66
@@ -31,19 +32,23 @@ class DecoratorUtils(object):
         return wrapper
 
     @staticmethod
-    def catch_exception(func):
+    def catch_exception(is_raise: bool = True):
         """
         catch exception
-        :param func:
+        :param is_raise:
         :return:
         """
-        @wraps(func)
-        def wrapper(*args, **kwargs):
-            try:
-                result = func(*args, **kwargs)
-                return result
-            except Exception as ex:
-                return ex
+        def wrapper(func):
+            @wraps(func)
+            def inner(*args, **kwargs):
+                try:
+                    result = func(*args, **kwargs)
+                    return result
+                except Exception as ex:
+                    if is_raise is True:
+                        traceback.print_exc()
+                    print("Error: {}".format(str(ex)))
+            return inner
         return wrapper
 
     @staticmethod
