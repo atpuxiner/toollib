@@ -9,7 +9,7 @@
 from datetime import datetime
 
 
-class TimeUtils(object):
+class ToolTime(object):
 
     @staticmethod
     def now2str(fmt: str = "S") -> str:

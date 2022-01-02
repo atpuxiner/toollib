@@ -10,6 +10,7 @@
 
 class Versions(object):
     ALL = [
+        ("2022.01.02", "Opt libs. rename..."),
         ("2021.12.30", "Add libs. eg: ToolException..."),
         ("2021.12.26", "Add libs. eg: Utils, SingletonType, G..."),
         ("2021.12.14", "Add libs. eg: DecoratorUtils, TimeUtils..."),

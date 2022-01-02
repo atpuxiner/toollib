@@ -14,7 +14,7 @@ _flwidth = 66
 _flchar = "-"
 
 
-class DecoratorUtils(object):
+class ToolDecorator(object):
 
     @staticmethod
     def print_return(func):
