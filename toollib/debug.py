@@ -6,13 +6,13 @@
 @description
 @history
 """
-import os
+import pathlib
 
-here = os.path.abspath(os.path.dirname(__file__))
+here = pathlib.Path(__file__).parent.absolute()
 
 
 def t001():
-    pass
+    print(here)
 
 
 if __name__ == "__main__":

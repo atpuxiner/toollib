@@ -11,9 +11,9 @@ __all__ = [
     "ToolUtils", "ToolException", "ToolSingleton", "ToolDecorator", "ToolTime", "ToolG",
 ]
 
-from toollib.libs._decorator import ToolDecorator
-from toollib.libs._exception import ToolException
-from toollib.libs._g import ToolG
-from toollib.libs._singleton import ToolSingleton
-from toollib.libs._time import ToolTime
-from toollib.libs._utils import ToolUtils
+from .libs._decorator import ToolDecorator
+from .libs._exception import ToolException
+from .libs._g import ToolG
+from .libs._singleton import ToolSingleton
+from .libs._time import ToolTime
+from .libs._utils import ToolUtils
