@@ -14,13 +14,13 @@ _flchar = "-"
 
 
 class ToolDecorator(object):
-    """decorator"""
+    """装饰器工具"""
 
     @staticmethod
     def print_return(is_print: bool = True):
         """
-        print_return
-        :param is_print:
+        打印返回结果
+        :param is_print: 是否打印
         :return:
         """
         def wrapper(func):
@@ -37,8 +37,8 @@ class ToolDecorator(object):
     @staticmethod
     def catch_exception(is_raise: bool = True):
         """
-        catch exception
-        :param is_raise:
+        捕获异常
+        :param is_raise: 是否raise
         :return:
         """
         def wrapper(func):
@@ -58,7 +58,7 @@ class ToolDecorator(object):
     @staticmethod
     def timer(func):
         """
-        timer
+        计时器
         :param func:
         :return:
         """

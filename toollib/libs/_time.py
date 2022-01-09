@@ -10,7 +10,7 @@ from datetime import datetime
 
 
 class ToolTime(object):
-    """time"""
+    """时间工具"""
 
     @staticmethod
     def now2str(fmt: str = "S") -> str:

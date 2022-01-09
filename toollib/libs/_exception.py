@@ -9,7 +9,7 @@
 
 
 class ToolException(Exception):
-    """exception"""
+    """异常基类"""
 
     def __init__(self, msg="Raise exception", code=1):
         self.msg = msg

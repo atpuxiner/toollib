@@ -30,7 +30,7 @@ class ExpireError(ToolException):
 
 
 class ToolG(metaclass=ToolSingleton):
-    """global variable"""
+    """全局变量（基于sqlite3实现的key-value容器）"""
 
     __support_types = (str, list,  dict, int, float, bool, type(None))
     __support_types_str = "str, list, dict, int, float, bool, None"
@@ -58,6 +58,13 @@ class ToolG(metaclass=ToolSingleton):
         return sqlite3.connect(self.__gfile)
 
     def get(self, key: str, check_expire: bool = True, get_expire: bool = False):
+        """
+        获取key的value
+        :param key:
+        :param check_expire: 是否检测过期（True: 若过期则会raise）
+        :param get_expire: 是否返回过期时间（True: 返回格式为元组(value, expire)）
+        :return:
+        """
         sql = "select v, expire from {tb} where k=?".format(tb=self.__gtable)
         parameters = (key,)
         value, expire = self.__queryone(sql, parameters)
@@ -76,11 +83,24 @@ class ToolG(metaclass=ToolSingleton):
         return value
 
     def set(self, key: str, value, expire: t.Union[int, float] = 0) -> None:
+        """
+        设置kye-value
+        :param key:
+        :param value:
+        :param expire: 默认为0（表不设置过期时间）
+        :return:
+        """
         parameters = self.__check_parameters(key, value, expire)
         sql = "replace into {tb} (k, v, expire) values(?, ?, ?)".format(tb=self.__gtable)
         self.__execute(sql, parameters)
 
     def expire(self, key: str, ex: t.Union[int, float] = 0):
+        """
+        设置key的过期时间
+        :param key:
+        :param ex: 默认为0（表不设置过期时间）
+        :return:
+        """
         key, _, ex = self.__check_parameters(key=key, expire=ex)
         parameters = (ex, key)
         sql = "update {tb} set expire=? where k=?".format(tb=self.__gtable)
@@ -138,6 +158,11 @@ class ToolG(metaclass=ToolSingleton):
         return value, expire
 
     def exists(self, key: str) -> bool:
+        """
+        检测key是否存在
+        :param key:
+        :return:
+        """
         conn = self.__conn()
         cursor = conn.cursor()
         sql = "select k from {tb} where k=?".format(tb=self.__gtable)
@@ -150,13 +175,26 @@ class ToolG(metaclass=ToolSingleton):
         return True
 
     def delete(self, key: str) -> None:
+        """
+        删除key
+        :param key:
+        :return:
+        """
         sql = "delete from {tb} where k=?".format(tb=self.__gtable)
         parameters = (key,)
         self.__execute(sql, parameters)
 
     def clear(self) -> None:
+        """
+        清除所有key-value
+        :return:
+        """
         sql = "delete from {tb}".format(tb=self.__gtable)
         self.__execute(sql)
 
     def remove(self) -> None:
+        """
+        移除实例g的db文件
+        :return:
+        """
         os.remove(self.__gfile)

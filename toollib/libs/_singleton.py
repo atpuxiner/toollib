@@ -10,7 +10,7 @@ from threading import Lock
 
 
 class ToolSingleton(type):
-    """singleton"""
+    """单例模式"""
 
     __instance_lock = Lock()
 
