@@ -117,4 +117,4 @@ dmypy.json
 # Myself
 .idea
 .vscode
-docs/doc2md.py
+docs/doc2md*

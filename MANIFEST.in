@@ -1,2 +1,3 @@
 include README.md
+include docs/helper.md
 recursive-include toollib *
