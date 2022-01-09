@@ -10,6 +10,7 @@ from datetime import datetime
 
 
 class ToolTime(object):
+    """time"""
 
     @staticmethod
     def now2str(fmt: str = "S") -> str:
@@ -33,7 +34,7 @@ class ToolTime(object):
     @staticmethod
     def str2datetime(time_str: str, fmt: str = None) -> datetime:
         """
-        Convert str datetime to datetime
+        convert str datetime to datetime
         :param time_str:
         :param fmt:
         :return:

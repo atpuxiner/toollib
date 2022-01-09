@@ -6,6 +6,7 @@
 @description
 @history
 """
+import os
 import sqlite3
 import time
 import typing as t
@@ -14,6 +15,14 @@ from pathlib import Path
 from ._exception import ToolException
 from ._singleton import ToolSingleton
 from ._utils import ToolUtils
+
+
+class TypeError(ToolException):
+    """type error"""
+
+
+class ValueError(ToolException):
+    """value error"""
 
 
 class ExpireError(ToolException):
@@ -34,15 +43,15 @@ class ToolG(metaclass=ToolSingleton):
     def __check_g(self, gfile, gtable):
         if isinstance(gfile, (str, Path)):
             if not gfile:
-                raise ValueError("'gfile' cannot be empty!")
+                raise ValueError("'gfile' cannot be empty")
             gfile = str(gfile)
         else:
-            raise TypeError("'gfile' only supported: str or Path!")
+            raise TypeError("'gfile' only supported: str or Path")
         if isinstance(gtable, str):
             if not gtable:
-                raise ValueError("'gtable' cannot be empty!")
+                raise ValueError("'gtable' cannot be empty")
         else:
-            raise TypeError("'gtable' only supported: str!")
+            raise TypeError("'gtable' only supported: str")
         return gfile, gtable
 
     def __conn(self):
@@ -57,9 +66,9 @@ class ToolG(metaclass=ToolSingleton):
                 if expire > 0:
                     is_expire = expire - time.time()
                     if is_expire < 0:
-                        raise ExpireError("'{}' has expired!".format(key))
+                        raise ExpireError("'{}' has expired".format(key))
         else:
-            raise KeyError("'check_expire' only supported: bool!")
+            raise TypeError("'check_expire' only supported: bool")
         if value:
             value = ToolUtils.json(value)
         if get_expire is True:
@@ -80,22 +89,22 @@ class ToolG(metaclass=ToolSingleton):
     def __check_parameters(self, key, value=None, expire=None):
         if isinstance(key, str):
             if not key:
-                raise ValueError("'key' cannot be empty!")
+                raise ValueError("'key' cannot be empty")
         else:
-            raise TypeError("'key' only supported: str!")
+            raise TypeError("'key' only supported: str")
         if value is not None:
             if not isinstance(value, self.__support_types):
-                raise TypeError("'value' only supported: {}!".format(self.__support_types_str))
+                raise TypeError("'value' only supported: {}".format(self.__support_types_str))
             else:
                 value = ToolUtils.json(value, "dumps")
         if expire is not None:
             if isinstance(expire, (int, float)):
                 if expire < 0:
-                    raise ValueError("'expire' greater than or equal to 0!")
+                    raise ValueError("'expire' greater than or equal to 0")
                 elif expire > 0:
                     expire = round(time.time() + expire, 7)
             else:
-                raise TypeError("'expire' only supported: int or float!")
+                raise TypeError("'expire' only supported: int or float")
         return key, value, expire
 
     def __execute(self, sql: str, parameters: t.Iterable = None) -> None:
@@ -148,3 +157,6 @@ class ToolG(metaclass=ToolSingleton):
     def clear(self) -> None:
         sql = "delete from {tb}".format(tb=self.__gtable)
         self.__execute(sql)
+
+    def remove(self) -> None:
+        os.remove(self.__gfile)

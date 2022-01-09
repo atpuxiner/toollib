@@ -10,10 +10,11 @@
 
 class ToolException(Exception):
     """exception"""
-    def __init__(self, msg="Raise exception!", code=1):
+
+    def __init__(self, msg="Raise exception", code=1):
         self.msg = msg
         self.code = code
         self.error = {"code": self.code, "msg": self.msg}
 
     def __str__(self):
-        return str(self.error)
+        return self.msg

@@ -14,9 +14,13 @@ class ToolSingleton(type):
 
     __instance_lock = Lock()
 
+    def __init__(cls, *args, **kwargs):
+        cls.__instance = None
+        super(ToolSingleton, cls).__init__(*args, **kwargs)
+
     def __call__(cls, *args, **kwargs):
-        if not hasattr(cls, "__instance"):
+        if cls.__instance is None:
             with cls.__instance_lock:
-                if not hasattr(cls, "__instance"):
+                if cls.__instance is None:
                     cls.__instance = super(ToolSingleton, cls).__call__(*args, **kwargs)
         return cls.__instance

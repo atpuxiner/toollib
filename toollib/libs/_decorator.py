@@ -7,7 +7,6 @@
 @history
 """
 import time
-import traceback
 from functools import wraps
 
 _flwidth = 66
@@ -15,20 +14,24 @@ _flchar = "-"
 
 
 class ToolDecorator(object):
+    """decorator"""
 
     @staticmethod
-    def print_return(func):
+    def print_return(is_print: bool = True):
         """
-        print return
-        :param func:
+        print_return
+        :param is_print:
         :return:
         """
-        @wraps(func)
-        def wrapper(*args, **kwargs):
-            result = func(*args, **kwargs)
-            print("func: '{0}', return: {1}\t@type: {2}".format(
-                func.__name__, result, type(result)).center(_flwidth, _flchar))
-            return result
+        def wrapper(func):
+            @wraps(func)
+            def inner(*args, **kwargs):
+                result = func(*args, **kwargs)
+                if is_print is True:
+                    print("func: '{0}', return: {1}\t【@type: {2}】".format(
+                        func.__name__, result, type(result)).center(_flwidth, _flchar))
+                return result
+            return inner
         return wrapper
 
     @staticmethod
@@ -46,8 +49,9 @@ class ToolDecorator(object):
                     return result
                 except Exception as ex:
                     if is_raise is True:
-                        traceback.print_exc()
-                    print("Error: {}".format(str(ex)))
+                        raise
+                    else:
+                        print("【IGNORE】Error: {}".format(str(ex)))
             return inner
         return wrapper
 
