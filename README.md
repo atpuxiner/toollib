@@ -4,6 +4,8 @@
 * by: axiner
 * toollib
 * This is a tool library.
+* *[Helper](https://github.com/atpuxiner/toollib/blob/main/docs/helper.md)*
+* *[帮助文档](https://blog.csdn.net/atpuxiner/article/details/122114364)*
 
 ## Installation
 This package can be installed using pip (recommended way):

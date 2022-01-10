@@ -1,8 +1,14 @@
 ## toollib 官方文档
 
-### ToolDecorator
+* 更多功能正在完善...
+* 更多功能正在完善...
+* 更多功能正在完善...
+-----
 
-*装饰器工具*
+
+### Decorator
+
+*装饰器*
 
 * catch_exception
 ```
@@ -27,13 +33,7 @@
 
 
 
-### ToolException
-
-*异常基类*
-
-
-
-### ToolG
+### G
 
 *全局变量（基于sqlite3实现的key-value容器）*
 
@@ -91,36 +91,15 @@
 
 
 
-### ToolSingleton
+### Singleton
 
 *单例模式*
 
 
 
-### ToolTime
+### Utils
 
-*时间工具*
-
-* now2str
-```
-now datetime to str
-  :param fmt:
-  :return:
-```
-
-* str2datetime
-```
-convert str datetime to datetime
-  :param time_str:
-  :param fmt:
-  :return:
-```
-
-
-
-### ToolUtils
-
-*utils工具*
+*Utils*
 
 * get_files
 ```
@@ -140,6 +119,21 @@ json loads or dumps
   :param default: 默认值（如果入参data为空，优先返回给定的默认值）
   :param args:
   :param kwargs:
+  :return:
+```
+
+* now2str
+```
+now datetime to str
+  :param fmt:
+  :return:
+```
+
+* str2datetime
+```
+convert str datetime to datetime
+  :param time_str:
+  :param fmt:
   :return:
 ```
 

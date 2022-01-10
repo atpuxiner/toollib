@@ -9,18 +9,18 @@
 from threading import Lock
 
 
-class ToolSingleton(type):
+class Singleton(type):
     """单例模式"""
 
     __instance_lock = Lock()
 
     def __init__(cls, *args, **kwargs):
         cls.__instance = None
-        super(ToolSingleton, cls).__init__(*args, **kwargs)
+        super(Singleton, cls).__init__(*args, **kwargs)
 
     def __call__(cls, *args, **kwargs):
         if cls.__instance is None:
             with cls.__instance_lock:
                 if cls.__instance is None:
-                    cls.__instance = super(ToolSingleton, cls).__call__(*args, **kwargs)
+                    cls.__instance = super(Singleton, cls).__call__(*args, **kwargs)
         return cls.__instance

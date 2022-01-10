@@ -18,3 +18,7 @@ class ToolException(Exception):
 
     def __str__(self):
         return self.msg
+
+
+class ExpireError(ToolException):
+    """expire error"""

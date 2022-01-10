@@ -12,24 +12,12 @@ import time
 import typing as t
 from pathlib import Path
 
-from ._exception import ToolException
-from ._singleton import ToolSingleton
-from ._utils import ToolUtils
+from ..exception import ExpireError
+from .singleton import Singleton
+from .utils import Utils
 
 
-class TypeError(ToolException):
-    """type error"""
-
-
-class ValueError(ToolException):
-    """value error"""
-
-
-class ExpireError(ToolException):
-    """expire error"""
-
-
-class ToolG(metaclass=ToolSingleton):
+class G(metaclass=Singleton):
     """全局变量（基于sqlite3实现的key-value容器）"""
 
     __support_types = (str, list,  dict, int, float, bool, type(None))
@@ -38,7 +26,7 @@ class ToolG(metaclass=ToolSingleton):
     def __init__(self, gfile: t.Union[str, Path], gtable: str = "g", *args, **kwargs):
         self.__gfile, self.__gtable = self.__check_g(gfile, gtable)
         self.__new_db()
-        super(ToolG, self).__init__(*args, **kwargs)
+        super(G, self).__init__(*args, **kwargs)
 
     def __check_g(self, gfile, gtable):
         if isinstance(gfile, (str, Path)):
@@ -77,7 +65,7 @@ class ToolG(metaclass=ToolSingleton):
         else:
             raise TypeError("'check_expire' only supported: bool")
         if value:
-            value = ToolUtils.json(value)
+            value = Utils.json(value)
         if get_expire is True:
             return value, expire
         return value
@@ -116,7 +104,7 @@ class ToolG(metaclass=ToolSingleton):
             if not isinstance(value, self.__support_types):
                 raise TypeError("'value' only supported: {}".format(self.__support_types_str))
             else:
-                value = ToolUtils.json(value, "dumps")
+                value = Utils.json(value, "dumps")
         if expire is not None:
             if isinstance(expire, (int, float)):
                 if expire < 0:

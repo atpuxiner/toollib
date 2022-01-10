@@ -13,8 +13,8 @@ _flwidth = 66
 _flchar = "-"
 
 
-class ToolDecorator(object):
-    """装饰器工具"""
+class Decorator(object):
+    """装饰器"""
 
     @staticmethod
     def print_return(is_print: bool = True):

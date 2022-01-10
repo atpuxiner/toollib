@@ -6,13 +6,53 @@
 @description
 @history
 """
+from datetime import datetime
 import typing as t
 from json import dumps, loads
 from pathlib import Path
 
 
-class ToolUtils(object):
-    """utils工具"""
+class Utils(object):
+    """Utils"""
+
+    @staticmethod
+    def now2str(fmt: str = "S") -> str:
+        """
+        now datetime to str
+        :param fmt:
+        :return:
+        """
+        _ = {
+            "S": "%Y-%m-%d %H:%M:%S",
+            "M": "%Y-%m-%d %H:%M",
+            "H": "%Y-%m-%d %H",
+            "d": "%Y-%m-%d",
+            "m": "%Y-%m",
+            "Y": "%Y"
+        }
+        fmt = _.get(fmt, fmt)
+        str_now = datetime.now().strftime(fmt)
+        return str_now
+
+    @staticmethod
+    def str2datetime(time_str: str, fmt: str = None) -> datetime:
+        """
+        convert str datetime to datetime
+        :param time_str:
+        :param fmt:
+        :return:
+        """
+        _ = {
+            19: "%Y-%m-%d %H:%M:%S",
+            16: "%Y-%m-%d %H:%M",
+            13: "%Y-%m-%d %H",
+            10: "%Y-%m-%d",
+            7: "%Y-%m",
+            4: "%Y"
+        }
+        fmt = fmt if fmt else _.get(len(time_str))
+        dt = datetime.strptime(time_str, fmt)
+        return dt
 
     @staticmethod
     def json(data, loadordumps="loads", default=None, *args, **kwargs):
