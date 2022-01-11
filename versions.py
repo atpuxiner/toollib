@@ -10,8 +10,9 @@
 
 class Versions(object):
     ALL = [
-        ("2022.01.10", "Opt"),
-        ("2022.01.09", "Add docs"),
+        ("2022.01.11", "Chg. eg: README.md..."),
+        ("2022.01.10", "Opt."),
+        ("2022.01.09", "Add docs."),
         ("2022.01.07", "Opt libs. eg: ToolG..."),
         ("2022.01.02", "Opt libs. rename..."),
         ("2021.12.30", "Add libs. eg: ToolException..."),
