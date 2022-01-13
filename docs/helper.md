@@ -101,13 +101,24 @@
 
 *Utils*
 
+* decompress
+```
+解压文件
+  :param src: 源目录或文件
+  :param dest_dir: 目标目录
+  :param pattern: 匹配模式（当src为目录时生效）
+  :param is_r: 是否递规查找（当src为目录时生效）
+  :param is_raise: 是否抛异常
+  :return:
+```
+
 * get_files
 ```
 获取文件
   :param src_dir: 源目录
   :param pattern: 匹配模式
-  :param is_name: 是否获取文件名（True: 获取文件及路径，False: 获取文件名）
-  :param is_r: 是否递规查找源目录及子目录所有的文件
+  :param is_name: 是否获取文件名（True: 获取文件路径，False: 获取文件名）
+  :param is_r: 是否递规查找
   :return:
 ```
 
