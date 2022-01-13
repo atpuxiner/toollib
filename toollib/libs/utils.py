@@ -6,13 +6,18 @@
 @description
 @history
 """
+import stat
+import tarfile
+import traceback
 from datetime import datetime
 import typing as t
 from json import dumps, loads
 from pathlib import Path
 
+from ..common import rarfile, zipfile
 
-class Utils(object):
+
+class Utils:
     """Utils"""
 
     @staticmethod
@@ -83,8 +88,8 @@ class Utils(object):
         获取文件
         :param src_dir: 源目录
         :param pattern: 匹配模式
-        :param is_name: 是否获取文件名（True: 获取文件及路径，False: 获取文件名）
-        :param is_r: 是否递规查找源目录及子目录所有的文件
+        :param is_name: 是否获取文件名（True: 获取文件路径，False: 获取文件名）
+        :param is_r: 是否递规查找
         :return:
         """
         files = []
@@ -94,3 +99,55 @@ class Utils(object):
             if f.is_file():
                 files.append(f.name if is_name is True else f)
         return files
+
+    @classmethod
+    def decompress(cls, src: t.Union[str, Path], dest_dir: t.Union[str, Path] = None,
+                   pattern: str = "*[.pzr]", is_r: bool = False, is_raise: bool = True) -> None:
+        """
+        解压文件
+        :param src: 源目录或文件
+        :param dest_dir: 目标目录
+        :param pattern: 匹配模式（当src为目录时生效）
+        :param is_r: 是否递规查找（当src为目录时生效）
+        :param is_raise: 是否抛异常
+        :return:
+        """
+        src = Path(src).absolute()
+        src_is_dir = False
+        if src.is_dir():
+            src_is_dir = True
+            src_files = cls.get_files(src, pattern=pattern, is_r=is_r)
+        else:
+            if src.suffix not in [".zip", ".rar", ".tar", ".gz", ".tgz"]:
+                raise ValueError("only supported: [.zip, .rar, .tar, .gz, .tgz]")
+            src_files = [src]
+        if not dest_dir:
+            dest_dir = src.absolute() if src_is_dir else src.absolute().parent
+        else:
+            dest_dir = Path(dest_dir).absolute()
+            dest_dir.mkdir(parents=True, exist_ok=True)
+        dest_dir.chmod(stat.S_IRWXU)
+        for src_file in src_files:
+            file_name, file_type = src_file.name, src_file.suffix
+            if file_type:
+                file_type = file_type.lower()
+            try:
+                if file_type == ".zip":
+                    zip_file = zipfile.ZipFile(src_file)
+                    for f in zip_file.namelist():
+                        zip_file.extract(f, dest_dir)
+                    zip_file.close()
+                elif file_type == ".rar":
+                    rar_file = rarfile.RarFile(src_file)
+                    rar_file.extractall(dest_dir)
+                    rar_file.close()
+                elif file_type in [".tar", ".gz", ".tgz"]:
+                    tar_file = tarfile.open(src_file)
+                    for name in tar_file.getnames():
+                        tar_file.extract(name, dest_dir)
+                    tar_file.close()
+            except:
+                if is_raise is True:
+                    raise
+                else:
+                    traceback.print_exc()

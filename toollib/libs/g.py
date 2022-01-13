@@ -12,7 +12,7 @@ import time
 import typing as t
 from pathlib import Path
 
-from ..exception import ExpireError
+from ..common.error import ExpireError
 from .singleton import Singleton
 from .utils import Utils
 
@@ -102,7 +102,7 @@ class G(metaclass=Singleton):
             raise TypeError("'key' only supported: str")
         if value is not None:
             if not isinstance(value, self.__support_types):
-                raise TypeError("'value' only supported: {}".format(self.__support_types_str))
+                raise TypeError("'value' only supported: [{}]".format(self.__support_types_str))
             else:
                 value = Utils.json(value, "dumps")
         if expire is not None:

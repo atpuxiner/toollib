@@ -7,13 +7,15 @@
 @history
 """
 import time
+import traceback
+import typing as t
 from functools import wraps
 
 _flwidth = 66
 _flchar = "-"
 
 
-class Decorator(object):
+class Decorator:
     """装饰器"""
 
     @staticmethod
@@ -23,7 +25,7 @@ class Decorator(object):
         :param is_print: 是否打印
         :return:
         """
-        def wrapper(func):
+        def wrapper(func: t.Callable):
             @wraps(func)
             def inner(*args, **kwargs):
                 result = func(*args, **kwargs)
@@ -41,22 +43,22 @@ class Decorator(object):
         :param is_raise: 是否raise
         :return:
         """
-        def wrapper(func):
+        def wrapper(func: t.Callable):
             @wraps(func)
             def inner(*args, **kwargs):
                 try:
                     result = func(*args, **kwargs)
                     return result
-                except Exception as ex:
+                except:
                     if is_raise is True:
                         raise
                     else:
-                        print("【IGNORE】Error: {}".format(str(ex)))
+                        traceback.print_exc()
             return inner
         return wrapper
 
     @staticmethod
-    def timer(func):
+    def timer(func: t.Callable):
         """
         计时器
         :param func:

@@ -8,7 +8,7 @@
 """
 import pathlib
 
-here = pathlib.Path(__file__).parent.absolute()
+here = pathlib.Path(__file__).absolute().parent
 
 
 def t001():

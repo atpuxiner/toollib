@@ -9,11 +9,9 @@
 
 
 ## Installation
-This package can be installed using pip (recommended way):
-> pip3 install toollib
+This package can be installed using pip (Python3):
+> pip install toollib
 
-or by downloading and running:
-> python3 setup.py install
 
 ## Copyright
 Copyright (c) 2021 axiner
