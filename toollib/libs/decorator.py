@@ -11,66 +11,69 @@ import traceback
 import typing as t
 from functools import wraps
 
-_flwidth = 66
-_flchar = "-"
+__all__ = [
+    "print_return",
+    "catch_exception",
+    "timer"
+]
+
+# config of print
+FLWIDTH = 66
+FLCHAR = "-"
 
 
-class Decorator:
-    """装饰器"""
-
-    @staticmethod
-    def print_return(is_print: bool = True):
-        """
-        打印返回结果
-        :param is_print: 是否打印
-        :return:
-        """
-        def wrapper(func: t.Callable):
-            @wraps(func)
-            def inner(*args, **kwargs):
-                result = func(*args, **kwargs)
-                if is_print is True:
-                    print("func: '{0}', return: {1}\t【@type: {2}】".format(
-                        func.__name__, result, type(result)).center(_flwidth, _flchar))
-                return result
-            return inner
-        return wrapper
-
-    @staticmethod
-    def catch_exception(is_raise: bool = True):
-        """
-        捕获异常
-        :param is_raise: 是否raise
-        :return:
-        """
-        def wrapper(func: t.Callable):
-            @wraps(func)
-            def inner(*args, **kwargs):
-                try:
-                    result = func(*args, **kwargs)
-                    return result
-                except:
-                    if is_raise is True:
-                        raise
-                    else:
-                        traceback.print_exc()
-            return inner
-        return wrapper
-
-    @staticmethod
-    def timer(func: t.Callable):
-        """
-        计时器
-        :param func:
-        :return:
-        """
+def print_return(is_print: bool = True):
+    """
+    打印返回结果
+    :param is_print: 是否打印
+    :return:
+    """
+    def wrapper(func: t.Callable):
         @wraps(func)
-        def wrapper(*args, **kwargs):
-            print("func: '{0}', start.....".format(func.__name__).center(_flwidth, _flchar))
-            start_time = time.time()
+        def inner(*args, **kwargs):
             result = func(*args, **kwargs)
-            end_time = time.time()
-            print("func: '{0}' finished, spent time: {1:.2f}s".format(
-                func.__name__, end_time - start_time).center(_flwidth, _flchar))
+            if is_print is True:
+                print("func: '{0}', return: {1}\t【@type: {2}】".format(
+                    func.__name__, result, type(result)).center(FLWIDTH, FLCHAR))
             return result
-        return wrapper
+        return inner
+    return wrapper
+
+
+def catch_exception(is_raise: bool = True):
+    """
+    捕获异常
+    :param is_raise: 是否raise
+    :return:
+    """
+    def wrapper(func: t.Callable):
+        @wraps(func)
+        def inner(*args, **kwargs):
+            try:
+                result = func(*args, **kwargs)
+                return result
+            except:
+                if is_raise is True:
+                    raise
+                else:
+                    traceback.print_exc()
+        return inner
+    return wrapper
+
+
+def timer(func: t.Callable):
+    """
+    计时器
+    :param func:
+    :return:
+    """
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        print("func: '{0}', start.....".format(func.__name__).center(FLWIDTH, FLCHAR))
+        start_time = time.time()
+        result = func(*args, **kwargs)
+        end_time = time.time()
+        print("func: '{0}' finished, spent time: {1:.2f}s".format(
+            func.__name__, end_time - start_time).center(FLWIDTH, FLCHAR))
+        return result
+    return wrapper

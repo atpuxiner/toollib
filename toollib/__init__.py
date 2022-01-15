@@ -6,14 +6,16 @@
 @description
 @history
 """
-from .libs.decorator import Decorator
+from .libs import decorator as decorator
 from .libs.g import G
 from .libs.singleton import Singleton
-from .libs.utils import Utils
+from .libs import utils as utils
 
 __all__ = [
-    "Decorator",
+    "decorator",
     "G",
     "Singleton",
-    "Utils",
+    "utils",
 ]
+
+__version__ = "2022.01.13"

@@ -14,11 +14,15 @@ from pathlib import Path
 
 from ..common.error import ExpireError
 from .singleton import Singleton
-from .utils import Utils
+from .utils import json
+
+__all__ = ["G"]
 
 
 class G(metaclass=Singleton):
     """全局变量（基于sqlite3实现的key-value容器）"""
+
+    # __slots__ = ("__gfile", "__gtable")
 
     __support_types = (str, list,  dict, int, float, bool, type(None))
     __support_types_str = "str, list, dict, int, float, bool, None"
@@ -65,7 +69,7 @@ class G(metaclass=Singleton):
         else:
             raise TypeError("'check_expire' only supported: bool")
         if value:
-            value = Utils.json(value)
+            value = json(value)
         if get_expire is True:
             return value, expire
         return value
@@ -104,7 +108,7 @@ class G(metaclass=Singleton):
             if not isinstance(value, self.__support_types):
                 raise TypeError("'value' only supported: [{}]".format(self.__support_types_str))
             else:
-                value = Utils.json(value, "dumps")
+                value = json(value, "dumps")
         if expire is not None:
             if isinstance(expire, (int, float)):
                 if expire < 0:

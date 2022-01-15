@@ -8,6 +8,8 @@
 """
 from threading import Lock
 
+__all__ = ["Singleton"]
+
 
 class Singleton(type):
     """单例模式"""

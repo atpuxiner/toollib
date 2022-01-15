@@ -6,9 +6,9 @@
 @description
 @history
 """
-import pathlib
+from pathlib import Path
 
-here = pathlib.Path(__file__).absolute().parent
+here = Path(__file__).absolute().parent
 
 
 def t001():
