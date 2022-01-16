@@ -116,15 +116,15 @@ def decompress(src: t.Union[str, Path], dest_dir: t.Union[str, Path] = None,
     :param is_raise: 是否抛异常
     :return: count-解压数量
     """
-    __supported = [".zip", ".rar", ".tar", ".gz", ".tgz"]
+    __support_types = [".zip", ".rar", ".tar", ".gz", ".tgz"]
     src = Path(src).absolute()
     src_is_dir = False
     if src.is_dir():
         src_is_dir = True
         src_files = get_files(src, pattern=pattern, is_r=is_r)
     else:
-        if src.suffix not in __supported:
-            raise ValueError("only supported: [.zip, .rar, .tar, .gz, .tgz]")
+        if src.suffix not in __support_types:
+            raise ValueError(f"only supported: {__support_types}")
         src_files = [src]
     if not dest_dir:
         dest_dir = src.absolute() if src_is_dir else src.absolute().parent
@@ -137,7 +137,7 @@ def decompress(src: t.Union[str, Path], dest_dir: t.Union[str, Path] = None,
         file_name, file_type = src_file.name, src_file.suffix
         if file_type:
             file_type = file_type.lower()
-            if file_type not in __supported:
+            if file_type not in __support_types:
                 continue
         else:
             continue
@@ -151,7 +151,7 @@ def decompress(src: t.Union[str, Path], dest_dir: t.Union[str, Path] = None,
                 rar_file = rarfile.RarFile(src_file)
                 rar_file.extractall(dest_dir)
                 rar_file.close()
-            elif file_type in [".tar", ".gz", ".tgz"]:
+            else:
                 tar_file = tarfile.open(src_file)
                 for name in tar_file.getnames():
                     tar_file.extract(name, dest_dir)

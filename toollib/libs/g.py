@@ -25,7 +25,6 @@ class G(metaclass=Singleton):
     # __slots__ = ("__gfile", "__gtable")
 
     __support_types = (str, list,  dict, int, float, bool, type(None))
-    __support_types_str = "str, list, dict, int, float, bool, None"
 
     def __init__(self, gfile: t.Union[str, Path], gtable: str = "g", *args, **kwargs):
         self.__gfile, self.__gtable = self.__check_g(gfile, gtable)
@@ -106,7 +105,8 @@ class G(metaclass=Singleton):
             raise TypeError("'key' only supported: str")
         if value is not None:
             if not isinstance(value, self.__support_types):
-                raise TypeError("'value' only supported: [{}]".format(self.__support_types_str))
+                raise TypeError("'value' only supported: {}".format(
+                    [_t.__name__ for _t in self.__support_types]))
             else:
                 value = json(value, "dumps")
         if expire is not None:
