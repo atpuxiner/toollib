@@ -10,6 +10,7 @@
 
 class Versions(object):
     ALL = [
+        ("2022.01.18", "Add. eg: webdriver.ChromeDriver"),
         ("2022.01.16", "Opt."),
         ("2022.01.13", "Opt. eg: add decompress..."),
         ("2022.01.11", "Chg. eg: README.md..."),

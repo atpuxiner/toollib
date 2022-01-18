@@ -10,12 +10,14 @@ from .libs import decorator as decorator
 from .libs.g import G
 from .libs.singleton import Singleton
 from .libs import utils as utils
+from .libs.webdriver import ChromeDriver
 
 __all__ = [
     "decorator",
     "G",
     "Singleton",
     "utils",
+    "ChromeDriver"
 ]
 
-__version__ = "2022.01.16"
+__version__ = "2022.01.18"
