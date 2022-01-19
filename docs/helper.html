@@ -12,34 +12,71 @@
 	更多功能正在完善...</pre></div>
     <HR>
     <div style="font-size:16px; font-weight:bold">
-<h2><i>G</i></h2><pre>全局变量（基于sqlite3实现的key-value容器）</pre>
-**********************
+<h2><i>toollib.decorator</i></h2><pre>
+@author axiner
+@version v1.0.0
+@created 2021/12/14 20:28
+@abstract
+@description
+@history
+</pre>
+---------------------------------
 
-<h3><i>clear</i></h3><pre>
+<h3><i>print_return</i></h3><pre>
+    打印返回结果
+    :param is_print: 是否打印
+    :return:
+    </pre>
+
+<h3><i>catch_exception</i></h3><pre>
+    捕获异常
+    :param is_raise: 是否raise
+    :return:
+    </pre>
+
+<h3><i>timer</i></h3><pre>
+    计时器
+    :param func:
+    :return:
+    </pre>
+++++++++++++++++++++++这是分隔线++++++++++++++++++++++
+<h2><i>toollib.global</i></h2><pre>
+@author axiner
+@version v1.0.0
+@created 2021/12/18 22:21
+@abstract
+@description
+@history
+</pre>
+---------------------------------
+
+<h3><i>G</i></h3><pre>全局变量（基于sqlite3实现的key-value容器）</pre>
+
+<h3><i>G.clear</i></h3><pre>
         清除所有key-value
         :return:
         </pre>
 
-<h3><i>delete</i></h3><pre>
+<h3><i>G.delete</i></h3><pre>
         删除key
         :param key:
         :return:
         </pre>
 
-<h3><i>exists</i></h3><pre>
+<h3><i>G.exists</i></h3><pre>
         检测key是否存在
         :param key:
         :return:
         </pre>
 
-<h3><i>expire</i></h3><pre>
+<h3><i>G.expire</i></h3><pre>
         设置key的过期时间
         :param key:
         :param ex: 默认为0（表不设置过期时间）
         :return:
         </pre>
 
-<h3><i>get</i></h3><pre>
+<h3><i>G.get</i></h3><pre>
         获取key的value
         :param key:
         :param check_expire: 是否检测过期（True: 若过期则会raise）
@@ -47,26 +84,30 @@
         :return:
         </pre>
 
-<h3><i>remove</i></h3><pre>
+<h3><i>G.remove</i></h3><pre>
         移除实例g的db文件
         :return:
         </pre>
 
-<h3><i>set</i></h3><pre>
+<h3><i>G.set</i></h3><pre>
         设置kye-value
         :param key:
         :param value:
         :param expire: 默认为0（表不设置过期时间）
         :return:
         </pre>
+++++++++++++++++++++++这是分隔线++++++++++++++++++++++
+<h2><i>toollib.utils</i></h2><pre>
+@author axiner
+@version v1.0.0
+@created 2021/12/18 22:20
+@abstract
+@description
+@history
+</pre>
+---------------------------------
 
-<h2><i>Singleton</i></h2><pre>单例模式</pre>
-**********************
-
-<h2><i>ChromeDriver</i></h2><pre>谷歌驱动</pre>
-**********************
-
-<h2><i>utils</i></h2>**********************
+<h3><i>Singleton</i></h3><pre>单例模式</pre>
 
 <h3><i>now2str</i></h3><pre>
     now datetime to str
@@ -109,25 +150,27 @@
     :param is_raise: 是否抛异常
     :return: count-解压数量
     </pre>
+++++++++++++++++++++++这是分隔线++++++++++++++++++++++
+<h2><i>toollib.webdriver</i></h2><pre>
+@author axiner
+@version v1.0.0
+@created 2022/1/18 21:05
+@abstract
+@description
+@history
+</pre>
+---------------------------------
 
-<h2><i>decorator</i></h2>**********************
-
-<h3><i>print_return</i></h3><pre>
-    打印返回结果
-    :param is_print: 是否打印
-    :return:
-    </pre>
-
-<h3><i>catch_exception</i></h3><pre>
-    捕获异常
-    :param is_raise: 是否raise
-    :return:
-    </pre>
-
-<h3><i>timer</i></h3><pre>
-    计时器
-    :param func:
-    :return:
+<h3><i>ChromeDriver</i></h3><pre>
+    谷歌驱动
+    eg:
+        driver = ChromeDriver("chromedriver_dir")
+        driver.get("https://www.baidu.com/")
+        ----- or
+        driver = ChromeDriver(r"D:\chromedriver_dir", version="96.0.4664.45")
+        driver.get("https://www.baidu.com/")
+        ----- or: more params
+        .....
     </pre>
 </div>
 </body>

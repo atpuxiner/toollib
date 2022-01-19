@@ -5,7 +5,7 @@
 * toollib
 * This is a tool library.
 
-##### *>>>* *[Helper](https://github.com/atpuxiner/toollib/blob/main/docs/helper.md) ([帮助文档](https://blog.csdn.net/atpuxiner/article/details/122114364))*
+##### *>>> [Helper](https://github.com/atpuxiner/toollib/blob/main/docs/helper.html) ([帮助文档](https://blog.csdn.net/atpuxiner/article/details/122114364))*
 
 
 ## Installation

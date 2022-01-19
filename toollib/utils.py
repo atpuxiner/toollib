@@ -13,16 +13,35 @@ from datetime import datetime
 import typing as t
 from json import dumps, loads
 from pathlib import Path
+from threading import Lock
 
-from ..common import rarfile, zipfile
+from .common import rarfile, zipfile
 
 __all__ = [
+    "Singleton",
     "now2str",
     "str2datetime",
     "json",
     "get_files",
-    "decompress"
+    "decompress",
 ]
+
+
+class Singleton(type):
+    """单例模式"""
+
+    __instance_lock = Lock()
+
+    def __init__(cls, *args, **kwargs):
+        cls.__instance = None
+        super(Singleton, cls).__init__(*args, **kwargs)
+
+    def __call__(cls, *args, **kwargs):
+        if cls.__instance is None:
+            with cls.__instance_lock:
+                if cls.__instance is None:
+                    cls.__instance = super(Singleton, cls).__call__(*args, **kwargs)
+        return cls.__instance
 
 
 def now2str(fmt: str = "S") -> str:

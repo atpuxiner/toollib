@@ -19,14 +19,21 @@ try:
 except ImportError:
     raise
 
-
 __all__ = ["ChromeDriver"]
 
 
 class ChromeDriver(ChromiumDriver):
-    """谷歌驱动"""
-
-    driver_path = None
+    """
+    谷歌驱动
+    eg:
+        driver = ChromeDriver("chromedriver_dir")
+        driver.get("https://www.baidu.com/")
+        ----- or
+        driver = ChromeDriver(r"D:\chromedriver_dir", version="96.0.4664.45")
+        driver.get("https://www.baidu.com/")
+        ----- or: more params
+        .....
+    """
 
     def __init__(self, driver_dir: t.Union[str, Path], version: str = "LATEST_RELEASE",
                  platform: str = "win", bit: int = 32,
@@ -36,14 +43,6 @@ class ChromeDriver(ChromiumDriver):
                  service: ChromiumService = None, keep_alive=None):
         """
         谷歌驱动
-        eg:
-            driver = ChromeDriver("chromedriver")
-            driver.get("https://www.baidu.com/")
-            ----- or
-            driver = ChromeDriver(r"D:\chromedriver_dir", version="96.0.4664.45")
-            driver.get("https://www.baidu.com/")
-            ----- or: more params
-            .....
         :param driver_dir: 驱动目录（若目录下不存在驱动则会自动下载）
         :param version: 版本号（谷歌浏览器）
         :param platform: 平台（默认：win）- 支持：["win", "mac", "linux"]
@@ -66,7 +65,8 @@ class ChromeDriver(ChromiumDriver):
                 driver_file, port, service_args, service_log_path, env, start_error_message)
         __browser_name, __vendor_prefix = "chrome", "goog"
         super(ChromeDriver, self).__init__(
-            __browser_name, __vendor_prefix, port, options, service_args, desired_capabilities, service_log_path,
+            __browser_name, __vendor_prefix, port, options, service_args,
+            desired_capabilities, service_log_path,
             service, keep_alive)
 
     @classmethod
@@ -89,7 +89,8 @@ class ChromeDriver(ChromiumDriver):
         if not __version:
             raise ValueError("This version may not exist")
         __driver_zip = driver_dir.joinpath(f"chromedriver_{platform}{bit}.zip")
-        __download_url = f"https://chromedriver.storage.googleapis.com/{__version}/{__driver_zip.name}"
+        __download_url = f"https://chromedriver.storage.googleapis.com/" \
+                         f"{__version}/{__driver_zip.name}"
         try:
             print(f"Download driver ({__driver_zip.stem}) start.....")
             urlrequest.urlretrieve(__download_url, __driver_zip.as_posix())

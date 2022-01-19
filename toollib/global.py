@@ -12,9 +12,8 @@ import time
 import typing as t
 from pathlib import Path
 
-from ..common.error import ExpireError
-from .singleton import Singleton
-from .utils import json
+from .common.error import ExpireError
+from .utils import json, Singleton
 
 __all__ = ["G"]
 
