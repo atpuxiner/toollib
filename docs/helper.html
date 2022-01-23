@@ -172,6 +172,38 @@
         ----- or: more params
         .....
     </pre>
+++++++++++++++++++++++这是分隔线++++++++++++++++++++++
+<h2><i>toollib.xlsx</i></h2><pre>
+@author axiner
+@version v1.0.0
+@created 2022/1/23 20:36
+@abstract
+@description
+@history
+</pre>
+---------------------------------
+
+<h3><i>inserts</i></h3><pre>
+    插入数据
+    :param ws: Worksheet实例（openpyxl库）
+    :param values: 值（eg: [[1, 2, 3], [4, 5, 6]]）
+    :param index: 从哪开始插入值，若为None则追加
+    :param mode: 插入模式（r: 插入行值，c: 插入列值）
+    :param is_new: 是否插入新的行|列（True: 是，False: 否，若有值则会覆盖）
+    :return:
+    </pre>
+
+<h3><i>rows_value</i></h3><pre>
+    所有行的值
+    :param ws: Worksheet实例（openpyxl库）
+    :return:
+    </pre>
+
+<h3><i>cols_value</i></h3><pre>
+    所有列的值
+    :param ws: Worksheet实例（openpyxl库）
+    :return:
+    </pre>
 </div>
 </body>
 </html>

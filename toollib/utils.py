@@ -101,7 +101,7 @@ def json(data, loadordumps="loads", default=None, *args, **kwargs):
         elif loadordumps == "dumps":
             data = dumps(data, *args, **kwargs)
         else:
-            raise ValueError("Only select from: [loads, dumps]")
+            raise ValueError("'loadordumps' only select from: ['loads', 'dumps']")
     return data
 
 
