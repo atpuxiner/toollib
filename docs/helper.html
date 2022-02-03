@@ -2,6 +2,7 @@
 <html>
 <head>
     <meta charset="utf-8">
+    <style>body{margin: 33px;}</style>
     <title>toollib 官方文档</title>
 </head>
 <body>
@@ -183,7 +184,7 @@
 </pre>
 ---------------------------------
 
-<h3><i>inserts</i></h3><pre>
+<h3><i>ws_inserts</i></h3><pre>
     插入数据
     :param ws: Worksheet实例（openpyxl库）
     :param values: 值（eg: [[1, 2, 3], [4, 5, 6]]）
@@ -193,15 +194,27 @@
     :return:
     </pre>
 
-<h3><i>rows_value</i></h3><pre>
+<h3><i>ws_rows_value</i></h3><pre>
     所有行的值
     :param ws: Worksheet实例（openpyxl库）
     :return:
     </pre>
 
-<h3><i>cols_value</i></h3><pre>
+<h3><i>ws_cols_value</i></h3><pre>
     所有列的值
     :param ws: Worksheet实例（openpyxl库）
+    :return:
+    </pre>
+
+<h3><i>ws_styles</i></h3><pre>
+    修改样式
+    :param ws: Worksheet实例（openpyxl库）
+    :param styles: 样式。以字典形式传入
+    :param by_icells: 按单元格索引。eg: '1:2,1:2' >>> 左行：1至2行，右列：1至2列
+    :param by_cells: 按单元格。eg: 'A1' or ['A1', 'B1', 'C1']
+    :param by_rows: 按行。eg: 1 or [1, 2, 3]
+    :param by_cols: 按列。eg: 'A' or ['A', 'B', 'C']
+    :param exclude_icell:
     :return:
     </pre>
 </div>
