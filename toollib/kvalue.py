@@ -21,31 +21,31 @@ __all__ = ['KValue']
 class KValue(metaclass=Singleton):
     """key-value容器"""
 
-    # __slots__ = ('__gfile', '__gtable')
+    # __slots__ = ('__kvfile', '__kvtable')
 
     __support_types = (str, list,  dict, int, float, bool, type(None))
 
-    def __init__(self, gfile: t.Union[str, Path], gtable: str = 'g', *args, **kwargs):
-        self.__gfile, self.__gtable = self.__check_g(gfile, gtable)
+    def __init__(self, kvfile: t.Union[str, Path], kvtable: str = 'kvalue', *args, **kwargs):
+        self.__kvfile, self.__kvtable = self.__check_g(kvfile, kvtable)
         self.__new_db()
         super(KValue, self).__init__(*args, **kwargs)
 
-    def __check_g(self, gfile, gtable):
-        if isinstance(gfile, (str, Path)):
-            if not gfile:
-                raise ValueError('"gfile" cannot be empty')
-            gfile = str(gfile)
+    def __check_g(self, kvfile, kvtable):
+        if isinstance(kvfile, (str, Path)):
+            if not kvfile:
+                raise ValueError('"kvfile" cannot be empty')
+            kvfile = str(kvfile)
         else:
-            raise TypeError('"gfile" only supported: str or Path')
-        if isinstance(gtable, str):
-            if not gtable:
-                raise ValueError('"gtable" cannot be empty')
+            raise TypeError('"kvfile" only supported: str or Path')
+        if isinstance(kvtable, str):
+            if not kvtable:
+                raise ValueError('"kvtable" cannot be empty')
         else:
-            raise TypeError('"gtable" only supported: str')
-        return gfile, gtable
+            raise TypeError('"kvtable" only supported: str')
+        return kvfile, kvtable
 
     def __conn(self):
-        return sqlite3.connect(self.__gfile)
+        return sqlite3.connect(self.__kvfile)
 
     def get(self, key: str, check_expire: bool = True, get_expire: bool = False):
         """
@@ -55,7 +55,7 @@ class KValue(metaclass=Singleton):
         :param get_expire: 是否返回过期时间（True: 返回格式为元组(value, expire)）
         :return:
         """
-        sql = 'select v, expire from {tb} where k=?'.format(tb=self.__gtable)
+        sql = 'select v, expire from {tb} where k=?'.format(tb=self.__kvtable)
         parameters = (key,)
         value, expire = self.__queryone(sql, parameters)
         if isinstance(check_expire, bool):
@@ -81,7 +81,7 @@ class KValue(metaclass=Singleton):
         :return:
         """
         parameters = self.__check_parameters(key, value, expire)
-        sql = 'replace into {tb} (k, v, expire) values(?, ?, ?)'.format(tb=self.__gtable)
+        sql = 'replace into {tb} (k, v, expire) values(?, ?, ?)'.format(tb=self.__kvtable)
         self.__execute(sql, parameters)
 
     def expire(self, key: str, ex: t.Union[int, float] = 0):
@@ -93,7 +93,7 @@ class KValue(metaclass=Singleton):
         """
         key, _, ex = self.__check_parameters(key=key, expire=ex)
         parameters = (ex, key)
-        sql = 'update {tb} set expire=? where k=?'.format(tb=self.__gtable)
+        sql = 'update {tb} set expire=? where k=?'.format(tb=self.__kvtable)
         self.__execute(sql, parameters)
 
     def __check_parameters(self, key, value=None, expire=None):
@@ -136,7 +136,7 @@ class KValue(metaclass=Singleton):
         sql = 'create table if not exists {tb}(' \
               'k text not null primary key, ' \
               'v text, ' \
-              'expire real)'.format(tb=self.__gtable)
+              'expire real)'.format(tb=self.__kvtable)
         self.__execute(sql)
 
     def __queryone(self, sql: str, parameters: t.Iterable):
@@ -156,7 +156,7 @@ class KValue(metaclass=Singleton):
         """
         conn = self.__conn()
         cursor = conn.cursor()
-        sql = 'select k from {tb} where k=?'.format(tb=self.__gtable)
+        sql = 'select k from {tb} where k=?'.format(tb=self.__kvtable)
         parameters = (key,)
         cursor.execute(sql, parameters)
         result = cursor.fetchone()
@@ -171,7 +171,7 @@ class KValue(metaclass=Singleton):
         :param key:
         :return:
         """
-        sql = 'delete from {tb} where k=?'.format(tb=self.__gtable)
+        sql = 'delete from {tb} where k=?'.format(tb=self.__kvtable)
         parameters = (key,)
         self.__execute(sql, parameters)
 
@@ -180,12 +180,12 @@ class KValue(metaclass=Singleton):
         清除所有key-value
         :return:
         """
-        sql = 'delete from {tb}'.format(tb=self.__gtable)
+        sql = 'delete from {tb}'.format(tb=self.__kvtable)
         self.__execute(sql)
 
     def remove(self) -> None:
         """
-        移除实例g的db文件
+        移除KValue实例的kvfile文件
         :return:
         """
-        os.remove(self.__gfile)
+        os.remove(self.__kvfile)
