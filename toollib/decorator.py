@@ -14,7 +14,7 @@ from functools import wraps
 __all__ = [
     'print_return',
     'catch_exception',
-    'timer'
+    'timer',
 ]
 
 # config of print
