@@ -15,20 +15,20 @@ from pathlib import Path
 from .common.error import ExpireError
 from .utils import json, Singleton
 
-__all__ = ['KValue']
+__all__ = ['KV']
 
 
-class KValue(metaclass=Singleton):
+class KV(metaclass=Singleton):
     """key-value容器"""
 
     # __slots__ = ('__kvfile', '__kvtable')
 
     __support_types = (str, list,  dict, int, float, bool, type(None))
 
-    def __init__(self, kvfile: t.Union[str, Path], kvtable: str = 'kvalue', *args, **kwargs):
+    def __init__(self, kvfile: t.Union[str, Path], kvtable: str = 'kvalues', *args, **kwargs):
         self.__kvfile, self.__kvtable = self.__check_g(kvfile, kvtable)
         self.__new_db()
-        super(KValue, self).__init__(*args, **kwargs)
+        super(KV, self).__init__(*args, **kwargs)
 
     def __check_g(self, kvfile, kvtable):
         if isinstance(kvfile, (str, Path)):
@@ -185,7 +185,7 @@ class KValue(metaclass=Singleton):
 
     def remove(self) -> None:
         """
-        移除KValue实例的kvfile文件
+        移除KV实例的kvfile文件
         :return:
         """
         os.remove(self.__kvfile)

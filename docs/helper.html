@@ -51,33 +51,33 @@
 </pre>
 ---------------------------------
 
-<h3><i>KValue</i></h3><pre>key-value容器</pre>
+<h3><i>KV</i></h3><pre>key-value容器</pre>
 
-<h3><i>KValue.clear</i></h3><pre>
+<h3><i>KV.clear</i></h3><pre>
         清除所有key-value
         :return:
         </pre>
 
-<h3><i>KValue.delete</i></h3><pre>
+<h3><i>KV.delete</i></h3><pre>
         删除key
         :param key:
         :return:
         </pre>
 
-<h3><i>KValue.exists</i></h3><pre>
+<h3><i>KV.exists</i></h3><pre>
         检测key是否存在
         :param key:
         :return:
         </pre>
 
-<h3><i>KValue.expire</i></h3><pre>
+<h3><i>KV.expire</i></h3><pre>
         设置key的过期时间
         :param key:
         :param ex: 默认为0（表不设置过期时间）
         :return:
         </pre>
 
-<h3><i>KValue.get</i></h3><pre>
+<h3><i>KV.get</i></h3><pre>
         获取key的value
         :param key:
         :param check_expire: 是否检测过期（True: 若过期则会raise）
@@ -85,12 +85,12 @@
         :return:
         </pre>
 
-<h3><i>KValue.remove</i></h3><pre>
-        移除KValue实例的kvfile文件
+<h3><i>KV.remove</i></h3><pre>
+        移除KV实例的kvfile文件
         :return:
         </pre>
 
-<h3><i>KValue.set</i></h3><pre>
+<h3><i>KV.set</i></h3><pre>
         设置kye-value
         :param key:
         :param value:

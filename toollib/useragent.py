@@ -10,12 +10,12 @@ import random
 import re
 
 __all__ = [
-    'UserAgents',
+    'uas',
     'choice_ua',
     'gen_uas',
 ]
 
-UserAgents = [
+uas = [
     'Mozilla/5.0 (compatible; U; ABrowse 0.6; Syllable) AppleWebKit/420+ (KHTML, like Gecko)',
     'Mozilla/5.0 (compatible; U; ABrowse 0.6;  Syllable) AppleWebKit/420+ (KHTML, like Gecko)',
     'Mozilla/5.0 (compatible; MSIE 8.0; Windows NT 6.0; Trident/4.0; Acoo Browser 1.98.744; .NET CLR 3.5.30729)',
@@ -1018,7 +1018,7 @@ UserAgents = [
     'Mozilla/5.0 (Windows; U; Windows NT 6.0; en-US) AppleWebKit/532.0 (KHTML, like Gecko) Chrome/4.0.207.0 Safari/532.0',
 ]
 
-choice_ua = random.choice(UserAgents)
+choice_ua = random.choice(uas)
 
 
 def gen_uas(max_len: int = 1000):
