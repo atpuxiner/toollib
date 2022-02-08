@@ -2,7 +2,7 @@
 @author axiner
 @version v1.0.0
 @created 2021/12/14 20:28
-@abstract
+@abstract 装饰器
 @description
 @history
 """

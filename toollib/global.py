@@ -2,7 +2,7 @@
 @author axiner
 @version v1.0.0
 @created 2021/12/18 22:21
-@abstract
+@abstract 全局变量
 @description
 @history
 """

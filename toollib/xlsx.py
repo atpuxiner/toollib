@@ -2,7 +2,7 @@
 @author axiner
 @version v1.0.0
 @created 2022/1/23 20:36
-@abstract
+@abstract xlsx（基于openpyxl库）
 @description
 @history
 """

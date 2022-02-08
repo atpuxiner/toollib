@@ -2,7 +2,7 @@
 @author axiner
 @version v1.0.0
 @created 2021/12/18 22:20
-@abstract
+@abstract 实用工具
 @description
 @history
 """
