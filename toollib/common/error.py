@@ -11,10 +11,10 @@
 class Error(Exception):
     """Error基类"""
 
-    def __init__(self, msg="Raise error", code=1):
+    def __init__(self, msg='Raise error', code=1):
         self.msg = msg
         self.code = code
-        self.error = {"code": self.code, "msg": self.msg}
+        self.error = {'code': self.code, 'msg': self.msg}
 
     def __str__(self):
         return self.msg

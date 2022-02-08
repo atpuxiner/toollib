@@ -15,17 +15,17 @@ from pathlib import Path
 from .common.error import ExpireError
 from .utils import json, Singleton
 
-__all__ = ["G"]
+__all__ = ['G']
 
 
 class G(metaclass=Singleton):
     """全局变量（基于sqlite3实现的key-value容器）"""
 
-    # __slots__ = ("__gfile", "__gtable")
+    # __slots__ = ('__gfile', '__gtable')
 
     __support_types = (str, list,  dict, int, float, bool, type(None))
 
-    def __init__(self, gfile: t.Union[str, Path], gtable: str = "g", *args, **kwargs):
+    def __init__(self, gfile: t.Union[str, Path], gtable: str = 'g', *args, **kwargs):
         self.__gfile, self.__gtable = self.__check_g(gfile, gtable)
         self.__new_db()
         super(G, self).__init__(*args, **kwargs)
@@ -33,15 +33,15 @@ class G(metaclass=Singleton):
     def __check_g(self, gfile, gtable):
         if isinstance(gfile, (str, Path)):
             if not gfile:
-                raise ValueError("'gfile' cannot be empty")
+                raise ValueError('"gfile" cannot be empty')
             gfile = str(gfile)
         else:
-            raise TypeError("'gfile' only supported: str or Path")
+            raise TypeError('"gfile" only supported: str or Path')
         if isinstance(gtable, str):
             if not gtable:
-                raise ValueError("'gtable' cannot be empty")
+                raise ValueError('"gtable" cannot be empty')
         else:
-            raise TypeError("'gtable' only supported: str")
+            raise TypeError('"gtable" only supported: str')
         return gfile, gtable
 
     def __conn(self):
@@ -55,7 +55,7 @@ class G(metaclass=Singleton):
         :param get_expire: 是否返回过期时间（True: 返回格式为元组(value, expire)）
         :return:
         """
-        sql = "select v, expire from {tb} where k=?".format(tb=self.__gtable)
+        sql = 'select v, expire from {tb} where k=?'.format(tb=self.__gtable)
         parameters = (key,)
         value, expire = self.__queryone(sql, parameters)
         if isinstance(check_expire, bool):
@@ -63,9 +63,9 @@ class G(metaclass=Singleton):
                 if expire > 0:
                     is_expire = expire - time.time()
                     if is_expire < 0:
-                        raise ExpireError("'{}' has expired".format(key))
+                        raise ExpireError('"{0}" has expired'.format(key))
         else:
-            raise TypeError("'check_expire' only supported: bool")
+            raise TypeError('"check_expire" only supported: bool')
         if value:
             value = json(value)
         if get_expire is True:
@@ -81,7 +81,7 @@ class G(metaclass=Singleton):
         :return:
         """
         parameters = self.__check_parameters(key, value, expire)
-        sql = "replace into {tb} (k, v, expire) values(?, ?, ?)".format(tb=self.__gtable)
+        sql = 'replace into {tb} (k, v, expire) values(?, ?, ?)'.format(tb=self.__gtable)
         self.__execute(sql, parameters)
 
     def expire(self, key: str, ex: t.Union[int, float] = 0):
@@ -93,29 +93,29 @@ class G(metaclass=Singleton):
         """
         key, _, ex = self.__check_parameters(key=key, expire=ex)
         parameters = (ex, key)
-        sql = "update {tb} set expire=? where k=?".format(tb=self.__gtable)
+        sql = 'update {tb} set expire=? where k=?'.format(tb=self.__gtable)
         self.__execute(sql, parameters)
 
     def __check_parameters(self, key, value=None, expire=None):
         if isinstance(key, str):
             if not key:
-                raise ValueError("'key' cannot be empty")
+                raise ValueError('"key" cannot be empty')
         else:
-            raise TypeError("'key' only supported: str")
+            raise TypeError('"key" only supported: str')
         if value is not None:
             if not isinstance(value, self.__support_types):
-                raise TypeError("'value' only supported: {}".format(
+                raise TypeError('"value" only supported: {0}'.format(
                     [_t.__name__ for _t in self.__support_types]))
             else:
-                value = json(value, "dumps")
+                value = json(value, 'dumps')
         if expire is not None:
             if isinstance(expire, (int, float)):
                 if expire < 0:
-                    raise ValueError("'expire' greater than or equal to 0")
+                    raise ValueError('"expire" greater than or equal to 0')
                 elif expire > 0:
                     expire = round(time.time() + expire, 7)
             else:
-                raise TypeError("'expire' only supported: int or float")
+                raise TypeError('"expire" only supported: int or float')
         return key, value, expire
 
     def __execute(self, sql: str, parameters: t.Iterable = None) -> None:
@@ -133,10 +133,10 @@ class G(metaclass=Singleton):
         conn.close()
 
     def __new_db(self) -> None:
-        sql = "create table if not exists {tb}(" \
-              "k text not null primary key, " \
-              "v text, " \
-              "expire real)".format(tb=self.__gtable)
+        sql = 'create table if not exists {tb}(' \
+              'k text not null primary key, ' \
+              'v text, ' \
+              'expire real)'.format(tb=self.__gtable)
         self.__execute(sql)
 
     def __queryone(self, sql: str, parameters: t.Iterable):
@@ -156,7 +156,7 @@ class G(metaclass=Singleton):
         """
         conn = self.__conn()
         cursor = conn.cursor()
-        sql = "select k from {tb} where k=?".format(tb=self.__gtable)
+        sql = 'select k from {tb} where k=?'.format(tb=self.__gtable)
         parameters = (key,)
         cursor.execute(sql, parameters)
         result = cursor.fetchone()
@@ -171,7 +171,7 @@ class G(metaclass=Singleton):
         :param key:
         :return:
         """
-        sql = "delete from {tb} where k=?".format(tb=self.__gtable)
+        sql = 'delete from {tb} where k=?'.format(tb=self.__gtable)
         parameters = (key,)
         self.__execute(sql, parameters)
 
@@ -180,7 +180,7 @@ class G(metaclass=Singleton):
         清除所有key-value
         :return:
         """
-        sql = "delete from {tb}".format(tb=self.__gtable)
+        sql = 'delete from {tb}'.format(tb=self.__gtable)
         self.__execute(sql)
 
     def remove(self) -> None:

@@ -18,12 +18,12 @@ from threading import Lock
 from .common import rarfile, zipfile
 
 __all__ = [
-    "Singleton",
-    "now2str",
-    "str2datetime",
-    "json",
-    "get_files",
-    "decompress",
+    'Singleton',
+    'now2str',
+    'str2datetime',
+    'json',
+    'get_files',
+    'decompress',
 ]
 
 
@@ -44,19 +44,19 @@ class Singleton(type):
         return cls.__instance
 
 
-def now2str(fmt: str = "S") -> str:
+def now2str(fmt: str = 'S') -> str:
     """
     now datetime to str
     :param fmt:
     :return:
     """
     _ = {
-        "S": "%Y-%m-%d %H:%M:%S",
-        "M": "%Y-%m-%d %H:%M",
-        "H": "%Y-%m-%d %H",
-        "d": "%Y-%m-%d",
-        "m": "%Y-%m",
-        "Y": "%Y"
+        'S': '%Y-%m-%d %H:%M:%S',
+        'M': '%Y-%m-%d %H:%M',
+        'H': '%Y-%m-%d %H',
+        'd': '%Y-%m-%d',
+        'm': '%Y-%m',
+        'Y': '%Y'
     }
     fmt = _.get(fmt, fmt)
     str_now = datetime.now().strftime(fmt)
@@ -71,19 +71,19 @@ def str2datetime(time_str: str, fmt: str = None) -> datetime:
     :return:
     """
     _ = {
-        19: "%Y-%m-%d %H:%M:%S",
-        16: "%Y-%m-%d %H:%M",
-        13: "%Y-%m-%d %H",
-        10: "%Y-%m-%d",
-        7: "%Y-%m",
-        4: "%Y"
+        19: '%Y-%m-%d %H:%M:%S',
+        16: '%Y-%m-%d %H:%M',
+        13: '%Y-%m-%d %H',
+        10: '%Y-%m-%d',
+        7: '%Y-%m',
+        4: '%Y'
     }
     fmt = fmt if fmt else _.get(len(time_str))
     dt = datetime.strptime(time_str, fmt)
     return dt
 
 
-def json(data, loadordumps="loads", default=None, *args, **kwargs):
+def json(data, loadordumps='loads', default=None, *args, **kwargs):
     """
     json loads or dumps
     :param data:
@@ -96,16 +96,16 @@ def json(data, loadordumps="loads", default=None, *args, **kwargs):
     if not data:
         data = default or data
     else:
-        if loadordumps == "loads":
+        if loadordumps == 'loads':
             data = loads(data, *args, **kwargs)
-        elif loadordumps == "dumps":
+        elif loadordumps == 'dumps':
             data = dumps(data, *args, **kwargs)
         else:
-            raise ValueError("'loadordumps' only select from: ['loads', 'dumps']")
+            raise ValueError('"loadordumps" only select from: ["loads", "dumps"]')
     return data
 
 
-def get_files(src_dir: t.Union[str, Path], pattern: str = "*",
+def get_files(src_dir: t.Union[str, Path], pattern: str = '*',
               is_name: bool = False, is_r: bool = False) -> list:
     """
     获取文件
@@ -125,7 +125,7 @@ def get_files(src_dir: t.Union[str, Path], pattern: str = "*",
 
 
 def decompress(src: t.Union[str, Path], dest_dir: t.Union[str, Path] = None,
-               pattern: str = "*[.pzr]", is_r: bool = False, is_raise: bool = True) -> int:
+               pattern: str = '*[.pzr]', is_r: bool = False, is_raise: bool = True) -> int:
     """
     解压文件
     :param src: 源目录或文件
@@ -135,7 +135,7 @@ def decompress(src: t.Union[str, Path], dest_dir: t.Union[str, Path] = None,
     :param is_raise: 是否抛异常
     :return: count-解压数量
     """
-    __support_types = [".zip", ".rar", ".tar", ".gz", ".tgz"]
+    __support_types = ['.zip', '.rar', '.tar', '.gz', '.tgz']
     src = Path(src).absolute()
     src_is_dir = False
     if src.is_dir():
@@ -143,7 +143,7 @@ def decompress(src: t.Union[str, Path], dest_dir: t.Union[str, Path] = None,
         src_files = get_files(src, pattern=pattern, is_r=is_r)
     else:
         if src.suffix not in __support_types:
-            raise ValueError(f"only supported: {__support_types}")
+            raise ValueError(f'only supported: {__support_types}')
         src_files = [src]
     if not dest_dir:
         dest_dir = src.absolute() if src_is_dir else src.absolute().parent
@@ -161,12 +161,12 @@ def decompress(src: t.Union[str, Path], dest_dir: t.Union[str, Path] = None,
         else:
             continue
         try:
-            if file_type == ".zip":
+            if file_type == '.zip':
                 zip_file = zipfile.ZipFile(src_file)
                 for f in zip_file.namelist():
                     zip_file.extract(f, dest_dir)
                 zip_file.close()
-            elif file_type == ".rar":
+            elif file_type == '.rar':
                 rar_file = rarfile.RarFile(src_file)
                 rar_file.extractall(dest_dir)
                 rar_file.close()

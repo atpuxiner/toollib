@@ -12,14 +12,14 @@ import typing as t
 from functools import wraps
 
 __all__ = [
-    "print_return",
-    "catch_exception",
-    "timer"
+    'print_return',
+    'catch_exception',
+    'timer'
 ]
 
 # config of print
 FLWIDTH = 66
-FLCHAR = "-"
+FLCHAR = '-'
 
 
 def print_return(is_print: bool = True):
@@ -33,7 +33,7 @@ def print_return(is_print: bool = True):
         def inner(*args, **kwargs):
             result = func(*args, **kwargs)
             if is_print is True:
-                print("func: '{0}', return: {1}\t【@type: {2}】".format(
+                print('func: "{0}", return: {1}\t【@type: {2}】'.format(
                     func.__name__, result, type(result)).center(FLWIDTH, FLCHAR))
             return result
         return inner
@@ -69,11 +69,11 @@ def timer(func: t.Callable):
     """
     @wraps(func)
     def wrapper(*args, **kwargs):
-        print("func: '{0}', start.....".format(func.__name__).center(FLWIDTH, FLCHAR))
+        print('func: "{0}", start.....'.format(func.__name__).center(FLWIDTH, FLCHAR))
         start_time = time.time()
         result = func(*args, **kwargs)
         end_time = time.time()
-        print("func: '{0}' finished, spent time: {1:.2f}s".format(
+        print('func: "{0}" finished, spent time: {1:.2f}s'.format(
             func.__name__, end_time - start_time).center(FLWIDTH, FLCHAR))
         return result
     return wrapper

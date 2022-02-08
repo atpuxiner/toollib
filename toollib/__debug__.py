@@ -15,5 +15,5 @@ def t001():
     print(here)
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     t001()

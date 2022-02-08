@@ -14,15 +14,15 @@ except ImportError:
     raise
 
 __all__ = [
-    "ws_inserts",
-    "ws_rows_value",
-    "ws_cols_value",
-    "ws_styles",
+    'ws_inserts',
+    'ws_rows_value',
+    'ws_cols_value',
+    'ws_styles',
 ]
 
 
 def ws_inserts(ws: Worksheet, values: t.List[list], index: int = None,
-               mode: str = "r", is_new: bool = True):
+               mode: str = 'r', is_new: bool = True):
     """
     插入数据
     :param ws: Worksheet实例（openpyxl库）
@@ -33,25 +33,25 @@ def ws_inserts(ws: Worksheet, values: t.List[list], index: int = None,
     :return:
     """
     _len = len(values)
-    if mode not in ["r", "c"]:
-        raise ValueError("'mode' only select from: ['r', 'c']")
-    if index is None and mode == "c":
+    if mode not in ['r', 'c']:
+        raise ValueError('"mode" only select from: ["r", "c"]')
+    if index is None and mode == 'c':
         index = ws.max_column + 1
     if index is not None:
         if isinstance(index, int):
             if index < 1:
-                raise ValueError("'index' greater than 0")
+                raise ValueError('"index" greater than 0')
         else:
-            raise ValueError("'index' only supported: int")
+            raise ValueError('"index" only supported: int')
         if is_new is True:
-            if mode == "r":
+            if mode == 'r':
                 ws.insert_rows(index, _len)
             else:
                 ws.insert_cols(index, _len)
         for r, item in enumerate(values):
             _i = r + index
             for c, v in enumerate(item, 1):
-                if mode == "r":
+                if mode == 'r':
                     _r, _c = _i, c
                 else:
                     _r, _c = c, _i
@@ -177,4 +177,4 @@ def ws_styles(
                     raise
                 setattr(ws_scope, stl, stl_value)
     else:
-        raise ValueError("'by_icells' |'by_cells' |'by_rows' |'by_cols' is required")
+        raise ValueError('"by_icells" |"by_cells" |"by_rows" |"by_cols" is required')

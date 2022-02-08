@@ -21,19 +21,19 @@ here = Path(__file__).absolute().parent
 
 __verison__ = Versions.ALL[0][0]
 
-with open("README.md", "r", encoding="utf8") as f:
+with open('README.md', 'r', encoding='utf8') as f:
     long_description = f.read()
-with open("requirements.txt", "r", encoding="utf8") as f:
+with open('requirements.txt', 'r', encoding='utf8') as f:
     install_requires = list(yield_lines(f.read()))
 
 
 def update_version():
     """update version"""
-    vfile = here.joinpath("toollib/__init__.py").as_posix()
-    with open(vfile, "r", encoding="utf8") as fp:
+    vfile = here.joinpath('toollib/__init__.py').as_posix()
+    with open(vfile, 'r', encoding='utf8') as fp:
         file = fp.read()
-    with open(vfile, "w", encoding="utf8") as fp:
-        file = re.sub(r'__version__ = "[\d.]+"', rf'__version__ = "{__verison__}"', file)
+    with open(vfile, 'w', encoding='utf8') as fp:
+        file = re.sub(r"__version__ = '[\d.]+'", rf"__version__ = '{__verison__}'", file)
         fp.write(file)
 
 
@@ -41,18 +41,18 @@ def bu():
     """build"""
     update_version()
     try:
-        print("Removing previous builds...")
-        rmtree(os.path.join(here, "dist"))
+        print('Removing previous builds...')
+        rmtree(os.path.join(here, 'dist'))
     except OSError:
         pass
-    print("Building Source or Wheel distribution...")
-    # os.system("{0} setup.py sdist bdist_wheel".format(sys.executable))
-    os.system("{0} setup.py bdist_wheel".format(sys.executable))
+    print('Building Source or Wheel distribution...')
+    # os.system('{0} setup.py sdist bdist_wheel'.format(sys.executable))
+    os.system('{0} setup.py bdist_wheel'.format(sys.executable))
 
 
 class BuildCommand(Command):
     """support setup.py build"""
-    description = "Build the package."
+    description = 'Build the package.'
     user_options = []
 
     def initialize_options(self):
@@ -68,7 +68,7 @@ class BuildCommand(Command):
 
 class UploadCommand(Command):
     """support setup.py build&upload"""
-    description = "Build and upload the package."
+    description = 'Build and upload the package.'
     user_options = []
 
     def initialize_options(self):
@@ -79,18 +79,18 @@ class UploadCommand(Command):
 
     def run(self):
         bu()
-        print("Uploading the package to PyPI via Twine...")
-        os.system("twine upload dist/*")
+        print('Uploading the package to PyPI via Twine...')
+        os.system('twine upload dist/*')
         sys.exit()
 
 
 setup(
     version=__verison__,
     long_description=long_description,
-    long_description_content_type="text/markdown",
+    long_description_content_type='text/markdown',
     install_requires=install_requires,
     cmdclass={
-        "bu": BuildCommand,
-        "up": UploadCommand,
+        'bu': BuildCommand,
+        'up': UploadCommand,
     },
 )
