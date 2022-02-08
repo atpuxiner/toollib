@@ -2,7 +2,7 @@
 @author axiner
 @version v1.0.0
 @created 2021/12/18 22:21
-@abstract 全局变量
+@abstract key-value容器（基于sqlite3）
 @description
 @history
 """
@@ -15,11 +15,11 @@ from pathlib import Path
 from .common.error import ExpireError
 from .utils import json, Singleton
 
-__all__ = ['G']
+__all__ = ['KValue']
 
 
-class G(metaclass=Singleton):
-    """全局变量（基于sqlite3实现的key-value容器）"""
+class KValue(metaclass=Singleton):
+    """key-value容器"""
 
     # __slots__ = ('__gfile', '__gtable')
 
@@ -28,7 +28,7 @@ class G(metaclass=Singleton):
     def __init__(self, gfile: t.Union[str, Path], gtable: str = 'g', *args, **kwargs):
         self.__gfile, self.__gtable = self.__check_g(gfile, gtable)
         self.__new_db()
-        super(G, self).__init__(*args, **kwargs)
+        super(KValue, self).__init__(*args, **kwargs)
 
     def __check_g(self, gfile, gtable):
         if isinstance(gfile, (str, Path)):

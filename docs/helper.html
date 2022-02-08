@@ -41,43 +41,43 @@
     :return:
     </pre>
 ++++++++++++++++++++++这是分隔线++++++++++++++++++++++
-<h2><i>toollib.global</i></h2><pre>
+<h2><i>toollib.kvalue</i></h2><pre>
 @author axiner
 @version v1.0.0
 @created 2021/12/18 22:21
-@abstract 全局变量
+@abstract key-value容器（基于sqlite3）
 @description
 @history
 </pre>
 ---------------------------------
 
-<h3><i>G</i></h3><pre>全局变量（基于sqlite3实现的key-value容器）</pre>
+<h3><i>KValue</i></h3><pre>key-value容器</pre>
 
-<h3><i>G.clear</i></h3><pre>
+<h3><i>KValue.clear</i></h3><pre>
         清除所有key-value
         :return:
         </pre>
 
-<h3><i>G.delete</i></h3><pre>
+<h3><i>KValue.delete</i></h3><pre>
         删除key
         :param key:
         :return:
         </pre>
 
-<h3><i>G.exists</i></h3><pre>
+<h3><i>KValue.exists</i></h3><pre>
         检测key是否存在
         :param key:
         :return:
         </pre>
 
-<h3><i>G.expire</i></h3><pre>
+<h3><i>KValue.expire</i></h3><pre>
         设置key的过期时间
         :param key:
         :param ex: 默认为0（表不设置过期时间）
         :return:
         </pre>
 
-<h3><i>G.get</i></h3><pre>
+<h3><i>KValue.get</i></h3><pre>
         获取key的value
         :param key:
         :param check_expire: 是否检测过期（True: 若过期则会raise）
@@ -85,12 +85,12 @@
         :return:
         </pre>
 
-<h3><i>G.remove</i></h3><pre>
+<h3><i>KValue.remove</i></h3><pre>
         移除实例g的db文件
         :return:
         </pre>
 
-<h3><i>G.set</i></h3><pre>
+<h3><i>KValue.set</i></h3><pre>
         设置kye-value
         :param key:
         :param value:
