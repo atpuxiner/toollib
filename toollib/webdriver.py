@@ -6,10 +6,11 @@
 @description
 @history
 """
+import os
 import re
+import shutil
 import typing as t
 import urllib.request as urlrequest
-import zipfile
 from pathlib import Path
 
 try:
@@ -94,10 +95,8 @@ class ChromeDriver(ChromiumDriver):
         try:
             print(f'Download driver ({__driver_zip.stem}) start.....')
             urlrequest.urlretrieve(__download_url, __driver_zip.as_posix())
-            zip_file = zipfile.ZipFile(__driver_zip)
-            for f in zip_file.namelist():
-                zip_file.extract(f, driver_dir)
-            zip_file.close()
+            shutil.unpack_archive(__driver_zip, driver_dir, 'zip')
+            os.remove(__driver_zip)
             return driver_file.as_posix()
         except:
             raise

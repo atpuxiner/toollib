@@ -6,6 +6,7 @@
 @description
 @history
 """
+import hashlib
 import stat
 import tarfile
 import traceback
@@ -24,6 +25,7 @@ __all__ = [
     'json',
     'get_files',
     'decompress',
+    'genmd5',
 ]
 
 
@@ -143,7 +145,7 @@ def decompress(src: t.Union[str, Path], dest_dir: t.Union[str, Path] = None,
         src_files = get_files(src, pattern=pattern, is_r=is_r)
     else:
         if src.suffix not in __support_types:
-            raise ValueError(f'only supported: {__support_types}')
+            raise ValueError('only supported: %s' % __support_types)
         src_files = [src]
     if not dest_dir:
         dest_dir = src.absolute() if src_is_dir else src.absolute().parent
@@ -183,3 +185,26 @@ def decompress(src: t.Union[str, Path], dest_dir: t.Union[str, Path] = None,
         else:
             count += 1
     return count
+
+
+def genmd5(obj, salt: str = '', is_file: bool = False):
+    """
+    生成md5
+    :param obj: 对象
+    :param salt: 加盐
+    :param is_file: 是否针对文件对象
+    :return:
+    """
+    obj_md5 = hashlib.md5()
+    if is_file is True:
+        with open(obj, 'rb') as f:
+            while True:
+                b = f.read(10240)
+                if not b:
+                    break
+                obj_md5.update(b)
+    else:
+        obj_md5.update(obj.encode('utf8'))
+    if salt:
+        obj_md5.update(salt.encode('utf8'))
+    return obj_md5.hexdigest()

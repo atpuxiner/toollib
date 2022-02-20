@@ -63,7 +63,7 @@ class KV(metaclass=Singleton):
                 if expire > 0:
                     is_expire = expire - time.time()
                     if is_expire < 0:
-                        raise ExpireError('"{0}" has expired'.format(key))
+                        raise ExpireError('"%s" has expired' % key)
         else:
             raise TypeError('"check_expire" only supported: bool')
         if value:
@@ -104,8 +104,8 @@ class KV(metaclass=Singleton):
             raise TypeError('"key" only supported: str')
         if value is not None:
             if not isinstance(value, self.__support_types):
-                raise TypeError('"value" only supported: {0}'.format(
-                    [_t.__name__ for _t in self.__support_types]))
+                raise TypeError('"value" only supported: %s' % [
+                    _t.__name__ for _t in self.__support_types])
             else:
                 value = json(value, 'dumps')
         if expire is not None:
