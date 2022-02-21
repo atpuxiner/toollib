@@ -10,6 +10,7 @@
 
 class Versions(object):
     ALL = [
+        ('2022.02.21', 'Fix. eg: decompress'),
         ('2022.02.20', 'Chg.'),
         ('2022.02.09', 'Chg. eg: global>kvalue'),
         ('2022.02.08', 'Add. eg: regexp.py, useragent.py'),
