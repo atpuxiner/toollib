@@ -137,7 +137,14 @@ def decompress(src: t.Union[str, Path], dest_dir: t.Union[str, Path] = None,
     :param is_raise: 是否抛异常
     :return: count-解压数量
     """
-    __support_types = ['.zip', '.rar', '.tar', '.gz', '.tgz']
+    __support_types = [
+        '.zip',
+        '.rar',
+        '.tar',
+        '.gz', '.tgz',
+        '.xz', '.txz',
+        '.bz2', '.tbz', '.tbz2', '.tb2',
+    ]
     src = Path(src).absolute()
     src_is_dir = False
     if src.is_dir():
