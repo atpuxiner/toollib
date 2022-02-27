@@ -6,5 +6,8 @@
 @description
 @history
 """
+from pathlib import Path
 
-__version__ = '2022.02.21'
+here = Path(__file__).absolute().parent
+
+__version__ = '2022.02.27'
