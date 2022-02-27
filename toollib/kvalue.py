@@ -12,8 +12,8 @@ import time
 import typing as t
 from pathlib import Path
 
-from .common.error import ExpireError
-from .utils import json, Singleton
+from toollib.common.error import ExpireError
+from toollib.utils import json, Singleton
 
 __all__ = ['KV']
 

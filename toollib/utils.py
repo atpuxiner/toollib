@@ -6,8 +6,10 @@
 @description
 @history
 """
-import hashlib
+import os
+import re
 import stat
+import subprocess
 import tarfile
 import traceback
 from datetime import datetime
@@ -16,16 +18,18 @@ from json import dumps, loads
 from pathlib import Path
 from threading import Lock
 
-from .common import rarfile, zipfile
+from toollib.common import rarfile, zipfile
 
 __all__ = [
     'Singleton',
+    'Typer',
     'now2str',
     'str2datetime',
     'json',
-    'get_files',
+    'listfile',
     'decompress',
-    'genmd5',
+    'home',
+    'syscmd',
 ]
 
 
@@ -44,6 +48,57 @@ class Singleton(type):
                 if cls.__instance is None:
                     cls.__instance = super(Singleton, cls).__call__(*args, **kwargs)
         return cls.__instance
+
+
+class Typer:
+    """
+    数据描述符类型检测
+    """
+
+    def __init__(self, key, ktype=None, required=True, enum=None, regex=None, func=None,
+                 error_msg=None, empty_msg=None):
+        self.key = key
+        self.ktype = ktype
+        self.required = required
+        self.enum = enum
+        self.regex = regex
+        self.func = func
+        self.error_msg = error_msg
+        self.empty_msg = empty_msg or '"%s" cannot be empty' % self.key
+
+    def __get__(self, instance, owner):
+        return instance.__dict__[self.key]
+
+    def __set__(self, instance, value):
+        if value is None:
+            if self.required is True:
+                raise TypeError(self.empty_msg)
+        else:
+            if self.ktype:
+                if not isinstance(value, self.ktype):
+                    error_msg = self.error_msg
+                    if not error_msg:
+                        error_msg = f'"%s" only supported: %s' % (self.key, self.ktype)
+                    raise TypeError(error_msg)
+            elif self.enum is not None:
+                if isinstance(self.enum, (list, tuple)):
+                    if value not in self.enum:
+                        error_msg = self.error_msg
+                        if not error_msg:
+                            error_msg = '"%s" only select from: %s' % (self.key, self.ktype)
+                        raise TypeError(error_msg)
+                else:
+                    raise TypeError('"enum" only supported: list or tuple')
+            elif self.regex is not None:
+                if re.match(self.regex, value) is None:
+                    raise TypeError('"%s" only supported: %s' % (self.key, self.regex))
+
+            if self.func is not None:
+                self.func(value)
+        instance.__dict__[self.key] = value
+
+    def __delete__(self, instance):
+        instance.__dict__.pop(self.key)
 
 
 def now2str(fmt: str = 'S') -> str:
@@ -107,12 +162,13 @@ def json(data, loadordumps='loads', default=None, *args, **kwargs):
     return data
 
 
-def get_files(src_dir: t.Union[str, Path], pattern: str = '*',
-              is_name: bool = False, is_r: bool = False) -> list:
+def listfile(src_dir: t.Union[str, Path], pattern: str = '*',
+             is_str: bool = False, is_name: bool = False, is_r: bool = False) -> list:
     """
-    获取文件
+    获取文件列表
     :param src_dir: 源目录
     :param pattern: 匹配模式
+    :param is_str: 是否返回字符串（True: 返回字符串，False: 返回Path类型）(is_name为False时生效)
     :param is_name: 是否获取文件名（True: 获取文件路径，False: 获取文件名）
     :param is_r: 是否递规查找
     :return:
@@ -122,7 +178,10 @@ def get_files(src_dir: t.Union[str, Path], pattern: str = '*',
     src_files = src_dir.rglob(pattern) if is_r is True else src_dir.glob(pattern)
     for f in src_files:
         if f.is_file():
-            files.append(f.name if is_name is True else f)
+            if is_str is True:
+                files.append(f.name if is_name is True else f.as_posix())
+            else:
+                files.append(f.name if is_name is True else f)
     return files
 
 
@@ -149,7 +208,7 @@ def decompress(src: t.Union[str, Path], dest_dir: t.Union[str, Path] = None,
     src_is_dir = False
     if src.is_dir():
         src_is_dir = True
-        src_files = get_files(src, pattern=pattern, is_r=is_r)
+        src_files = listfile(src, pattern=pattern, is_r=is_r)
     else:
         if src.suffix not in __support_types:
             raise ValueError('only supported: %s' % __support_types)
@@ -194,24 +253,23 @@ def decompress(src: t.Union[str, Path], dest_dir: t.Union[str, Path] = None,
     return count
 
 
-def genmd5(obj, salt: str = '', is_file: bool = False):
+def home():
     """
-    生成md5
-    :param obj: 对象
-    :param salt: 加盐
-    :param is_file: 是否针对文件对象
+    家目录
     :return:
     """
-    obj_md5 = hashlib.md5()
-    if is_file is True:
-        with open(obj, 'rb') as f:
-            while True:
-                b = f.read(10240)
-                if not b:
-                    break
-                obj_md5.update(b)
-    else:
-        obj_md5.update(obj.encode('utf8'))
-    if salt:
-        obj_md5.update(salt.encode('utf8'))
-    return obj_md5.hexdigest()
+    return os.environ.get("HOME") or os.path.join(os.environ.get("HOMEDRIVE"), os.environ.get("HOMEPATH"))
+
+
+def syscmd(cmd, shell=True, env=None, *args, **kwargs):
+    """
+    系统命令（基于subprocess.Popen，具体参数见源）
+    :param cmd:
+    :param shell:
+    :param env:
+    :return: (stdout, stderr)
+    """
+    r = subprocess.Popen(
+        cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+        shell=shell, env=env, *args, **kwargs)
+    return r.communicate()
