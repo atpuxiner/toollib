@@ -13,6 +13,24 @@
 	更多功能正在完善...</pre></div>
     <HR>
     <div style='font-size:16px; font-weight:bold'>
+<h2><i>toollib.crypto</i></h2><pre>
+@author axiner
+@version v1.0.0
+@created 2022/2/27 11:46
+@abstract
+@description
+@history
+</pre>
+---------------------------------
+
+<h3><i>cmd5</i></h3><pre>
+    md5加密
+    :param obj: 对象
+    :param salt: 加盐
+    :param is_file: 是否针对文件对象
+    :return:
+    </pre>
+<br>++++++++++++++++++++++这是分隔线++++++++++++++++++++++
 <h2><i>toollib.decorator</i></h2><pre>
 @author axiner
 @version v1.0.0
@@ -133,6 +151,10 @@
 
 <h3><i>Singleton</i></h3><pre>单例模式</pre>
 
+<h3><i>Typer</i></h3><pre>
+    数据描述符类型检测
+    </pre>
+
 <h3><i>now2str</i></h3><pre>
     now datetime to str
     :param fmt:
@@ -156,10 +178,11 @@
     :return:
     </pre>
 
-<h3><i>get_files</i></h3><pre>
-    获取文件
+<h3><i>listfile</i></h3><pre>
+    获取文件列表
     :param src_dir: 源目录
     :param pattern: 匹配模式
+    :param is_str: 是否返回字符串（True: 返回字符串，False: 返回Path类型）(is_name为False时生效)
     :param is_name: 是否获取文件名（True: 获取文件路径，False: 获取文件名）
     :param is_r: 是否递规查找
     :return:
@@ -175,12 +198,17 @@
     :return: count-解压数量
     </pre>
 
-<h3><i>genmd5</i></h3><pre>
-    生成md5
-    :param obj: 对象
-    :param salt: 加盐
-    :param is_file: 是否针对文件对象
+<h3><i>home</i></h3><pre>
+    家目录
     :return:
+    </pre>
+
+<h3><i>syscmd</i></h3><pre>
+    系统命令（基于subprocess.Popen，具体参数见源）
+    :param cmd:
+    :param shell:
+    :param env:
+    :return: (stdout, stderr)
     </pre>
 <br>++++++++++++++++++++++这是分隔线++++++++++++++++++++++
 <h2><i>toollib.webdriver</i></h2><pre>
