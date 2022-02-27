@@ -267,6 +267,8 @@ def syscmd(cmd, shell=True, env=None, *args, **kwargs):
     :param cmd:
     :param shell:
     :param env:
+    :param args:
+    :param kwargs:
     :return: (stdout, stderr)
     """
     r = subprocess.Popen(
