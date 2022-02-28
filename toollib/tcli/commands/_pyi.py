@@ -28,7 +28,7 @@ class Cmd(BaseCmd):
         return options
 
     def pyi(self):
-        from pip._internal import main as pypip
+        from pip._internal.cli.main import main as pypip
         optional = ['install', self.parse_args.pkg]
         optional.extend(self._index_urls(self.parse_args.index))
         pypip(optional)
