@@ -163,26 +163,32 @@ def json(data, loadordumps='loads', default=None, *args, **kwargs):
 
 
 def listfile(src_dir: t.Union[str, Path], pattern: str = '*',
-             is_str: bool = False, is_name: bool = False, is_r: bool = False) -> list:
+             is_str: bool = False, is_name: bool = False, is_r: bool = False) -> t.Generator:
     """
-    获取文件列表
+    文件列表
     :param src_dir: 源目录
     :param pattern: 匹配模式
-    :param is_str: 是否返回字符串（True: 返回字符串，False: 返回Path类型）(is_name为False时生效)
-    :param is_name: 是否获取文件名（True: 获取文件路径，False: 获取文件名）
+    :param is_str: 是否返回字符串（True: 若为路径返回字符串，False: 若为路径返回Path类型）
+    :param is_name: 是否获取文件名（True: 返回文件路径，False: 返回文件名）
     :param is_r: 是否递规查找
     :return:
     """
-    files = []
     src_dir = Path(src_dir).absolute()
     src_files = src_dir.rglob(pattern) if is_r is True else src_dir.glob(pattern)
+    count = 0
     for f in src_files:
         if f.is_file():
-            if is_str is True:
-                files.append(f.name if is_name is True else f.as_posix())
+            count += 1
+            if is_name is True:
+                yield f.name
             else:
-                files.append(f.name if is_name is True else f)
-    return files
+                if is_str is True:
+                    yield f.as_posix()
+                else:
+                    yield f
+    else:
+        if count == 0:
+            yield
 
 
 def decompress(src: t.Union[str, Path], dest_dir: t.Union[str, Path] = None,
@@ -194,7 +200,7 @@ def decompress(src: t.Union[str, Path], dest_dir: t.Union[str, Path] = None,
     :param pattern: 匹配模式（当src为目录时生效）
     :param is_r: 是否递规查找（当src为目录时生效）
     :param is_raise: 是否抛异常
-    :return: count-解压数量
+    :return: count（解压数量）
     """
     __support_types = [
         '.zip',
@@ -261,7 +267,7 @@ def home():
     return os.environ.get("HOME") or os.path.join(os.environ.get("HOMEDRIVE"), os.environ.get("HOMEPATH"))
 
 
-def syscmd(cmd, shell=True, env=None, *args, **kwargs):
+def syscmd(cmd, shell=True, env=None, *args, **kwargs) -> tuple:
     """
     系统命令（基于subprocess.Popen，具体参数见源）
     :param cmd:
