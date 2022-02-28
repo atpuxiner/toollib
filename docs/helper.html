@@ -179,11 +179,11 @@
     </pre>
 
 <h3><i>listfile</i></h3><pre>
-    获取文件列表
+    文件列表
     :param src_dir: 源目录
     :param pattern: 匹配模式
-    :param is_str: 是否返回字符串（True: 返回字符串，False: 返回Path类型）(is_name为False时生效)
-    :param is_name: 是否获取文件名（True: 获取文件路径，False: 获取文件名）
+    :param is_str: 是否返回字符串（True: 若为路径返回字符串，False: 若为路径返回Path类型）
+    :param is_name: 是否获取文件名（True: 返回文件路径，False: 返回文件名）
     :param is_r: 是否递规查找
     :return:
     </pre>
@@ -195,7 +195,7 @@
     :param pattern: 匹配模式（当src为目录时生效）
     :param is_r: 是否递规查找（当src为目录时生效）
     :param is_raise: 是否抛异常
-    :return: count-解压数量
+    :return: count（解压数量）
     </pre>
 
 <h3><i>home</i></h3><pre>
