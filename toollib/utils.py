@@ -35,7 +35,9 @@ from toollib.validator import choicer
 
 
 class Singleton(type):
-    """单例模式"""
+    """
+    单例模式
+    """
 
     __instance_lock = Lock()
 

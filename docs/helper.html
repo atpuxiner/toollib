@@ -149,10 +149,12 @@
 </pre>
 ---------------------------------
 
-<h3><i>Singleton</i></h3><pre>单例模式</pre>
+<h3><i>Singleton</i></h3><pre>
+    单例模式
+    </pre>
 
-<h3><i>Typer</i></h3><pre>
-    数据描述符类型检测
+<h3><i>Charset</i></h3><pre>
+    字符集
     </pre>
 
 <h3><i>now2str</i></h3><pre>
@@ -171,7 +173,7 @@
 <h3><i>json</i></h3><pre>
     json loads or dumps
     :param data:
-    :param loadordumps: loads or dumps
+    :param mode: loads or dumps
     :param default: 默认值（如果入参data为空，优先返回给定的默认值）
     :param args:
     :param kwargs:
@@ -211,6 +213,29 @@
     :param args:
     :param kwargs:
     :return: (stdout, stderr)
+    </pre>
+<br>++++++++++++++++++++++这是分隔线++++++++++++++++++++++
+<h2><i>toollib.validator</i></h2><pre>
+@author axiner
+@version v1.0.0
+@created 2022/3/5 0:03
+@abstract 验证器
+@description
+@history
+</pre>
+---------------------------------
+
+<h3><i>Typer</i></h3><pre>
+    数据描述符类型验证
+    </pre>
+
+<h3><i>choicer</i></h3><pre>
+    选择验证（校验通过时返回obj）
+    :param obj: 对象
+    :param choices: 可选范围
+    :param title: 标题
+    :param errmsg: 不在可选范围时报错信息
+    :return:
     </pre>
 <br>++++++++++++++++++++++这是分隔线++++++++++++++++++++++
 <h2><i>toollib.webdriver</i></h2><pre>
@@ -269,13 +294,14 @@
 
 <h3><i>ws_styles</i></h3><pre>
     修改样式
+    注：by_icells |by_cells |by_rows |by_cols，只支持其中一种方式（若传入多则只取第一种方式）
     :param ws: Worksheet实例（openpyxl库）
     :param styles: 样式。以字典形式传入
     :param by_icells: 按单元格索引。eg: '1:2,1:2' >>> 左行：1至2行，右列：1至2列
     :param by_cells: 按单元格。eg: 'A1' or ['A1', 'B1', 'C1']
     :param by_rows: 按行。eg: 1 or [1, 2, 3]
     :param by_cols: 按列。eg: 'A' or ['A', 'B', 'C']
-    :param exclude_icell:
+    :param exclude_icell: 排除的单元格（by_icells方式下生效）
     :return:
     </pre>
 </div>
