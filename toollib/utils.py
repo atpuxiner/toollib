@@ -21,7 +21,7 @@ from toollib.common import rarfile, zipfile
 
 __all__ = [
     'Singleton',
-    'Charset',
+    'Chars',
     'now2str',
     'str2datetime',
     'json',
@@ -53,9 +53,9 @@ class Singleton(type):
         return cls.__instance
 
 
-class Charset:
+class Chars:
     """
-    字符集
+    字符
     """
     lowercases = 'abcdefghijklmnopqrstuvwxyz'
     uppercases = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
