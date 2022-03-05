@@ -6,7 +6,7 @@
 @description
 @history
 """
-from toollib.utils import Typer
+from toollib.validator import Typer
 
 
 def check_callcmd(value):

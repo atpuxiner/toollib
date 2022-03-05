@@ -7,7 +7,6 @@
 @history
 """
 import os
-import re
 import stat
 import subprocess
 import tarfile
@@ -22,7 +21,7 @@ from toollib.common import rarfile, zipfile
 
 __all__ = [
     'Singleton',
-    'Typer',
+    'Charset',
     'now2str',
     'str2datetime',
     'json',
@@ -31,6 +30,8 @@ __all__ = [
     'home',
     'syscmd',
 ]
+
+from toollib.validator import choicer
 
 
 class Singleton(type):
@@ -50,55 +51,15 @@ class Singleton(type):
         return cls.__instance
 
 
-class Typer:
+class Charset:
     """
-    数据描述符类型检测
+    字符集
     """
-
-    def __init__(self, key, ktype=None, required=True, enum=None, regex=None, func=None,
-                 error_msg=None, empty_msg=None):
-        self.key = key
-        self.ktype = ktype
-        self.required = required
-        self.enum = enum
-        self.regex = regex
-        self.func = func
-        self.error_msg = error_msg
-        self.empty_msg = empty_msg or '"%s" cannot be empty' % self.key
-
-    def __get__(self, instance, owner):
-        return instance.__dict__[self.key]
-
-    def __set__(self, instance, value):
-        if value is None:
-            if self.required is True:
-                raise TypeError(self.empty_msg)
-        else:
-            if self.ktype:
-                if not isinstance(value, self.ktype):
-                    error_msg = self.error_msg
-                    if not error_msg:
-                        error_msg = f'"%s" only supported: %s' % (self.key, self.ktype)
-                    raise TypeError(error_msg)
-            elif self.enum is not None:
-                if isinstance(self.enum, (list, tuple)):
-                    if value not in self.enum:
-                        error_msg = self.error_msg
-                        if not error_msg:
-                            error_msg = '"%s" only select from: %s' % (self.key, self.ktype)
-                        raise TypeError(error_msg)
-                else:
-                    raise TypeError('"enum" only supported: list or tuple')
-            elif self.regex is not None:
-                if re.match(self.regex, value) is None:
-                    raise TypeError('"%s" only supported: %s' % (self.key, self.regex))
-
-            if self.func is not None:
-                self.func(value)
-        instance.__dict__[self.key] = value
-
-    def __delete__(self, instance):
-        instance.__dict__.pop(self.key)
+    lowercases = 'abcdefghijklmnopqrstuvwxyz'
+    uppercases = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+    digits = '0123456789'
+    punctuation = r"""~`!@#$%^&*()_-+={[}]|\:;"'<,>.?/"""
+    whitespace = ' \t\n\r\v\f'
 
 
 def now2str(fmt: str = 'S') -> str:
@@ -140,25 +101,24 @@ def str2datetime(time_str: str, fmt: str = None) -> datetime:
     return dt
 
 
-def json(data, loadordumps='loads', default=None, *args, **kwargs):
+def json(data, mode='loads', default=None, *args, **kwargs):
     """
     json loads or dumps
     :param data:
-    :param loadordumps: loads or dumps
+    :param mode: loads or dumps
     :param default: 默认值（如果入参data为空，优先返回给定的默认值）
     :param args:
     :param kwargs:
     :return:
     """
+    mode = choicer(mode, ['loads', 'dumps'], 'mode')
     if not data:
         data = default or data
     else:
-        if loadordumps == 'loads':
+        if mode == 'loads':
             data = loads(data, *args, **kwargs)
-        elif loadordumps == 'dumps':
-            data = dumps(data, *args, **kwargs)
         else:
-            raise ValueError('"loadordumps" only select from: ["loads", "dumps"]')
+            data = dumps(data, *args, **kwargs)
     return data
 
 

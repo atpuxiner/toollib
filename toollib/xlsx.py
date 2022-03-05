@@ -92,13 +92,14 @@ def ws_styles(
 ):
     """
     修改样式
+    注：by_icells |by_cells |by_rows |by_cols，只支持其中一种方式（若传入多则只取第一种方式）
     :param ws: Worksheet实例（openpyxl库）
     :param styles: 样式。以字典形式传入
     :param by_icells: 按单元格索引。eg: '1:2,1:2' >>> 左行：1至2行，右列：1至2列
     :param by_cells: 按单元格。eg: 'A1' or ['A1', 'B1', 'C1']
     :param by_rows: 按行。eg: 1 or [1, 2, 3]
     :param by_cols: 按列。eg: 'A' or ['A', 'B', 'C']
-    :param exclude_icell:
+    :param exclude_icell: 排除的单元格（by_icells方式下生效）
     :return:
     """
     if by_icells:

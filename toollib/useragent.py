@@ -1044,4 +1044,5 @@ def gen_uas(max_len: int = 1000):
         _len += 1
         yield ua
     else:
-        yield
+        if _len == 0:
+            yield
