@@ -65,7 +65,7 @@ def cbase64(obj, mode: int = 1, to_file: t.Union[str, Path] = None, altchars=Non
     :param obj: 对象
     :param mode: 模式（1-加密；2-解密）
     :param to_file: 输出指定文件（针对obj为文件对象）
-    :param altchars: alt chars
+    :param altchars: altchars（2 bytes, 用于指定替换'/'和'+'）
     :param validate:
     :return:
     """
