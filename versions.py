@@ -10,6 +10,7 @@
 
 class Versions(object):
     ALL = [
+        ('2022.03.05', 'Chg. eg: crypto, utils...'),
         ('2022.02.27', 'Add. eg: tcli...'),
         ('2022.02.21', 'Fix. eg: decompress'),
         ('2022.02.20', 'Chg.'),

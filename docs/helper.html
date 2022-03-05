@@ -17,7 +17,7 @@
 @author axiner
 @version v1.0.0
 @created 2022/2/27 11:46
-@abstract
+@abstract 加密
 @description
 @history
 </pre>
@@ -28,6 +28,35 @@
     :param obj: 对象
     :param salt: 加盐
     :param is_file: 是否针对文件对象
+    :return:
+    </pre>
+
+<h3><i>curl</i></h3><pre>
+    url加密与解密
+    :param obj: 对象
+    :param mode: 模式（1-加密；2-解密）
+    :return:
+    </pre>
+
+<h3><i>cbase64</i></h3><pre>
+    base64加密与解密
+    :param obj: 对象
+    :param mode: 模式（1-加密；2-解密）
+    :param to_file: 输出指定文件（针对obj为文件对象）
+    :param altchars: alt chars
+    :param validate:
+    :return:
+    </pre>
+
+<h3><i>cdes</i></h3><pre>
+    des加密与解密（des mode: ECB or CBC）
+    :param obj: 对象
+    :param deskey: des key（8 bytes）
+    :param desiv: des iv向量（8 bytes）
+    :param mode: 模式（1-加密；2-解密）
+    :param to_file: 输出指定文件（针对obj为文件对象）
+    :param desmode: des mode (ECB or CBC, 默认为 CBC)
+    :param despadmode: despad mode (PAD_NORMAL or PAD_PKCS5, 默认为 PAD_PKCS5)
     :return:
     </pre>
 <br>++++++++++++++++++++++这是分隔线++++++++++++++++++++++
@@ -153,8 +182,8 @@
     单例模式
     </pre>
 
-<h3><i>Charset</i></h3><pre>
-    字符集
+<h3><i>Chars</i></h3><pre>
+    字符
     </pre>
 
 <h3><i>now2str</i></h3><pre>
