@@ -18,6 +18,7 @@ from pathlib import Path
 from threading import Lock
 
 from toollib.common import rarfile, zipfile
+from toollib.validator import choicer
 
 __all__ = [
     'Singleton',
@@ -30,8 +31,6 @@ __all__ = [
     'home',
     'syscmd',
 ]
-
-from toollib.validator import choicer
 
 
 class Singleton(type):
