@@ -6,7 +6,7 @@
 @description
 @history
 """
-from toollib.validator import Typer
+from toollib.validator import Typer, choicer
 
 
 def check_callcmd(value):
@@ -16,11 +16,11 @@ def check_callcmd(value):
 
 def check_args(value):
     for item in value:
-        errmsg = '"args" only supported: Tuple[str, Union[True, False, -1], str]'
-        if not isinstance(item, tuple):
-            raise TypeError(errmsg)
-        if '%s' % item[1] not in ['True', 'False', '-1']:
-            raise ValueError(errmsg)
+        if not isinstance(item, dict):
+            raise TypeError('"args" only supported: dict')
+        if item.get('required'):
+            choicer(str(item.get('required')), ['True', 'False', '-1'], 'required',
+                    '"required" only supported: [True, False, -1]')
 
 
 class Option:

@@ -21,15 +21,28 @@ class Cmd(BaseCmd):
             desc='pip install',
             callcmd=self.pyi,
             args=[
-                ('pkg', -1, '安装包'),
-                ('index', False, '源'),
+                {'key': 'pkg', 'required': -1, 'help': '安装包', 'default_by': 'requirement'},
+                {'key': 'index', 'required': False, 'help': '下载源'},
+                {'key': 'requirement', 'required': False, 'help': '安装文件'},
+                {'key': 'downloaddir', 'required': False, 'help': '下载包目录'},
+                {'key': 'findlinks', 'required': False, 'help': '离线包目录'},
             ]
         )
         return options
 
     def pyi(self):
         from pip._internal.cli.main import main as pypip
-        optional = ['install', self.parse_args.pkg]
+        optional = []
+        if self.parse_args.downloaddir:
+            optional.extend(['wheel', f'--wheel-dir={self.parse_args.downloaddir}'])
+        else:
+            optional.append('install')
+            if self.parse_args.findlinks:
+                optional.extend(['--no-index', f'--find-links={self.parse_args.findlinks}'])
+        if self.parse_args.pkg is not False:
+            optional.append(self.parse_args.pkg)
+        if self.parse_args.requirement:
+            optional.extend(['-r', self.parse_args.requirement])
         optional.extend(self._index_urls(self.parse_args.index))
         pypip(optional)
 
