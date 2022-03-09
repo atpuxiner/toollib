@@ -19,12 +19,12 @@ __all__ = [
 ]
 
 
-def cmd5(obj, salt: str = '', is_file: bool = False):
+def cmd5(obj, is_file: bool = False, saltstr: str = None):
     """
     md5加密
     :param obj: 对象
-    :param salt: 加盐
     :param is_file: 是否针对文件对象
+    :param saltstr: 加盐字符串
     :return:
     """
     from hashlib import md5
@@ -38,8 +38,8 @@ def cmd5(obj, salt: str = '', is_file: bool = False):
                 _obj.update(b)
     else:
         _obj.update(obj.encode('utf8'))
-    if salt:
-        _obj.update(salt.encode('utf8'))
+    if saltstr:
+        _obj.update(saltstr.encode('utf8'))
     return _obj.hexdigest()
 
 
@@ -51,7 +51,7 @@ def curl(obj, mode: int = 1):
     :return:
     """
     from urllib import parse
-    mode = choicer(mode, [1, 2], 'mode')
+    mode = choicer(mode, choices=[1, 2], title='mode')
     if mode == 1:
         _obj = parse.quote(obj)
     else:
@@ -70,7 +70,7 @@ def cbase64(obj, mode: int = 1, to_file: t.Union[str, Path] = None, altchars=Non
     :return:
     """
     import base64
-    mode = choicer(mode, [1, 2], 'mode')
+    mode = choicer(mode, choices=[1, 2], title='mode')
     if to_file:
         with open(obj, 'rb') as f, open(to_file, 'wb') as f2:
             for line in f.readlines():
@@ -107,8 +107,8 @@ def cdes(obj, deskey='12345678', desiv='abcdefgh', mode: int = 1,
         import pyDes
     except ImportError:
         raise
-    desmode = choicer(desmode, ['ECB', 'CBC'], 'desmod')
-    despadmode = choicer(despadmode, ['PAD_NORMAL', 'PAD_PKCS5'], 'despadmode')
+    desmode = choicer(desmode, choices=['ECB', 'CBC'], title='desmod')
+    despadmode = choicer(despadmode, choices=['PAD_NORMAL', 'PAD_PKCS5'], title='despadmode')
     despad = None
     desmode = {'ECB': pyDes.ECB, 'CBC': pyDes.CBC}.get(desmode)
     despadmode = {'PAD_NORMAL': pyDes.PAD_NORMAL, 'PAD_PKCS5': pyDes.PAD_NORMAL}.get(despadmode)

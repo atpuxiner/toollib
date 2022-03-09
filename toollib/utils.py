@@ -112,7 +112,7 @@ def json(data, mode='loads', default=None, *args, **kwargs):
     :param kwargs:
     :return:
     """
-    mode = choicer(mode, ['loads', 'dumps'], 'mode')
+    mode = choicer(mode, choices=['loads', 'dumps'], title='mode')
     if not data:
         data = default or data
     else:
