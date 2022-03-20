@@ -25,15 +25,16 @@ __all__ = ['ChromeDriver']
 
 class ChromeDriver(ChromiumDriver):
     """
-    谷歌驱动
-    eg:
+    谷歌驱动（继承于selenium）
+    - 可自动下载谷歌驱动（注：若指定目录存在谷歌驱动则不会自动下载）
+    使用示例：
+        # 1）不指定谷歌浏览器版本号，则下载最新的（谷歌浏览器版本号可从浏览器中查询）
         driver = ChromeDriver('chromedriver_dir')
         driver.get('https://www.baidu.com/')
-        ----- or
-        driver = ChromeDriver(r'D:\chromedriver_dir', version='96.0.4664.45')
+        # 2）指定对应版本号
+        driver = ChromeDriver('D:/tmp/chromedriver_dir', version='96.0.4664.45')
         driver.get('https://www.baidu.com/')
-        ----- or: more params
-        .....
+        +++++[更多详见参数或源码]+++++
     """
 
     def __init__(self, driver_dir: t.Union[str, Path], version: str = 'LATEST_RELEASE',
@@ -81,6 +82,7 @@ class ChromeDriver(ChromiumDriver):
             raise TypeError('"platform" only supported: win, mac or linux')
         if platform == 'win':
             executable_file = 'chromedriver.exe'
+            bit = 32
         else:
             executable_file = 'chromedriver'
         driver_file = driver_dir.joinpath(executable_file)

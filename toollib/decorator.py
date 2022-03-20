@@ -25,6 +25,10 @@ FLCHAR = '-'
 def print_return(is_print: bool = True):
     """
     打印返回结果
+    使用示例：
+        @decorator.print_return()
+        def foo():
+            return 'this is toollib'
     :param is_print: 是否打印
     :return:
     """
@@ -43,6 +47,10 @@ def print_return(is_print: bool = True):
 def catch_exception(is_raise: bool = True):
     """
     捕获异常
+    使用示例：
+        @decorator.catch_exception()
+        def foo():
+            pass
     :param is_raise: 是否raise
     :return:
     """
@@ -64,6 +72,10 @@ def catch_exception(is_raise: bool = True):
 def timer(func: t.Callable):
     """
     计时器
+    使用示例：
+        @decorator.timer()
+        def foo():
+            pass
     :param func:
     :return:
     """

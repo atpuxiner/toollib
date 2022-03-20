@@ -10,4 +10,4 @@ from pathlib import Path
 
 here = Path(__file__).absolute().parent
 
-__version__ = '2022.03.07'
+__version__ = '2022.03.20'

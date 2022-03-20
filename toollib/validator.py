@@ -17,6 +17,9 @@ __all__ = [
 class Typer:
     """
     数据描述符类型验证
+    使用示例：
+        请查看数据描述符中数据校验.....
+        +++++[更多详见参数或源码]+++++
     """
 
     def __init__(self, key, ktype=None, required=True, enum=None, regex=None, func=None,
@@ -68,6 +71,11 @@ class Typer:
 def choicer(obj, choices: list, title: str = None, errmsg: str = None):
     """
     选择验证（校验通过时返回obj）
+    使用示例：
+        flag = 1
+        flag = validator.choicer(flag, choices=[1,2,3], title='标识')
+        # res: 若校验不通过则报异常
+        +++++[更多详见参数或源码]+++++
     :param obj: 对象
     :param choices: 可选范围
     :param title: 标题

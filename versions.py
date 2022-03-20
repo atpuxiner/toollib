@@ -10,6 +10,7 @@
 
 class Versions(object):
     ALL = [
+        ('2022.03.20', 'Chg docs.'),
         ('2022.03.07', 'Chg tcli. eg: pyi'),
         ('2022.03.05', 'Chg. eg: crypto, utils...'),
         ('2022.02.27', 'Add. eg: tcli...'),

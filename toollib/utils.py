@@ -36,6 +36,11 @@ __all__ = [
 class Singleton(type):
     """
     单例模式
+    使用示例：
+        # 比如使类A为单例模式
+        class A(metaclass=utils.Singleton):
+            pass
+        # res: 得到一个单例类A
     """
 
     __instance_lock = Lock()
@@ -55,6 +60,11 @@ class Singleton(type):
 class Chars:
     """
     字符
+    使用示例：
+        # 比如获取小写字母
+        low_cases = utils.Chars.lowercases
+        # res: 返回指定的字符
+        +++++[更多详见参数或源码]+++++
     """
     lowercases = 'abcdefghijklmnopqrstuvwxyz'
     uppercases = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
@@ -65,7 +75,14 @@ class Chars:
 
 def now2str(fmt: str = 'S') -> str:
     """
-    now datetime to str
+    now datetime to str (获取当前时间的字符串)
+    使用示例：
+        # 比如获取当前时间
+        now = utils.now2str()
+        # 比如获取当前日期
+        now_year = utils.now2str(fmt='d')  # 或者 fmt='%Y-%m-%d'
+        # res: 返回指定格式时间的字符串
+        +++++[更多详见参数或源码]+++++
     :param fmt:
     :return:
     """
@@ -84,9 +101,14 @@ def now2str(fmt: str = 'S') -> str:
 
 def str2datetime(time_str: str, fmt: str = None) -> datetime:
     """
-    convert str datetime to datetime
-    :param time_str:
-    :param fmt:
+    时间字符串转换成日期（默认自动识别 fmt）
+    使用示例：
+        time_str = '2021-12-12'
+        date = utils.str2datetime(time_str)
+        # res: datetime.datetime(2021, 12, 12, 0, 0)
+        +++++[更多详见参数或源码]+++++
+    :param time_str: 时间字符串
+    :param fmt: 格式化
     :return:
     """
     _ = {
@@ -105,6 +127,11 @@ def str2datetime(time_str: str, fmt: str = None) -> datetime:
 def json(data, mode='loads', default=None, *args, **kwargs):
     """
     json loads or dumps
+    使用示例：
+        data = {'name': 'x', age: 20}
+        data_json = utils.json(data, mode='dumps')
+        # res: (一个json)
+        +++++[更多详见参数或源码]+++++
     :param data:
     :param mode: loads or dumps
     :param default: 默认值（如果入参data为空，优先返回给定的默认值）
@@ -127,6 +154,12 @@ def listfile(src_dir: t.Union[str, Path], pattern: str = '*',
              is_str: bool = False, is_name: bool = False, is_r: bool = False) -> t.Generator:
     """
     文件列表
+    使用示例：
+        # 比如获取某目录下的.py文件
+        src_dir = 'D:/tmp'
+        flist = utils.listfile(src_dir, pattern='*.py')
+        # res: 输出匹配的文件路径生成器
+        +++++[更多详见参数或源码]+++++
     :param src_dir: 源目录
     :param pattern: 匹配模式
     :param is_str: 是否返回字符串（True: 若为路径返回字符串，False: 若为路径返回Path类型）
@@ -153,12 +186,18 @@ def listfile(src_dir: t.Union[str, Path], pattern: str = '*',
 
 
 def decompress(src: t.Union[str, Path], dest_dir: t.Union[str, Path] = None,
-               pattern: str = '*[.pzr]', is_r: bool = False, is_raise: bool = True) -> int:
+               pattern: str = '*[.pzr2]', is_r: bool = False, is_raise: bool = True) -> int:
     """
     解压文件
+    使用示例：
+        # 比如解压某目录下的.zip文件
+        src = 'D:/tmp'
+        count = utils.decompress(src, pattern='*.zip')
+        # res: 解压数量
+        +++++[更多详见参数或源码]+++++
     :param src: 源目录或文件
     :param dest_dir: 目标目录
-    :param pattern: 匹配模式（当src为目录时生效）
+    :param pattern: 匹配模式（当src为目录时生效，默认匹配所有支持的压缩包）
     :param is_r: 是否递规查找（当src为目录时生效）
     :param is_raise: 是否抛异常
     :return: count（解压数量）
@@ -223,22 +262,31 @@ def decompress(src: t.Union[str, Path], dest_dir: t.Union[str, Path] = None,
 def home():
     """
     家目录
+    使用示例：
+        h = utils.home()
+        # res: 返回家目录的路径
+        +++++[更多详见参数或源码]+++++
     :return:
     """
     return os.environ.get("HOME") or os.path.join(os.environ.get("HOMEDRIVE"), os.environ.get("HOMEPATH"))
 
 
-def syscmd(cmd, shell=True, env=None, *args, **kwargs) -> tuple:
+def syscmd(cmd, shell=True, env=None, *args, **kwargs) -> subprocess.Popen:
     """
     系统命令（基于subprocess.Popen，具体参数见源）
+    使用示例：
+        # 比如获取当前路径（linux）
+        utils.syscmd('pwd')
+        # res: 返回 subprocess.Popen
+        +++++[更多详见参数或源码]+++++
     :param cmd:
     :param shell:
     :param env:
     :param args:
     :param kwargs:
-    :return: (stdout, stderr)
+    :return:
     """
-    r = subprocess.Popen(
+    p = subprocess.Popen(
         cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
         shell=shell, env=env, *args, **kwargs)
-    return r.communicate()
+    return p

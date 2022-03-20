@@ -8,6 +8,8 @@
 """
 import typing as t
 
+from toollib.validator import choicer
+
 try:
     from openpyxl.worksheet.worksheet import Worksheet
 except ImportError:
@@ -25,16 +27,23 @@ def ws_inserts(ws: Worksheet, values: t.List[list], index: int = None,
                mode: str = 'r', is_new: bool = True):
     """
     插入数据
+    使用示例：
+        from openpyxl import load_workbook
+        wb = load_workbook('D:/tmp/t.xlsx')
+        ws = wb.active
+        values = [[1, 2, 3, 4, 5]]
+        xlsx.ws_inserts(ws, values, index=1)
+        .....
+        +++++[更多详见参数或源码]+++++
     :param ws: Worksheet实例（openpyxl库）
     :param values: 值（eg: [[1, 2, 3], [4, 5, 6]]）
-    :param index: 从哪开始插入值，若为None则追加
+    :param index: 从哪开始插入值，若为None则追加（正整数）
     :param mode: 插入模式（r: 插入行值，c: 插入列值）
     :param is_new: 是否插入新的行|列（True: 是，False: 否，若有值则会覆盖）
     :return:
     """
     _len = len(values)
-    if mode not in ['r', 'c']:
-        raise ValueError('"mode" only select from: ["r", "c"]')
+    mode = choicer(mode, choices=['r', 'c'], title='mode')
     if index is None and mode == 'c':
         index = ws.max_column + 1
     if index is not None:
@@ -64,6 +73,13 @@ def ws_inserts(ws: Worksheet, values: t.List[list], index: int = None,
 def ws_rows_value(ws: Worksheet):
     """
     所有行的值
+    使用示例：
+        from openpyxl import load_workbook
+        wb = load_workbook('D:/tmp/t.xlsx')
+        ws = wb.active
+        rows = xlsx.ws_rows_value()
+        # res: 返回所有行的值（生成器对象）
+        +++++[更多详见参数或源码]+++++
     :param ws: Worksheet实例（openpyxl库）
     :return:
     """
@@ -74,6 +90,13 @@ def ws_rows_value(ws: Worksheet):
 def ws_cols_value(ws: Worksheet):
     """
     所有列的值
+    使用示例：
+        from openpyxl import load_workbook
+        wb = load_workbook('D:/tmp/t.xlsx')
+        ws = wb.active
+        cols = xlsx.ws_cols_value()
+        # res: 返回所有列的值（生成器对象）
+        +++++[更多详见参数或源码]+++++
     :param ws: Worksheet实例（openpyxl库）
     :return:
     """
@@ -92,10 +115,20 @@ def ws_styles(
 ):
     """
     修改样式
+    使用示例：
+        from openpyxl import load_workbook
+        from openpyxl.styles import PatternFill
+        wb = load_workbook('D:/tmp/t.xlsx')
+        ws = wb.active
+        fill = PatternFill(fill_type=None, start_color=’FFFFFF‘, end_color=‘000000’)
+        styles = {'fill': fill}
+        xlsx.ws_styles(styles, by_icells='0,0')
+        .....
+        +++++[更多详见参数或源码]+++++
     注：by_icells |by_cells |by_rows |by_cols，只支持其中一种方式（若传入多则只取第一种方式）
     :param ws: Worksheet实例（openpyxl库）
-    :param styles: 样式。以字典形式传入
-    :param by_icells: 按单元格索引。eg: '1:2,1:2' >>> 左行：1至2行，右列：1至2列
+    :param styles: 样式。以字典形式传入（key可为：font, fill, border等）
+    :param by_icells: 按单元格索引（若索引为0，则表示从1至最大行或列）。eg: '1:2,1:2' >>> 左行：1至2行，右列：1至2列
     :param by_cells: 按单元格。eg: 'A1' or ['A1', 'B1', 'C1']
     :param by_rows: 按行。eg: 1 or [1, 2, 3]
     :param by_cols: 按列。eg: 'A' or ['A', 'B', 'C']

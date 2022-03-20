@@ -4,6 +4,23 @@
 @created 2022/2/8 20:37
 @abstract 正则表达式
 @description
+    有以下正则表达式：
+        1）中文，regexp.zh
+        2）表情：regexp.emoji
+
+        3）手机号：regexp.phone
+        4）座机号（有‘-’）：regexp.landline
+        5）座机号（‘-’可有可无）：regexp.landline2
+        6）手机号和座机号：regexp.phone_and_landline
+
+        7）邮箱：regexp.email
+        8）邮箱（可含中文字符）：regexp.email_contain_zh
+
+        9）ipv4: regexp.ipv4
+        10）ipv4（粗匹配）: regexp.ipv4_simple
+        11）ipv6（粗匹配）: regexp.ipv6_simple
+
+        12）url: regexp.url
 @history
 """
 # 易混淆

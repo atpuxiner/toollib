@@ -4,6 +4,10 @@
 @created 2022/2/8 20:36
 @abstract 用户代理
 @description
+    有以下属性：
+        1）uas列表1000条：useragent.uas
+        2）从1000条uas中随机选1条：useragent.choice_ua
+        3）生成uas: useragent.gen_uas()
 @history
 """
 import random
@@ -1022,6 +1026,15 @@ choice_ua = random.choice(uas)
 
 
 def gen_uas(max_len: int = 1000):
+    """
+    生成User-Agent
+    使用示例：
+        uas = useragent.gen_uas()
+        # res: 返回uas生成器
+        +++++[更多详见参数或源码]+++++
+    :param max_len:
+    :return:
+    """
     url = 'http://useragentstring.com/pages/useragentstring.php?typ=Browser'
     headers = {
         'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',

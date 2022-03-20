@@ -2,17 +2,50 @@
 <html>
 <head>
     <meta charset='utf-8'>
-    <style>body{margin: 33px;}</style>
+    <style type="text/css">
+        html, body {height: 100%; padding: 0; margin: 0;}
+        .top {
+            z-index: 999;
+            position: fixed;
+            top: 0;
+            right: 10%;
+            left: 10%;
+            height: 155px;
+            background-color: darkseagreen;
+            text-align: center;
+        }
+        .ahead {
+            font-size: 18px;
+        }
+        .main {
+            position: relative;
+            width: 80%;
+            margin: 0 auto;
+            box-shadow: 5px -5px 10px 10px darkgray;
+            background-color: azure;
+        }
+        .docs {
+            position: relative;
+            bottom: 22px;
+            font-size: 16px;
+            padding: 0 10px;
+        }
+    </style>
     <title>toollib 官方文档</title>
 </head>
 <body>
-    <h1>toollib 官方文档</h1>
-    <div style='font-size:16px'><pre>
+    <div class="top">
+        <h1>toollib 官方文档</h1>
+        <div class="ahead"><pre>
 	更多功能正在完善...
 	更多功能正在完善...
 	更多功能正在完善...</pre></div>
-    <HR>
-    <div style='font-size:16px; font-weight:bold'>
+        <HR>
+    </div>
+    <div class="main">
+        <div class="docs">
+            <br><br><br><br><br><br><br><br><br>
+            
 <h2><i>toollib.crypto</i></h2><pre>
 @author axiner
 @version v1.0.0
@@ -25,6 +58,15 @@
 
 <h3><i>cmd5</i></h3><pre>
     md5加密
+    使用示例：
+        # 1）针对字符
+        obj = 'this is toollib'
+        cobj = crypto.cmd5(obj)
+        # 2）针对文件
+        obj = 'D:/tmp/t.txt'
+        cobj = crypto.cmd5(obj, is_file=True)
+        # ret: 返回obj的md5
+        +++++[更多详见参数或源码]+++++
     :param obj: 对象
     :param is_file: 是否针对文件对象
     :param saltstr: 加盐字符串
@@ -33,6 +75,14 @@
 
 <h3><i>curl</i></h3><pre>
     url加密与解密
+    使用示例：
+        # 加密
+        obj = 'https:www.baidu.com/'
+        cobj = crypto.curl(obj)
+        # 解密
+        obj = crypto.curl(cobj, mode=2)
+        # res: 返回相应结果
+        +++++[更多详见参数或源码]+++++
     :param obj: 对象
     :param mode: 模式（1-加密；2-解密）
     :return:
@@ -40,6 +90,17 @@
 
 <h3><i>cbase64</i></h3><pre>
     base64加密与解密
+    使用示例：
+        # 1）针对字符
+        obj = b'这是一个示例'
+        cobj = crypto.cbase64(obj)
+        # 2）针对文件
+        obj = 'D:/tmp/t.txt'
+        to_file = 'D:/tmp/t.c'
+        cobj = crypto.cbase64(obj, to_file=to_file)
+        # 另：解密详见参数
+        # res: 返回相应结果
+        +++++[更多详见参数或源码]+++++
     :param obj: 对象
     :param mode: 模式（1-加密；2-解密）
     :param to_file: 输出指定文件（针对obj为文件对象）
@@ -50,6 +111,21 @@
 
 <h3><i>cdes</i></h3><pre>
     des加密与解密（des mode: ECB or CBC）
+    使用示例：
+        # 1）针对字符
+        obj = b'这是一个示例'
+        deskey = b'asdfhjkl'  #  8 bytes
+        desiv = b'aaaaaaaa'  # 8 bytes
+        cobj = crypto.cdes(obj, deskey=deskey, desiv=desiv)
+        # 2）针对文件
+        obj = 'D:/tmp/t.txt'
+        deskey = b'asdfhjkl'  #  8 bytes
+        desiv = b'aaaaaaaa'  # 8 bytes
+        to_file = 'D:/tmp/t.c'
+        cobj = crypto.cdes(obj, deskey=deskey, desiv=desiv, to_file=to_file)
+        # 另：解密详见参数
+        # res: 返回相应结果
+        +++++[更多详见参数或源码]+++++
     :param obj: 对象
     :param deskey: des key（8 bytes）
     :param desiv: des iv向量（8 bytes）
@@ -72,18 +148,30 @@
 
 <h3><i>print_return</i></h3><pre>
     打印返回结果
+    使用示例：
+        @decorator.print_return()
+        def foo():
+            return 'this is toollib'
     :param is_print: 是否打印
     :return:
     </pre>
 
 <h3><i>catch_exception</i></h3><pre>
     捕获异常
+    使用示例：
+        @decorator.catch_exception()
+        def foo():
+            pass
     :param is_raise: 是否raise
     :return:
     </pre>
 
 <h3><i>timer</i></h3><pre>
     计时器
+    使用示例：
+        @decorator.timer()
+        def foo():
+            pass
     :param func:
     :return:
     </pre>
@@ -98,7 +186,20 @@
 </pre>
 ---------------------------------
 
-<h3><i>KV</i></h3><pre>key-value容器</pre>
+<h3><i>KV</i></h3><pre>
+    key-value容器
+    使用示例：
+        # 创建一个kv实例
+        kv = kvalue.KV(kvfile='D:/tmp/kv.db')
+        # 增改查删操作
+        kv.set(key='name', value='xxx')
+        kv.expire(key='name', ex=60)  # 过期时间
+        kv.get(key='name')
+        kv.exists(key='name')
+        kv.delete(key='name')
+        # res: 结果存储于kvfile的db文件里
+        +++++[更多详见参数或源码]+++++
+    </pre>
 
 <h3><i>KV.clear</i></h3><pre>
         清除所有key-value
@@ -151,6 +252,23 @@
 @created 2022/2/8 20:37
 @abstract 正则表达式
 @description
+    有以下正则表达式：
+        1）中文，regexp.zh
+        2）表情：regexp.emoji
+
+        3）手机号：regexp.phone
+        4）座机号（有‘-’）：regexp.landline
+        5）座机号（‘-’可有可无）：regexp.landline2
+        6）手机号和座机号：regexp.phone_and_landline
+
+        7）邮箱：regexp.email
+        8）邮箱（可含中文字符）：regexp.email_contain_zh
+
+        9）ipv4: regexp.ipv4
+        10）ipv4（粗匹配）: regexp.ipv4_simple
+        11）ipv6（粗匹配）: regexp.ipv6_simple
+
+        12）url: regexp.url
 @history
 </pre>
 
@@ -162,11 +280,23 @@
 @created 2022/2/8 20:36
 @abstract 用户代理
 @description
+    有以下属性：
+        1）uas列表1000条：useragent.uas
+        2）从1000条uas中随机选1条：useragent.choice_ua
+        3）生成uas: useragent.gen_uas()
 @history
 </pre>
 ---------------------------------
 
-<h3><i>gen_uas</i></h3><pre>暂无文档</pre>
+<h3><i>gen_uas</i></h3><pre>
+    生成User-Agent
+    使用示例：
+        uas = useragent.gen_uas()
+        # res: 返回uas生成器
+        +++++[更多详见参数或源码]+++++
+    :param max_len:
+    :return:
+    </pre>
 <br>++++++++++++++++++++++这是分隔线++++++++++++++++++++++
 <h2><i>toollib.utils</i></h2><pre>
 @author axiner
@@ -180,27 +310,54 @@
 
 <h3><i>Singleton</i></h3><pre>
     单例模式
+    使用示例：
+        # 比如使类A为单例模式
+        class A(metaclass=utils.Singleton):
+            pass
+        # res: 得到一个单例类A
     </pre>
 
 <h3><i>Chars</i></h3><pre>
     字符
+    使用示例：
+        # 比如获取小写字母
+        low_cases = utils.Chars.lowercases
+        # res: 返回指定的字符
+        +++++[更多详见参数或源码]+++++
     </pre>
 
 <h3><i>now2str</i></h3><pre>
-    now datetime to str
+    now datetime to str (获取当前时间的字符串)
+    使用示例：
+        # 比如获取当前时间
+        now = utils.now2str()
+        # 比如获取当前日期
+        now_year = utils.now2str(fmt='d')  # 或者 fmt='%Y-%m-%d'
+        # res: 返回指定格式时间的字符串
+        +++++[更多详见参数或源码]+++++
     :param fmt:
     :return:
     </pre>
 
 <h3><i>str2datetime</i></h3><pre>
-    convert str datetime to datetime
-    :param time_str:
-    :param fmt:
+    时间字符串转换成日期（默认自动识别 fmt）
+    使用示例：
+        time_str = '2021-12-12'
+        date = utils.str2datetime(time_str)
+        # res: datetime.datetime(2021, 12, 12, 0, 0)
+        +++++[更多详见参数或源码]+++++
+    :param time_str: 时间字符串
+    :param fmt: 格式化
     :return:
     </pre>
 
 <h3><i>json</i></h3><pre>
     json loads or dumps
+    使用示例：
+        data = {'name': 'x', age: 20}
+        data_json = utils.json(data, mode='dumps')
+        # res: (一个json)
+        +++++[更多详见参数或源码]+++++
     :param data:
     :param mode: loads or dumps
     :param default: 默认值（如果入参data为空，优先返回给定的默认值）
@@ -211,6 +368,12 @@
 
 <h3><i>listfile</i></h3><pre>
     文件列表
+    使用示例：
+        # 比如获取某目录下的.py文件
+        src_dir = 'D:/tmp'
+        flist = utils.listfile(src_dir, pattern='*.py')
+        # res: 输出匹配的文件路径生成器
+        +++++[更多详见参数或源码]+++++
     :param src_dir: 源目录
     :param pattern: 匹配模式
     :param is_str: 是否返回字符串（True: 若为路径返回字符串，False: 若为路径返回Path类型）
@@ -221,9 +384,15 @@
 
 <h3><i>decompress</i></h3><pre>
     解压文件
+    使用示例：
+        # 比如解压某目录下的.zip文件
+        src = 'D:/tmp'
+        count = utils.decompress(src, pattern='*.zip')
+        # res: 解压数量
+        +++++[更多详见参数或源码]+++++
     :param src: 源目录或文件
     :param dest_dir: 目标目录
-    :param pattern: 匹配模式（当src为目录时生效）
+    :param pattern: 匹配模式（当src为目录时生效，默认匹配所有支持的压缩包）
     :param is_r: 是否递规查找（当src为目录时生效）
     :param is_raise: 是否抛异常
     :return: count（解压数量）
@@ -231,17 +400,26 @@
 
 <h3><i>home</i></h3><pre>
     家目录
+    使用示例：
+        h = utils.home()
+        # res: 返回家目录的路径
+        +++++[更多详见参数或源码]+++++
     :return:
     </pre>
 
 <h3><i>syscmd</i></h3><pre>
     系统命令（基于subprocess.Popen，具体参数见源）
+    使用示例：
+        # 比如获取当前路径（linux）
+        utils.syscmd('pwd')
+        # res: 返回 subprocess.Popen
+        +++++[更多详见参数或源码]+++++
     :param cmd:
     :param shell:
     :param env:
     :param args:
     :param kwargs:
-    :return: (stdout, stderr)
+    :return:
     </pre>
 <br>++++++++++++++++++++++这是分隔线++++++++++++++++++++++
 <h2><i>toollib.validator</i></h2><pre>
@@ -256,10 +434,18 @@
 
 <h3><i>Typer</i></h3><pre>
     数据描述符类型验证
+    使用示例：
+        请查看数据描述符中数据校验.....
+        +++++[更多详见参数或源码]+++++
     </pre>
 
 <h3><i>choicer</i></h3><pre>
     选择验证（校验通过时返回obj）
+    使用示例：
+        flag = 1
+        flag = validator.choicer(flag, choices=[1,2,3], title='标识')
+        # res: 若校验不通过则报异常
+        +++++[更多详见参数或源码]+++++
     :param obj: 对象
     :param choices: 可选范围
     :param title: 标题
@@ -278,15 +464,16 @@
 ---------------------------------
 
 <h3><i>ChromeDriver</i></h3><pre>
-    谷歌驱动
-    eg:
+    谷歌驱动（继承于selenium）
+    - 可自动下载谷歌驱动（注：若指定目录存在谷歌驱动则不会自动下载）
+    使用示例：
+        # 1）不指定谷歌浏览器版本号，则下载最新的（谷歌浏览器版本号可从浏览器中查询）
         driver = ChromeDriver('chromedriver_dir')
         driver.get('https://www.baidu.com/')
-        ----- or
-        driver = ChromeDriver(r'D:\chromedriver_dir', version='96.0.4664.45')
+        # 2）指定对应版本号
+        driver = ChromeDriver('D:/tmp/chromedriver_dir', version='96.0.4664.45')
         driver.get('https://www.baidu.com/')
-        ----- or: more params
-        .....
+        +++++[更多详见参数或源码]+++++
     </pre>
 <br>++++++++++++++++++++++这是分隔线++++++++++++++++++++++
 <h2><i>toollib.xlsx</i></h2><pre>
@@ -301,9 +488,17 @@
 
 <h3><i>ws_inserts</i></h3><pre>
     插入数据
+    使用示例：
+        from openpyxl import load_workbook
+        wb = load_workbook('D:/tmp/t.xlsx')
+        ws = wb.active
+        values = [[1, 2, 3, 4, 5]]
+        xlsx.ws_inserts(ws, values, index=1)
+        .....
+        +++++[更多详见参数或源码]+++++
     :param ws: Worksheet实例（openpyxl库）
     :param values: 值（eg: [[1, 2, 3], [4, 5, 6]]）
-    :param index: 从哪开始插入值，若为None则追加
+    :param index: 从哪开始插入值，若为None则追加（正整数）
     :param mode: 插入模式（r: 插入行值，c: 插入列值）
     :param is_new: 是否插入新的行|列（True: 是，False: 否，若有值则会覆盖）
     :return:
@@ -311,28 +506,54 @@
 
 <h3><i>ws_rows_value</i></h3><pre>
     所有行的值
+    使用示例：
+        from openpyxl import load_workbook
+        wb = load_workbook('D:/tmp/t.xlsx')
+        ws = wb.active
+        rows = xlsx.ws_rows_value()
+        # res: 返回所有行的值（生成器对象）
+        +++++[更多详见参数或源码]+++++
     :param ws: Worksheet实例（openpyxl库）
     :return:
     </pre>
 
 <h3><i>ws_cols_value</i></h3><pre>
     所有列的值
+    使用示例：
+        from openpyxl import load_workbook
+        wb = load_workbook('D:/tmp/t.xlsx')
+        ws = wb.active
+        cols = xlsx.ws_cols_value()
+        # res: 返回所有列的值（生成器对象）
+        +++++[更多详见参数或源码]+++++
     :param ws: Worksheet实例（openpyxl库）
     :return:
     </pre>
 
 <h3><i>ws_styles</i></h3><pre>
     修改样式
+    使用示例：
+        from openpyxl import load_workbook
+        from openpyxl.styles import PatternFill
+        wb = load_workbook('D:/tmp/t.xlsx')
+        ws = wb.active
+        fill = PatternFill(fill_type=None, start_color=’FFFFFF‘, end_color=‘000000’)
+        styles = {'fill': fill}
+        xlsx.ws_styles(styles, by_icells='0,0')
+        .....
+        +++++[更多详见参数或源码]+++++
     注：by_icells |by_cells |by_rows |by_cols，只支持其中一种方式（若传入多则只取第一种方式）
     :param ws: Worksheet实例（openpyxl库）
-    :param styles: 样式。以字典形式传入
-    :param by_icells: 按单元格索引。eg: '1:2,1:2' >>> 左行：1至2行，右列：1至2列
+    :param styles: 样式。以字典形式传入（key可为：font, fill, border等）
+    :param by_icells: 按单元格索引（若索引为0，则表示从1至最大行或列）。eg: '1:2,1:2' >>> 左行：1至2行，右列：1至2列
     :param by_cells: 按单元格。eg: 'A1' or ['A1', 'B1', 'C1']
     :param by_rows: 按行。eg: 1 or [1, 2, 3]
     :param by_cols: 按列。eg: 'A' or ['A', 'B', 'C']
     :param exclude_icell: 排除的单元格（by_icells方式下生效）
     :return:
     </pre>
-</div>
+
+        </div>
+    </div>
 </body>
 </html>

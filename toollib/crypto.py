@@ -22,6 +22,15 @@ __all__ = [
 def cmd5(obj, is_file: bool = False, saltstr: str = None):
     """
     md5加密
+    使用示例：
+        # 1）针对字符
+        obj = 'this is toollib'
+        cobj = crypto.cmd5(obj)
+        # 2）针对文件
+        obj = 'D:/tmp/t.txt'
+        cobj = crypto.cmd5(obj, is_file=True)
+        # ret: 返回obj的md5
+        +++++[更多详见参数或源码]+++++
     :param obj: 对象
     :param is_file: 是否针对文件对象
     :param saltstr: 加盐字符串
@@ -46,6 +55,14 @@ def cmd5(obj, is_file: bool = False, saltstr: str = None):
 def curl(obj, mode: int = 1):
     """
     url加密与解密
+    使用示例：
+        # 加密
+        obj = 'https:www.baidu.com/'
+        cobj = crypto.curl(obj)
+        # 解密
+        obj = crypto.curl(cobj, mode=2)
+        # res: 返回相应结果
+        +++++[更多详见参数或源码]+++++
     :param obj: 对象
     :param mode: 模式（1-加密；2-解密）
     :return:
@@ -62,6 +79,17 @@ def curl(obj, mode: int = 1):
 def cbase64(obj, mode: int = 1, to_file: t.Union[str, Path] = None, altchars=None, validate=False):
     """
     base64加密与解密
+    使用示例：
+        # 1）针对字符
+        obj = b'这是一个示例'
+        cobj = crypto.cbase64(obj)
+        # 2）针对文件
+        obj = 'D:/tmp/t.txt'
+        to_file = 'D:/tmp/t.c'
+        cobj = crypto.cbase64(obj, to_file=to_file)
+        # 另：解密详见参数
+        # res: 返回相应结果
+        +++++[更多详见参数或源码]+++++
     :param obj: 对象
     :param mode: 模式（1-加密；2-解密）
     :param to_file: 输出指定文件（针对obj为文件对象）
@@ -93,6 +121,21 @@ def cdes(obj, deskey='12345678', desiv='abcdefgh', mode: int = 1,
          desmode='CBC', despadmode='PAD_PKCS5'):
     """
     des加密与解密（des mode: ECB or CBC）
+    使用示例：
+        # 1）针对字符
+        obj = b'这是一个示例'
+        deskey = b'asdfhjkl'  #  8 bytes
+        desiv = b'aaaaaaaa'  # 8 bytes
+        cobj = crypto.cdes(obj, deskey=deskey, desiv=desiv)
+        # 2）针对文件
+        obj = 'D:/tmp/t.txt'
+        deskey = b'asdfhjkl'  #  8 bytes
+        desiv = b'aaaaaaaa'  # 8 bytes
+        to_file = 'D:/tmp/t.c'
+        cobj = crypto.cdes(obj, deskey=deskey, desiv=desiv, to_file=to_file)
+        # 另：解密详见参数
+        # res: 返回相应结果
+        +++++[更多详见参数或源码]+++++
     :param obj: 对象
     :param deskey: des key（8 bytes）
     :param desiv: des iv向量（8 bytes）

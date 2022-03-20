@@ -19,7 +19,20 @@ __all__ = ['KV']
 
 
 class KV(metaclass=Singleton):
-    """key-value容器"""
+    """
+    key-value容器
+    使用示例：
+        # 创建一个kv实例
+        kv = kvalue.KV(kvfile='D:/tmp/kv.db')
+        # 增改查删操作
+        kv.set(key='name', value='xxx')
+        kv.expire(key='name', ex=60)  # 过期时间
+        kv.get(key='name')
+        kv.exists(key='name')
+        kv.delete(key='name')
+        # res: 结果存储于kvfile的db文件里
+        +++++[更多详见参数或源码]+++++
+    """
 
     # __slots__ = ('__kvfile', '__kvtable')
 
