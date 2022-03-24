@@ -9,9 +9,13 @@
 import os
 import re
 import shutil
+import sys
 import typing as t
 import urllib.request as urlrequest
+import winreg
 from pathlib import Path
+
+from toollib.validator import choicer
 
 try:
     from selenium.webdriver.chrome.options import Options
@@ -60,16 +64,14 @@ class ChromeDriver(ChromiumDriver):
         :param keep_alive:
         """
         if not service:
-            start_error_message = start_error_message or \
-                                  'Please see https://sites.google.com/a/chromium.org/chromedriver/home'
+            if not start_error_message:
+                start_error_message = 'Please see https://sites.google.com/a/chromium.org/chromedriver/home'
             driver_file = self.__download_driver(driver_dir, version, platform, bit)
             service = ChromiumService(
                 driver_file, port, service_args, service_log_path, env, start_error_message)
-        __browser_name, __vendor_prefix = 'chrome', 'goog'
         super(ChromeDriver, self).__init__(
-            __browser_name, __vendor_prefix, port, options, service_args,
-            desired_capabilities, service_log_path,
-            service, keep_alive)
+            'chrome', 'goog', port, options, service_args,
+            desired_capabilities, service_log_path, service, keep_alive)
 
     @classmethod
     def __download_driver(cls, driver_dir, version, platform, bit):
@@ -78,16 +80,17 @@ class ChromeDriver(ChromiumDriver):
             raise TypeError('"driver_dir" is dir')
         else:
             driver_dir.mkdir(parents=True, exist_ok=True)
-        if platform not in ['win', 'mac', 'linux']:
-            raise TypeError('"platform" only supported: win, mac or linux')
+        platform = choicer(platform, choices=['win', 'mac', 'linux'], title='platform')
         if platform == 'win':
+            version = cls.__get_version(version)
             executable_file = 'chromedriver.exe'
             bit = 32
         else:
             executable_file = 'chromedriver'
         driver_file = driver_dir.joinpath(executable_file)
         if driver_file.is_file():
-            return driver_file.as_posix()
+            if cls.__check_driver_version(driver_file, version):
+                return driver_file.as_posix()
         __version = cls.__find_similar_version(version)
         if not __version:
             raise ValueError('This version may not exist')
@@ -95,7 +98,7 @@ class ChromeDriver(ChromiumDriver):
         __download_url = f'https://chromedriver.storage.googleapis.com/' \
                          f'{__version}/{__driver_zip.name}'
         try:
-            print(f'Download driver ({__driver_zip.stem}) start.....')
+            sys.stdout.write(f'Download driver ({__driver_zip.stem}) start.....')
             urlrequest.urlretrieve(__download_url, __driver_zip.as_posix())
             shutil.unpack_archive(__driver_zip, driver_dir, 'zip')
             os.remove(__driver_zip)
@@ -117,10 +120,31 @@ class ChromeDriver(ChromiumDriver):
             if version == 'LATEST_RELEASE':
                 sml_version = html
             else:
-                pat = f'<Key>({version}[\d.]*)/chromedriver_[\w.]+.zip</Key>'
+                pat = rf'<Key>({version}[\d.]*)/chromedriver_[\w.]+.zip</Key>'
                 result = re.findall(pat, html)
                 if result:
                     sml_version = max(result)
         finally:
             pass
         return sml_version
+
+    @staticmethod
+    def __get_version(version):
+        if version != 'LATEST_RELEASE':
+            return version
+        try:
+            key = winreg.OpenKey(winreg.HKEY_CURRENT_USER, r'Software\Google\Chrome\BLBeacon')
+            value, _type = winreg.QueryValueEx(key, 'version')
+            if value:
+                version = value
+        except:
+            pass
+        return version
+
+    @staticmethod
+    def __check_driver_version(driver_file, version):
+        try:
+            outstd = os.popen(f'{driver_file} --version').read()
+            return outstd.split()[1] == version
+        except:
+            pass
