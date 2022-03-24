@@ -30,18 +30,18 @@ __all__ = ['ChromeDriver']
 class ChromeDriver(ChromiumDriver):
     """
     谷歌驱动（继承于selenium）
-    - 可自动下载谷歌驱动（注：若指定目录存在谷歌驱动则不会自动下载）
+    - 可自动下载驱动（注：若指定目录存在与浏览器版本一致的驱动则会跳过）
     使用示例：
-        # 1）不指定谷歌浏览器版本号，则下载最新的（谷歌浏览器版本号可从浏览器中查询）
-        driver = ChromeDriver('chromedriver_dir')
+        # 1）不指定浏览器版本，则下载当前浏览器对应的版本（针对win平台）
+        driver = ChromeDriver()
         driver.get('https://www.baidu.com/')
-        # 2）指定对应版本号
-        driver = ChromeDriver('D:/tmp/chromedriver_dir', version='96.0.4664.45')
+        # 2）指定对应版本
+        driver = ChromeDriver(driver_dir='D:/tmp', version='96.0.4664.45')
         driver.get('https://www.baidu.com/')
         +++++[更多详见参数或源码]+++++
     """
 
-    def __init__(self, driver_dir: t.Union[str, Path], version: str = 'LATEST_RELEASE',
+    def __init__(self, driver_dir: t.Union[str, Path] = '.', version: str = 'LATEST_RELEASE',
                  platform: str = 'win', bit: int = 32,
                  port=0, options: Options = None,
                  service_args: t.List[str] = None, desired_capabilities=None,
@@ -49,8 +49,8 @@ class ChromeDriver(ChromiumDriver):
                  service: ChromiumService = None, keep_alive=None):
         """
         谷歌驱动
-        :param driver_dir: 驱动目录（若目录下不存在驱动则会自动下载）
-        :param version: 版本号（谷歌浏览器）
+        :param driver_dir: 驱动目录（默认当前执行目录）
+        :param version: 版本（谷歌浏览器）
         :param platform: 平台（默认：win）- 支持：['win', 'mac', 'linux']
         :param bit: 位数（默认：32）- 支持：[32, 64]
         :param port:
