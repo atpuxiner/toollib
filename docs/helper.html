@@ -467,10 +467,10 @@
     谷歌驱动（继承于selenium）
     - 可自动下载驱动（注：若指定目录存在与浏览器版本一致的驱动则会跳过）
     使用示例：
-        # 1）不指定浏览器版本，则下载当前浏览器对应的版本（针对win平台）
+        # 1）不指定浏览器版本，则下载当前浏览器对应的版本（针对win平台，mac|linux则下载最新版本）
         driver = ChromeDriver()
         driver.get('https://www.baidu.com/')
-        # 2）指定对应版本
+        # 2）指定对应版本（版本号可在浏览器中查看）
         driver = ChromeDriver(driver_dir='D:/tmp', version='96.0.4664.45')
         driver.get('https://www.baidu.com/')
         +++++[更多详见参数或源码]+++++
