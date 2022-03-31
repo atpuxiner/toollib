@@ -25,10 +25,10 @@ def check_args(value):
 
 
 class Option:
-    name: str = Typer('name', str)
-    callcmd = Typer('callcmd', func=check_callcmd)
-    desc: str = Typer('desc', str)
-    args: list = Typer('args', list, required=False, func=check_args)
+    name: str = Typer('name', str, required=True)
+    callcmd = Typer('callcmd', required=True, callback=check_callcmd)
+    desc: str = Typer('desc', str, required=True)
+    args: list = Typer('args', list, callback=check_args)
 
     def __init__(self, name, desc, callcmd, args=None):
         self.name = name

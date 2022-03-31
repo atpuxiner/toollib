@@ -22,14 +22,14 @@ class Typer:
         +++++[更多详见参数或源码]+++++
     """
 
-    def __init__(self, key, ktype=None, required=True, enum=None, regex=None, func=None,
+    def __init__(self, key, ktype=None, required=False, enum=None, regex=None, callback=None,
                  error_msg=None, empty_msg=None):
         self.key = key
         self.ktype = ktype
         self.required = required
         self.enum = enum
         self.regex = regex
-        self.func = func
+        self.callback = callback
         self.error_msg = error_msg
         self.empty_msg = empty_msg or '"%s" cannot be empty' % self.key
 
@@ -60,8 +60,8 @@ class Typer:
                 if re.match(self.regex, value) is None:
                     raise TypeError('"%s" only supported: %s' % (self.key, self.regex))
 
-            if self.func is not None:
-                self.func(value)
+            if self.callback is not None:
+                self.callback(value)
         instance.__dict__[self.key] = value
 
     def __delete__(self, instance):
