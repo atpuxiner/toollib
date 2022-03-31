@@ -82,9 +82,7 @@ def choicer(obj, choices: list, title: str = None, errmsg: str = None):
     :param errmsg: 不在可选范围时报错信息
     :return:
     """
-    try:
-        choices.index(obj)
-    except ValueError:
+    if obj not in choices:
         if not errmsg:
             errmsg = 'only supported: %s' % choices
             if title:
