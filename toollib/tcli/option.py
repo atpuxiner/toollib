@@ -6,7 +6,7 @@
 @description
 @history
 """
-from toollib.validator import Typer, choicer
+from toollib.validator import Attr, choicer
 
 
 def check_callcmd(value):
@@ -27,10 +27,10 @@ def check_args(value):
 
 
 class Option:
-    name: str = Typer('name', str, required=True)
-    callcmd = Typer('callcmd', required=True, callback=check_callcmd)
-    desc: str = Typer('desc', str, required=True)
-    args: list = Typer('args', list, callback=check_args)
+    name: str = Attr('name', str, required=True)
+    callcmd = Attr('callcmd', required=True, callback=check_callcmd)
+    desc: str = Attr('desc', str, required=True)
+    args: list = Attr('args', list, callback=check_args)
 
     def __init__(self, name, desc, callcmd, args=None):
         self.name = name

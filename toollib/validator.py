@@ -9,14 +9,14 @@
 import re
 
 __all__ = [
-    'Typer',
+    'Attr',
     'choicer',
 ]
 
 
-class Typer:
+class Attr:
     """
-    数据描述符类型验证
+    属性验证（数据描述符）
     使用示例：
         请查看数据描述符中数据校验.....
         +++++[更多详见参数或源码]+++++
