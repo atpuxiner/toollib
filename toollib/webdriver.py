@@ -82,7 +82,7 @@ class ChromeDriver(ChromiumDriver):
         platform = choicer(
             platform,
             choices=['win64', 'mac64', 'linux64'],
-            title='platform')
+            lable='platform')
         if platform.startswith('win'):
             platform = 'win32'
             version = cls.__get_version(version)

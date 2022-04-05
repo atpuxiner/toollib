@@ -19,9 +19,11 @@ def check_args(value):
         if not isinstance(item, dict):
             raise TypeError('"args" only supported: dict')
         if item.get('required'):
-            choicer(str(item.get('required')),
-                    choices=['True', 'False', '-1'], title='required',
-                    errmsg='"required" only supported: [True, False, -1]')
+            choicer(
+                str(item.get('required')),
+                choices=['True', 'False', '-1'],
+                lable='required',
+                errmsg='"required" only supported: [True, False, -1]')
 
 
 class Option:

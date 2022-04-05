@@ -68,7 +68,7 @@ def curl(obj, mode: int = 1):
     :return:
     """
     from urllib import parse
-    mode = choicer(mode, choices=[1, 2], title='mode')
+    mode = choicer(mode, choices=[1, 2], lable='mode')
     if mode == 1:
         _obj = parse.quote(obj)
     else:
@@ -98,7 +98,7 @@ def cbase64(obj, mode: int = 1, to_file: t.Union[str, Path] = None, altchars=Non
     :return:
     """
     import base64
-    mode = choicer(mode, choices=[1, 2], title='mode')
+    mode = choicer(mode, choices=[1, 2], lable='mode')
     if to_file:
         with open(obj, 'rb') as f, open(to_file, 'wb') as f2:
             for line in f.readlines():
@@ -150,8 +150,8 @@ def cdes(obj, deskey='12345678', desiv='abcdefgh', mode: int = 1,
         import pyDes
     except ImportError:
         raise
-    desmode = choicer(desmode, choices=['ECB', 'CBC'], title='desmod')
-    despadmode = choicer(despadmode, choices=['PAD_NORMAL', 'PAD_PKCS5'], title='despadmode')
+    desmode = choicer(desmode, choices=['ECB', 'CBC'], lable='desmod')
+    despadmode = choicer(despadmode, choices=['PAD_NORMAL', 'PAD_PKCS5'], lable='despadmode')
     despad = None
     desmode = {'ECB': pyDes.ECB, 'CBC': pyDes.CBC}.get(desmode)
     despadmode = {'PAD_NORMAL': pyDes.PAD_NORMAL, 'PAD_PKCS5': pyDes.PAD_NORMAL}.get(despadmode)

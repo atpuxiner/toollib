@@ -68,24 +68,24 @@ class Typer:
         instance.__dict__.pop(self.key)
 
 
-def choicer(obj, choices: list, title: str = None, errmsg: str = None):
+def choicer(obj, choices: list, lable: str = None, errmsg: str = None):
     """
     选择验证（校验通过时返回obj）
     使用示例：
         flag = 1
-        flag = validator.choicer(flag, choices=[1,2,3], title='标识')
+        flag = validator.choicer(flag, choices=[1,2,3], lable='标识')
         # res: 若校验不通过则报异常
         +++++[更多详见参数或源码]+++++
     :param obj: 对象
     :param choices: 可选范围
-    :param title: 标题
+    :param lable: 标签
     :param errmsg: 不在可选范围时报错信息
     :return:
     """
     if obj not in choices:
         if not errmsg:
             errmsg = 'only supported: %s' % choices
-            if title:
-                errmsg = '"%s" %s' % (title, errmsg)
+            if lable:
+                errmsg = '"%s" %s' % (lable, errmsg)
         raise TypeError(errmsg)
     return obj

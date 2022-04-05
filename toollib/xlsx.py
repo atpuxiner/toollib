@@ -43,7 +43,7 @@ def ws_inserts(ws: Worksheet, values: t.List[list], index: int = None,
     :return:
     """
     _len = len(values)
-    mode = choicer(mode, choices=['r', 'c'], title='mode')
+    mode = choicer(mode, choices=['r', 'c'], lable='mode')
     if index is None and mode == 'c':
         index = ws.max_column + 1
     if index is not None:
