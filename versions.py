@@ -10,6 +10,7 @@
 
 class Versions(object):
     ALL = [
+        ('2022.04.16', 'Chg tcli.'),
         ('2022.03.27', 'Fix webdriver.'),
         ('2022.03.24', 'Opt webdriver.'),
         ('2022.03.20', 'Chg docs.'),

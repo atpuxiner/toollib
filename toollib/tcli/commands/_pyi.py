@@ -21,7 +21,7 @@ class Cmd(BaseCmd):
             desc='pip install',
             callcmd=self.pyi,
             args=[
-                {'key': 'pkg', 'required': -1, 'help': '安装包', 'default_by': 'requirement'},
+                {'key': 'pkg', 'required': -1, 'nargs': '*', 'help': '安装包'},
                 {'key': 'index', 'required': False, 'help': '下载源'},
                 {'key': 'requirement', 'required': False, 'help': '安装文件'},
                 {'key': 'downloaddir', 'required': False, 'help': '下载包目录'},
@@ -39,8 +39,8 @@ class Cmd(BaseCmd):
             optional.append('install')
             if self.parse_args.findlinks:
                 optional.extend(['--no-index', f'--find-links={self.parse_args.findlinks}'])
-        if self.parse_args.pkg is not False:
-            optional.append(self.parse_args.pkg)
+        if self.parse_args.pkg:
+            optional.extend(self.parse_args.pkg)
         if self.parse_args.requirement:
             optional.extend(['-r', self.parse_args.requirement])
         optional.extend(self._index_urls(self.parse_args.index))

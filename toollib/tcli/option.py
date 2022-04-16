@@ -36,4 +36,4 @@ class Option:
         self.name = name
         self.desc = desc
         self.callcmd = callcmd
-        self.args = args
+        self.args = args or []
