@@ -35,7 +35,7 @@ class ChromeDriver(ChromiumDriver):
         # 1）不指定浏览器版本，则下载当前浏览器对应的版本（针对win平台，mac|linux则下载最新版本）
         driver = ChromeDriver()
         driver.get('https://www.baidu.com/')
-        # 2）指定对应版本（版本号可在浏览器中查看）
+        # 2）指定浏览器版本（版本号可在浏览器中查看）（注：driver_dir为驱动器存放目录，可自定义）
         driver = ChromeDriver(driver_dir='D:/tmp', version='96.0.4664.45')
         driver.get('https://www.baidu.com/')
         +++++[更多详见参数或源码]+++++
@@ -51,7 +51,7 @@ class ChromeDriver(ChromiumDriver):
         谷歌驱动
         :param driver_dir: 驱动目录（默认当前执行目录）
         :param version: 版本（谷歌浏览器）
-        :param platform: 平台（默认：win64）-支持：['win64', 'mac64', 'linux64']
+        :param platform: 平台（默认：win64）-支持：['win32', 'win64', 'mac64', 'linux64']
         :param port:
         :param options:
         :param service_args:
@@ -81,7 +81,7 @@ class ChromeDriver(ChromiumDriver):
             driver_dir.mkdir(parents=True, exist_ok=True)
         platform = choicer(
             platform,
-            choices=['win64', 'mac64', 'linux64'],
+            choices=['win32', 'win64', 'mac64', 'linux64'],
             lable='platform')
         if platform.startswith('win'):
             platform = 'win32'
@@ -110,33 +110,38 @@ class ChromeDriver(ChromiumDriver):
 
     @staticmethod
     def __get_version(version: str) -> str:
-        if version != 'LATEST_RELEASE':
-            return version
-        try:
-            key = winreg.OpenKey(winreg.HKEY_CURRENT_USER, r'Software\Google\Chrome\BLBeacon')
-            value, _type = winreg.QueryValueEx(key, 'version')
-            if value:
-                version = value
-        except:
-            pass
+        if version == 'LATEST_RELEASE' or not version:
+            try:
+                key = winreg.OpenKey(winreg.HKEY_CURRENT_USER, r'Software\Google\Chrome\BLBeacon')
+                value, _type = winreg.QueryValueEx(key, 'version')
+                version = value or 'LATEST_RELEASE'
+            except Exception as err:
+                sys.stdout.write(str(err))
+                sys.stdout.write('将版本赋值为最新版本"LATEST_RELEASE"')
+                version = 'LATEST_RELEASE'
+        version = '.'.join(version.split('.')[:3])
         return version
 
     @staticmethod
     def __check_driver_version(driver_file: str, version: str, platform: str) -> bool:
+        is_eq = True
         try:
             if platform.startswith('win'):
                 outstd = os.popen(f'{driver_file} --version').read()
-                return outstd.split()[1] == version
-            else:
-                return True
+                cv_split = outstd.split()[1].split('.')[:3]
+                v_split = version.split('.')
+                if cv_split != v_split:
+                    if len(v_split) > 1:
+                        is_eq = '.'.join(cv_split).startswith('.'.join(v_split))
+                    else:
+                        is_eq = (v_split == cv_split[:1])
         except:
-            pass
+            is_eq = False
+        return is_eq
 
     @staticmethod
     def __find_similar_version(version: str) -> str:
         url = 'https://chromedriver.storage.googleapis.com/'
-        if isinstance(version, str) and (version == "" or version.count('.') == 3):
-            return version
         if version == 'LATEST_RELEASE':
             url += version
         sml_version = None
@@ -151,5 +156,6 @@ class ChromeDriver(ChromiumDriver):
                 if result:
                     sml_version = max(result)
         finally:
-            pass
+            if not sml_version:
+                raise ValueError('This version may not exist')
         return sml_version

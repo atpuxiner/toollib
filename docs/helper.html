@@ -470,7 +470,7 @@
         # 1）不指定浏览器版本，则下载当前浏览器对应的版本（针对win平台，mac|linux则下载最新版本）
         driver = ChromeDriver()
         driver.get('https://www.baidu.com/')
-        # 2）指定对应版本（版本号可在浏览器中查看）
+        # 2）指定浏览器版本（版本号可在浏览器中查看）（注：driver_dir为驱动器存放目录，可自定义）
         driver = ChromeDriver(driver_dir='D:/tmp', version='96.0.4664.45')
         driver.get('https://www.baidu.com/')
         +++++[更多详见参数或源码]+++++
