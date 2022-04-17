@@ -156,6 +156,5 @@ class ChromeDriver(ChromiumDriver):
                 if result:
                     sml_version = max(result)
         finally:
-            if not sml_version:
-                raise ValueError('This version may not exist')
+            pass
         return sml_version
