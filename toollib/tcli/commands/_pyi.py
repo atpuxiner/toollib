@@ -6,6 +6,7 @@
 @description
 @history
 """
+from toollib.tcli import sys_required
 from toollib.tcli.base import BaseCmd
 from toollib.tcli.option import Options, Arg
 
@@ -31,6 +32,7 @@ class Cmd(BaseCmd):
         )
         return options
 
+    @sys_required()
     def pyi(self):
         from pip._internal.cli.main import main as pypip
         optional = []

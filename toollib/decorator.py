@@ -58,8 +58,7 @@ def catch_exception(is_raise: bool = True):
         @wraps(func)
         def inner(*args, **kwargs):
             try:
-                result = func(*args, **kwargs)
-                return result
+                return func(*args, **kwargs)
             except:
                 if is_raise is True:
                     raise
