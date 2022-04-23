@@ -7,7 +7,7 @@
 @history
 """
 from toollib.tcli.base import BaseCmd
-from toollib.tcli.option import Option
+from toollib.tcli.option import Options, Arg
 
 
 class Cmd(BaseCmd):
@@ -16,17 +16,18 @@ class Cmd(BaseCmd):
         super().__init__()
 
     def add_options(self):
-        options = Option(
+        options = Options(
             name='pyi',
             desc='pip install',
-            callcmd=self.pyi,
-            args=[
-                {'key': 'pkg', 'required': -1, 'nargs': '*', 'help': '安装包'},
-                {'key': 'index', 'required': False, 'help': '下载源'},
-                {'key': 'requirement', 'required': False, 'help': '安装文件'},
-                {'key': 'downloaddir', 'required': False, 'help': '下载包目录'},
-                {'key': 'findlinks', 'required': False, 'help': '离线包目录'},
-            ]
+            optional={
+                self.pyi: [
+                    Arg('pkg', nargs='*', help='安装包'),
+                    Arg('-i', '--index', help='下载源'),
+                    Arg('-r', '--requirement', help='安装文件'),
+                    Arg('-d', '--downloaddir', help='下载包目录'),
+                    Arg('-f', '--findlinks', help='离线包目录'),
+                ],
+            }
         )
         return options
 
@@ -39,7 +40,7 @@ class Cmd(BaseCmd):
             optional.append('install')
             if self.parse_args.findlinks:
                 optional.extend(['--no-index', f'--find-links={self.parse_args.findlinks}'])
-        if self.parse_args.pkg:
+        if self.parse_args.pkg is not False:
             optional.extend(self.parse_args.pkg)
         if self.parse_args.requirement:
             optional.extend(['-r', self.parse_args.requirement])

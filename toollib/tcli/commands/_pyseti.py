@@ -12,7 +12,7 @@ from pathlib import Path
 from toollib import utils
 from toollib.tcli.base import BaseCmd
 from toollib.tcli.commands import byter
-from toollib.tcli.option import Option
+from toollib.tcli.option import Options
 
 
 class Cmd(BaseCmd):
@@ -21,11 +21,10 @@ class Cmd(BaseCmd):
         super().__init__()
 
     def add_options(self):
-        options = Option(
+        options = Options(
             name='pyseti',
             desc='设置pip国内源',
-            callcmd=self.pyseti,
-            args=None
+            optional={self.pyseti: None}
         )
         return options
 
