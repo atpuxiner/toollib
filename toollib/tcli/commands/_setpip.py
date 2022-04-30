@@ -8,6 +8,7 @@
 """
 import sys
 from pathlib import Path
+from platform import platform
 
 from toollib import utils
 from toollib.tcli import sys_required
@@ -23,21 +24,20 @@ class Cmd(BaseCmd):
 
     def add_options(self):
         options = Options(
-            name='pyseti',
-            desc='设置pip国内源',
-            optional={self.pyseti: None}
+            name='set pip',
+            desc='设置pip源',
+            optional={self.setpip: None}
         )
         return options
 
     @sys_required()
-    def pyseti(self):
-        import platform
-        sys.stdout.write('设置国内源.....\n')
+    def setpip(self):
+        sys.stdout.write('设置镜像源.....\n')
         _home = utils.home()
-        if platform.platform().find('Windows') != -1:
-            conf_file = Path(_home, "pip", "pip.ini")
+        if platform().find('Windows') != -1:
+            conf_file = Path(_home, 'pip', 'pip.ini')
         else:
-            conf_file = Path(_home, ".pip", "pip.conf")
+            conf_file = Path(_home, '.pip', 'pip.conf')
         conf_file.parent.mkdir(parents=True, exist_ok=True)
         with open(conf_file, mode='wb') as f:
             f.write(byter.pip_conf)
