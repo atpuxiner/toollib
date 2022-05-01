@@ -175,6 +175,16 @@
     :param func:
     :return:
     </pre>
+
+<h3><i>sys_required</i></h3><pre>
+    系统要求
+    使用示例：
+        @decorator.sys_required()
+        def foo():
+            pass
+    :param supported_sys: 支持的系统（正则表达示）
+    :return:
+    </pre>
 <br>++++++++++++++++++++++这是分隔线++++++++++++++++++++++
 <h2><i>toollib.kvalue</i></h2><pre>
 @author axiner
@@ -450,6 +460,17 @@
     :param choices: 可选范围
     :param lable: 标签
     :param errmsg: 不在可选范围时报错信息
+    :return:
+    </pre>
+
+<h3><i>pyv</i></h3><pre>
+    python版本校验
+    使用示例：
+        pyv = validator.pyv(min_v='3.6')
+        # res: 若校验不通过则报异常
+        +++++[更多详见参数或源码]+++++
+    :param min_v: 最小版本号（包含）
+    :param max_v: 最大版本号（不包含）
     :return:
     </pre>
 <br>++++++++++++++++++++++这是分隔线++++++++++++++++++++++

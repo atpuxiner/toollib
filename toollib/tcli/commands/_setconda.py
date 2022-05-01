@@ -10,7 +10,7 @@ import sys
 from pathlib import Path
 
 from toollib import utils
-from toollib.tcli import sys_required
+from toollib.decorator import sys_required
 from toollib.tcli.base import BaseCmd
 from toollib.tcli.commands import byter
 from toollib.tcli.option import Options

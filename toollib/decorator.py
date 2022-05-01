@@ -6,6 +6,8 @@
 @description
 @history
 """
+import platform
+import re
 import time
 import traceback
 import typing as t
@@ -15,6 +17,7 @@ __all__ = [
     'print_return',
     'catch_exception',
     'timer',
+    'sys_required',
 ]
 
 # config of print
@@ -87,4 +90,24 @@ def timer(func: t.Callable):
         print('func: "{0}" finished, spent time: {1:.2f}s'.format(
             func.__name__, end_time - start_time).center(FLWIDTH, FLCHAR))
         return result
+    return wrapper
+
+
+def sys_required(supported_sys: str = '.*'):
+    """
+    系统要求
+    使用示例：
+        @decorator.sys_required()
+        def foo():
+            pass
+    :param supported_sys: 支持的系统（正则表达示）
+    :return:
+    """
+    def wrapper(func):
+        @wraps(func)
+        def inner(*args, **kwargs):
+            if not re.findall(supported_sys.lower(), platform.platform().lower()):
+                raise TypeError('system only supported: %s' % supported_sys)
+            return func(*args, **kwargs)
+        return inner
     return wrapper

@@ -6,23 +6,9 @@
 @description
 @history
 """
-import platform
-import re
-from functools import wraps
 
 
 class Conf:
     prog = 'tcli'
     description = 'toollib命令行工具'
     usage = f'{prog} <command> [options]'
-
-
-def sys_required(supported_sys: str = '.*'):
-    def wrapper(func):
-        @wraps(func)
-        def inner(*args, **kwargs):
-            if not re.findall(supported_sys.lower(), platform.platform().lower()):
-                raise TypeError('system only supported: %s' % supported_sys)
-            return func(*args, **kwargs)
-        return inner
-    return wrapper

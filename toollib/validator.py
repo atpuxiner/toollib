@@ -6,11 +6,13 @@
 @description
 @history
 """
+import platform
 import re
 
 __all__ = [
     'Attr',
     'choicer',
+    'pyv',
 ]
 
 
@@ -89,3 +91,23 @@ def choicer(obj, choices: list, lable: str = None, errmsg: str = None):
                 errmsg = '"%s" %s' % (lable, errmsg)
         raise TypeError(errmsg)
     return obj
+
+
+def pyv(min_v: str = '3.6', max_v: str = None):
+    """
+    python版本校验
+    使用示例：
+        pyv = validator.pyv(min_v='3.6')
+        # res: 若校验不通过则报异常
+        +++++[更多详见参数或源码]+++++
+    :param min_v: 最小版本号（包含）
+    :param max_v: 最大版本号（不包含）
+    :return:
+    """
+    _pyv = platform.python_version()
+    if _pyv < min_v:
+        raise Warning('python version required >= %s' % min_v)
+    if max_v:
+        if _pyv >= max_v:
+            raise Warning('python version required < %s' % max_v)
+    return _pyv
