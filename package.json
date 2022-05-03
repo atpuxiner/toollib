@@ -1,0 +1,25 @@
+{
+  "name": "toollib",
+  "version": "1.0.0",
+  "description": "* by: axiner\r * toollib\r * This is a tool library.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "docs:dev": "vuepress dev docs",
+    "docs:build": "vuepress build docs"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/readpage/toollib.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/readpage/toollib/issues"
+  },
+  "homepage": "https://github.com/readpage/toollib#readme",
+  "devDependencies": {
+    "typescript": "^4.6.4",
+    "vuepress": "^2.0.0-beta.43"
+  }
+}

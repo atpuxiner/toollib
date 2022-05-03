@@ -118,3 +118,7 @@ dmypy.json
 .idea
 .vscode
 docs/doc2*
+
+node_modules
+.temp
+.cache
