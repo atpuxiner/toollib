@@ -117,3 +117,5 @@ dmypy.json
 # Myself
 .idea
 .vscode
+docs/doc2*
+toollib/tcli/commands/plugins/*.sh

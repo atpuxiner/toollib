@@ -1,2 +1,3 @@
 include README.md
 recursive-include toollib *
+recursive-exclude toollib/tcli/commands/plugins *.sh
