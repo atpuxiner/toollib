@@ -9,7 +9,6 @@
 import os
 import re
 import shutil
-import sys
 import typing as t
 import urllib.request as urlrequest
 import winreg
@@ -80,7 +79,7 @@ class ChromeDriver:
         __download_url = f'https://chromedriver.storage.googleapis.com/' \
                          f'{__version}/{__driver_zip.name}'
         try:
-            sys.stdout.write(f'Download driver({__driver_zip.stem}) start.....')
+            print(f'Download driver({__driver_zip.stem}) start.....')
             urlrequest.urlretrieve(__download_url, __driver_zip.as_posix())
             shutil.unpack_archive(__driver_zip, driver_dir, 'zip')
             os.remove(__driver_zip)
@@ -96,8 +95,8 @@ class ChromeDriver:
                 value, _type = winreg.QueryValueEx(key, 'version')
                 version = value or 'LATEST_RELEASE'
             except Exception as err:
-                sys.stdout.write(str(err)+'\n')
-                sys.stdout.write('将版本赋值为最新版本"LATEST_RELEASE"\n')
+                print(str(err))
+                print('将版本赋值为最新版本"LATEST_RELEASE"')
                 version = 'LATEST_RELEASE'
         version = '.'.join(version.split('.')[:3])
         return version
@@ -107,7 +106,7 @@ class ChromeDriver:
         is_eq = True
         try:
             if platform.startswith('win'):
-                outstd = os.popen(f'{driver_file} --version').read()
+                outstd = os.popen(f'"{driver_file}" --version').read()
                 cv_split = outstd.split()[1].split('.')[:3]
                 v_split = version.split('.')
                 if cv_split != v_split:
