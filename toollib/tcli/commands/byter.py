@@ -7,5 +7,5 @@
 @history
 """
 
-pip_conf = b'[global]\ntimeout=6000\nindex-url=https://pypi.tuna.tsinghua.edu.cn/simple/\nextra-index-url=\n\thttp://mirrors.aliyun.com/pypi/simple/\n\thttp://pypi.douban.com/simple/\n\thttp://pypi.mirrors.ustc.edu.cn/simple/\n\thttps://pypi.python.org/simple/\n\n[install]\ntrusted-host=\n\tmirrors.aliyun.com\n\tpypi.douban.com\n\tpypi.mirrors.ustc.edu.cn'
+pip_conf = b'[global]\ntimeout=6000\nindex-url=https://pypi.tuna.tsinghua.edu.cn/simple/\nextra-index-url=\n\thttps://mirrors.aliyun.com/pypi/simple/\n\thttps://mirrors.bfsu.edu.cn/pypi/web/simple/\n\thttps://pypi.doubanio.com/simple/\n\thttps://pypi.python.org/simple/\n\n[install]\ntrusted-host=\n\tpypi.tuna.tsinghua.edu.cn\n\tmirrors.aliyun.com\n\tmirrors.bfsu.edu.cn\n\tpypi.doubanio.com'
 conda_conf = b'channels:\n  - https://mirrors.tuna.tsinghua.edu.cn/anaconda/cloud/conda-forge/\n  - https://mirrors.tuna.tsinghua.edu.cn/anaconda/pkgs/r/\n  - https://mirrors.tuna.tsinghua.edu.cn/anaconda/pkgs/main/\n  - https://mirrors.tuna.tsinghua.edu.cn/anaconda/pkgs/free/\n  - defaults\nshow_channel_urls: true\n'
