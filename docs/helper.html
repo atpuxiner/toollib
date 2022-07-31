@@ -289,6 +289,35 @@
         :return:
         </pre>
 <br>++++++++++++++++++++++这是分隔线++++++++++++++++++++++
+<h2><i>toollib.log</i></h2><pre>
+@author axiner
+@version v1.0.0
+@created 2022/7/31 8:59
+@abstract
+@description
+@history
+</pre>
+---------------------------------
+
+<h3><i>getLogger</i></h3><pre>
+    日志
+    使用示例：
+        from toollib import log
+        logger = log.getLogger()
+        logger.info('this is log')
+        +++++[更多详见参数或源码]+++++
+    :param name: 名称
+    :param level: 日志等级
+    :param formatter: 日志格式（支持：default, standard, simple）
+    :param logdir: 日志目录
+    :param infoname: info文件名（当logdir指定时生效）
+    :param errorname: error文件名（当logdir指定时生效）
+    :param is_console: 生成日志文件时是否开启console日志（当logdir指定时生效）
+    :param max_bytes: 最大字节数（当logdir指定时生效）
+    :param backup_count: 备份数（当logdir指定时生效）
+    :return:
+    </pre>
+<br>++++++++++++++++++++++这是分隔线++++++++++++++++++++++
 <h2><i>toollib.regexp</i></h2><pre>
 @author axiner
 @version v1.0.0
@@ -316,6 +345,31 @@
 </pre>
 
 
+<br>++++++++++++++++++++++这是分隔线++++++++++++++++++++++
+<h2><i>toollib.snowflake</i></h2><pre>
+@author axiner
+@version v1.0.0
+@created 2022/7/30 16:07
+@abstract
+@description
+@history
+</pre>
+---------------------------------
+
+<h3><i>SnowFlake</i></h3><pre>
+    雪花算法
+    （最早是Twitter公司在其内部用于分布式环境下生成唯一ID）
+    使用示例：
+        from toollib.snowflake import SnowFlake
+        snow = SnowFlake()
+        uid = snow.guid()
+        或：直接引用该模块的snow对象
+        from toollib.snowflake import snow
+        uid = snow.guid()
+        +++++[更多详见参数或源码]+++++
+    </pre>
+
+<h3><i>SnowFlake.guid</i></h3><pre>暂无文档</pre>
 <br>++++++++++++++++++++++这是分隔线++++++++++++++++++++++
 <h2><i>toollib.useragent</i></h2><pre>
 @author axiner

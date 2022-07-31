@@ -22,3 +22,7 @@ class Error(Exception):
 
 class ExpireError(Error):
     """expire error"""
+
+
+class InvalidSystemClock(Error):
+    """系统时钟无效"""
