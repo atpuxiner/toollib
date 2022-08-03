@@ -33,8 +33,8 @@ class SnowFlake(metaclass=Singleton):
         +++++[更多详见参数或源码]+++++
     """
 
-    def __init__(self, worker_id: int = 0, datacenter_id: int = 0, sequence=0, epoch_timestamp: int = 1639286040000,
-                 worker_id_bits: int = 5, datacenter_id_bits: int = 5, sequence_bits: int = 10):
+    def __init__(self, worker_id: int = 0, datacenter_id: int = 0, sequence=0, epoch_timestamp: int = 1288834974657,
+                 worker_id_bits: int = 5, datacenter_id_bits: int = 5, sequence_bits: int = 12):
         """
         初始化
             注：分布式可通过映射指定不同的'worker_id'+'datacenter_id'来区分
