@@ -1,0 +1,968 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset='utf-8'>
+    <style type="text/css">
+        html, body {height: 100%; padding: 0; margin: 0;}
+        .top {
+            z-index: 999;
+            position: fixed;
+            top: 0;
+            right: 10%;
+            left: 10%;
+            height: 155px;
+            background-color: darkseagreen;
+            text-align: center;
+        }
+        .ahead {
+            font-size: 18px;
+        }
+        .main {
+            position: relative;
+            width: 80%;
+            margin: 0 auto;
+            box-shadow: 5px -5px 10px 10px darkgray;
+            background-color: azure;
+        }
+        .docs {
+            position: relative;
+            bottom: 22px;
+            font-size: 16px;
+            padding: 0 10px;
+        }
+    </style>
+    <title>toollib 官方文档</title>
+</head>
+<body>
+    <div class="top">
+        <h1>toollib 官方文档</h1>
+        <div class="ahead"><pre>
+	更多功能正在完善...
+	更多功能正在完善...
+	更多功能正在完善...</pre></div>
+        <HR>
+    </div>
+    <div class="main">
+        <div class="docs">
+            <br><br><br><br><br><br><br><br><br>
+            
+<h2><i>toollib.autodriver</i></h2><pre>
+@author axiner
+@version v1.0.0
+@created 2022/1/18 21:05
+@abstract web驱动
+@description
+@history
+</pre>
+---------------------------------
+
+<h3><i>chromedriver</i></h3><pre>
+    自动下载谷歌驱动（注：若指定目录存在与浏览器版本一致的驱动则会跳过）
+
+    e.g.::
+
+        # 不指定浏览器版本，则下载当前浏览器对应的版本（针对win平台，mac|linux则下载最新版本（可查看浏览器版本自行指定））
+        import time
+        from selenium import webdriver
+        from selenium.webdriver.chrome.service import Service
+        from toollib import autodriver
+
+        driver_path = autodriver.chromedriver()  # 自动下载驱动
+        driver = webdriver.Chrome(service=Service(driver_path))
+        driver.get('https://www.baidu.com')
+        driver.find_element(value='kw').send_keys('python toollib')
+        driver.find_element(value='su').click()
+        time.sleep(29)
+        driver.close()
+
+        +++++[更多详见参数或源码]+++++
+
+    :param driver_dir: 驱动目录（默认当前执行目录）
+    :param version: 版本（谷歌浏览器）
+    :param platform: 平台（默认：win64）-支持：['win32', 'win64', 'mac64', 'linux64']
+    </pre>
+<br>++++++++++++++++++++++这是分隔线++++++++++++++++++++++
+<h2><i>toollib.crypto</i></h2><pre>
+@author axiner
+@version v1.0.0
+@created 2022/2/27 11:46
+@abstract 加密
+@description
+@history
+</pre>
+---------------------------------
+
+<h3><i>cmd5</i></h3><pre>
+    md5加密
+
+    e.g.::
+
+        # 1）针对字符
+        obj = 'this is toollib'
+        cobj = crypto.cmd5(obj)
+
+        # 2）针对文件
+        obj = 'D:/tmp/t.txt'
+        cobj = crypto.cmd5(obj, is_file=True)
+
+        # ret: 返回obj的md5
+
+        +++++[更多详见参数或源码]+++++
+
+    :param obj: 对象
+    :param is_file: 是否针对文件对象
+    :param saltstr: 加盐字符串
+    :return:
+    </pre>
+
+<h3><i>curl</i></h3><pre>
+    url加密与解密
+
+    e.g.::
+
+        # 加密
+        obj = 'https:www.baidu.com/'
+        cobj = crypto.curl(obj)
+
+        # 解密
+        obj = crypto.curl(cobj, mode=2)
+
+        # res: 返回相应结果
+
+        +++++[更多详见参数或源码]+++++
+
+    :param obj: 对象
+    :param mode: 模式（1-加密；2-解密）
+    :return:
+    </pre>
+
+<h3><i>cbase64</i></h3><pre>
+    base64加密与解密
+
+    e.g.::
+
+        # 1）针对字符
+        obj = b'这是一个示例'
+        cobj = crypto.cbase64(obj)
+
+        # 2）针对文件
+        obj = 'D:/tmp/t.txt'
+        to_file = 'D:/tmp/t.c'
+        cobj = crypto.cbase64(obj, to_file=to_file)
+
+        # 另：解密详见参数
+
+        # res: 返回相应结果
+
+        +++++[更多详见参数或源码]+++++
+
+    :param obj: 对象
+    :param mode: 模式（1-加密；2-解密）
+    :param to_file: 输出指定文件（针对obj为文件对象）
+    :param altchars: altchars（2 bytes, 用于指定替换'/'和'+'）
+    :param validate:
+    :return:
+    </pre>
+
+<h3><i>cdes</i></h3><pre>
+    des加密与解密（des mode: ECB or CBC）
+
+    e.g.::
+
+        # 1）针对字符
+        obj = b'这是一个示例'
+        deskey = b'asdfhjkl'  #  8 bytes
+        desiv = b'aaaaaaaa'  # 8 bytes
+        cobj = crypto.cdes(obj, deskey=deskey, desiv=desiv)
+
+        # 2）针对文件
+        obj = 'D:/tmp/t.txt'
+        deskey = b'asdfhjkl'  #  8 bytes
+        desiv = b'aaaaaaaa'  # 8 bytes
+        to_file = 'D:/tmp/t.c'
+        cobj = crypto.cdes(obj, deskey=deskey, desiv=desiv, to_file=to_file)
+
+        # 另：解密详见参数
+
+        # res: 返回相应结果
+
+        +++++[更多详见参数或源码]+++++
+
+    :param obj: 对象
+    :param deskey: des key（8 bytes）
+    :param desiv: des iv向量（8 bytes）
+    :param mode: 模式（1-加密；2-解密）
+    :param to_file: 输出指定文件（针对obj为文件对象）
+    :param desmode: des mode (ECB or CBC, 默认为 CBC)
+    :param despadmode: despad mode (PAD_NORMAL or PAD_PKCS5, 默认为 PAD_PKCS5)
+    :return:
+    </pre>
+<br>++++++++++++++++++++++这是分隔线++++++++++++++++++++++
+<h2><i>toollib.decorator</i></h2><pre>
+@author axiner
+@version v1.0.0
+@created 2021/12/14 20:28
+@abstract 装饰器
+@description
+@history
+</pre>
+---------------------------------
+
+<h3><i>print_return</i></h3><pre>
+    打印返回结果
+
+    e.g.::
+
+        @decorator.print_return()
+        def foo():
+            return 'this is toollib'
+
+        +++++[更多详见参数或源码]+++++
+
+    :param is_print: 是否打印
+    :return:
+    </pre>
+
+<h3><i>catch_exception</i></h3><pre>
+    捕获异常
+
+    e.g.::
+
+        @decorator.catch_exception()
+        def foo():
+            pass
+
+        +++++[更多详见参数或源码]+++++
+
+    :param is_raise: 是否raise
+    :return:
+    </pre>
+
+<h3><i>timer</i></h3><pre>
+    计时器
+
+    e.g.::
+
+        @decorator.timer()
+        def foo():
+            pass
+
+        +++++[更多详见参数或源码]+++++
+
+    :param func:
+    :return:
+    </pre>
+
+<h3><i>sys_required</i></h3><pre>
+    系统要求
+
+    e.g.::
+
+        @decorator.sys_required()
+        def foo():
+            pass
+
+        +++++[更多详见参数或源码]+++++
+
+    注：当前系统名称：优先从环境变量获取，其次自动获取（以防自动获取不精确，则可手动设置）
+
+    :param supported_sys: 支持的系统（正则表达式）
+    :param errmsg: 匹配失败信息
+    :param is_raise: 是否raise
+    :return:
+    </pre>
+<br>++++++++++++++++++++++这是分隔线++++++++++++++++++++++
+<h2><i>toollib.guid</i></h2><pre>
+@author axiner
+@version v1.0.0
+@created 2022/7/30 16:07
+@abstract 全局唯一id
+@description
+@history
+</pre>
+---------------------------------
+
+<h3><i>SnowFlake</i></h3><pre>
+    雪花算法（全局唯一id）
+
+    # 最早是Twitter公司在其内部用于分布式环境下生成唯一ID
+
+    # Twitter's Snowflake algorithm implementation which is used to generate distributed IDs.
+
+    # https://github.com/twitter-archive/snowflake/blob/snowflake-2010/src/main/scala/com/twitter/service/snowflake/IdWorker.scala
+
+    e.g.::
+
+        from toollib.guid import SnowFlake
+        snow = SnowFlake()
+        uid = snow.gen_uid()
+
+        +++++[更多详见参数或源码]+++++
+    </pre>
+
+<h3><i>SnowFlake.gen_uid</i></h3><pre>
+        生成唯一id
+        :param to_str: 是否转为字符串(可覆盖cls中的to_str)
+        :return:
+        </pre>
+
+<h3><i>RedisUid</i></h3><pre>
+    全局唯一id，基于redis实现（可用于分布式）
+
+    e.g.::
+
+        from toollib.guid import RedisUid
+        ruid = RedisUid(redis_cli, prefix='ABC')
+        uid = ruid.gen_uid()
+
+        +++++[更多详见参数或源码]+++++
+    </pre>
+
+<h3><i>RedisUid.gen_uid</i></h3><pre>
+        生成唯一id
+        :param seq_step: 序列步长，默认为1
+        :return:
+        </pre>
+<br>++++++++++++++++++++++这是分隔线++++++++++++++++++++++
+<h2><i>toollib.kvalue</i></h2><pre>
+@author axiner
+@version v1.0.0
+@created 2021/12/18 22:21
+@abstract key-value容器（基于sqlite3）
+@description
+@history
+</pre>
+---------------------------------
+
+<h3><i>KV</i></h3><pre>
+
+    key-value容器
+
+    e.g.::
+
+        # 创建一个kv实例
+        kv = kvalue.KV(kvfile='D:/tmp/kv.db')
+
+        # 增改查删操作
+        kv.set(key='name', value='xxx')
+        kv.expire(key='name', ex=60)  # 过期时间
+        kv.get(key='name')
+        kv.exists(key='name')
+        kv.delete(key='name')
+
+        # res: 结果存储于kvfile的db文件里
+
+        +++++[更多详见参数或源码]+++++
+    </pre>
+
+<h3><i>KV.clear</i></h3><pre>
+        清除所有key-value
+        :return:
+        </pre>
+
+<h3><i>KV.delete</i></h3><pre>
+        删除key
+        :param key:
+        :return:
+        </pre>
+
+<h3><i>KV.exists</i></h3><pre>
+        检测key是否存在
+        :param key:
+        :return:
+        </pre>
+
+<h3><i>KV.expire</i></h3><pre>
+        设置key的过期时间
+        :param key:
+        :param ex: 默认为0（表不设置过期时间）
+        :return:
+        </pre>
+
+<h3><i>KV.get</i></h3><pre>
+        获取key的value
+        :param key:
+        :param check_expire: 是否检测过期（True: 若过期则会raise）
+        :param get_expire: 是否返回过期时间（True: 返回格式为元组(value, expire)）
+        :return:
+        </pre>
+
+<h3><i>KV.remove</i></h3><pre>
+        移除KV实例的kvfile文件
+        :return:
+        </pre>
+
+<h3><i>KV.set</i></h3><pre>
+        设置kye-value
+        :param key:
+        :param value:
+        :param expire: 默认为0（表不设置过期时间）
+        :return:
+        </pre>
+<br>++++++++++++++++++++++这是分隔线++++++++++++++++++++++
+<h2><i>toollib.locker</i></h2><pre>
+@author axiner
+@version v1.0.0
+@created 2022/10/28 14:03
+@abstract 锁
+@description
+@history
+</pre>
+---------------------------------
+
+<h3><i>Locker</i></h3><pre>
+    锁，基于redis的分布式锁
+
+    e.g.::
+
+        a = 0
+        locker = Locker(redis_cli)  # 创建锁实例
+        if locker.acquire(acquire_timeout=2)  # 获取锁
+            for i in range(10):
+                a += 1
+                print(f'a: {a}')
+            locker.release()  # 释放锁
+
+        # 另：with方式
+        a = 0
+        locker = Locker(redis_cli, acquire_timeout=2)
+        with locker:
+            if locker.is_lock:  # 若获取锁
+                for i in range(10):
+                    a += 1
+                    print(f'a: {a}')
+
+        +++++[更多详见参数或源码]+++++
+    </pre>
+
+<h3><i>Locker.acquire</i></h3><pre>
+        获取锁
+        :param acquire_timeout: 获取锁的超时时间
+        :param timeout: 锁的过期时间
+        :return:
+        </pre>
+
+<h3><i>Locker.release</i></h3><pre>
+        释放锁
+        :return:
+        </pre>
+<br>++++++++++++++++++++++这是分隔线++++++++++++++++++++++
+<h2><i>toollib.log</i></h2><pre>
+@author axiner
+@version v1.0.0
+@created 2023/5/20 13:19
+@abstract
+@description
+@history
+</pre>
+---------------------------------
+
+<h3><i>init_logger</i></h3><pre>
+    初始化日志器
+
+    e.g.::
+
+        from toollib import log
+
+        logger = log.init_logger(__name__)
+
+        +++++[更多详见参数或源码]+++++
+
+    config: dict
+        - file_format: 文件日志格式
+        - console_format: 控制台日志格式
+        - datefmt: 日期格式
+        - info_filename: info日志文件名称
+        - error_filename: error日志文件名称
+        - file_maxBytes: 文件日志最大字节
+        - file_backupCount: 文件日志备份数
+
+    :param name: 名称
+    :param config: 配置
+    :param debug: 是否调试
+    :param log_dir: 日志目录
+    :param is_file: 是否文件日志
+    :param is_console: 是否控制台日志
+    :return:
+    </pre>
+<br>++++++++++++++++++++++这是分隔线++++++++++++++++++++++
+<h2><i>toollib.py2pyder</i></h2><pre>
+@author axiner
+@version v1.0.0
+@created 2023/4/7 15:14
+@abstract py转pyd
+@description
+@history
+</pre>
+---------------------------------
+
+<h3><i>Py2Pyder</i></h3><pre>
+    py转pyd
+
+    e.g.::
+
+        py2pyder = Py2Pyder(src=r'D:\pyprj', exclude=r'main.py|tests/')
+        py2pyder.run()
+
+        - 注：
+            - 自动跳过: __init__.py, 空文件，只存在注释的文件，当然还有非py文件
+            - 若编译不成功或编译后执行不成功：
+                - 确保python代码的正确性与严谨性
+                - 编译失败的，Pyd目录下对应的源文件不会删除
+                - 编译后的文件执行，需要与编译时的python版本、操作系统一致
+                - 实在编译不了或执行不了，可加入exclude用源文件代替
+            - exclude: 排除编译（适用正则）
+                - 文件夹加正斜杠'/'即可，如：tests/, tests/a/
+                - 多个则用'|'隔开，如：main.py|tests/
+                - 项目的入口文件一般是不编译的，加入exclude即可
+            - 输出：Pyd目录（默认源+Pyd），该目录与src结构一致
+
+        +++++[更多详见参数或源码]+++++
+    </pre>
+
+<h3><i>Py2Pyder.run</i></h3><pre>
+        执行
+        :return:
+        </pre>
+<br>++++++++++++++++++++++这是分隔线++++++++++++++++++++++
+<h2><i>toollib.redis_cli</i></h2><pre>
+@author axiner
+@version v1.0.0
+@created 2022/10/28 14:23
+@abstract redis
+@description
+@history
+</pre>
+---------------------------------
+
+<h3><i>RedisCli</i></h3><pre>
+    redis客户端
+
+    e.g.::
+
+        # 1) 单个连接使用
+        r = RedisCli(host='127.0.0.1')
+
+        # 或，使用with
+        with RedisCli(host='127.0.0.1') as r:
+            pass
+
+        #2）以连接池的方式
+
+        # 2.1）创建连接池
+        redis_cli = RedisCli(host='127.0.0.1', max_connections=100)
+        redis_conn = redis_cli.connection
+
+        # 2.2）调用连接（每次获取连接池中连接）
+        r = redis_conn()
+
+        +++++[更多详见参数或源码]+++++
+    </pre>
+
+<h3><i>RedisCli.connection</i></h3><pre>
+        创建连接
+        :return:
+        </pre>
+<br>++++++++++++++++++++++这是分隔线++++++++++++++++++++++
+<h2><i>toollib.regexp</i></h2><pre>
+@author axiner
+@version v1.0.0
+@created 2022/2/8 20:37
+@abstract 正则表达式
+@description
+    有以下正则表达式：
+        1）中文，regexp.zh
+        2）表情：regexp.emoji
+
+        3）手机号：regexp.phone
+        4）座机号（有‘-’）：regexp.landline
+        5）座机号（‘-’可有可无）：regexp.landline2
+        6）手机号和座机号：regexp.phone_and_landline
+
+        7）邮箱：regexp.email
+        8）邮箱（可含中文字符）：regexp.email_contain_zh
+
+        9）ipv4: regexp.ipv4
+        10）ipv4（粗匹配）: regexp.ipv4_simple
+        11）ipv6（粗匹配）: regexp.ipv6_simple
+
+        12）url: regexp.url
+@history
+</pre>
+
+
+<br>++++++++++++++++++++++这是分隔线++++++++++++++++++++++
+<h2><i>toollib.useragent</i></h2><pre>
+@author axiner
+@version v1.0.0
+@created 2022/2/8 20:36
+@abstract 用户代理
+@description
+    有以下属性：
+        1）uas列表1000条：useragent.uas
+        2）从1000条uas中随机选1条：useragent.random_ua
+        3）生成uas: useragent.gen_uas()
+@history
+</pre>
+---------------------------------
+
+<h3><i>gen_uas</i></h3><pre>
+    生成User-Agent
+
+    e.g.::
+
+        uas = useragent.gen_uas()
+
+        # res: 返回uas生成器
+
+        +++++[更多详见参数或源码]+++++
+
+    :param max_len:
+    :return:
+    </pre>
+<br>++++++++++++++++++++++这是分隔线++++++++++++++++++++++
+<h2><i>toollib.utils</i></h2><pre>
+@author axiner
+@version v1.0.0
+@created 2021/12/18 22:20
+@abstract 实用工具
+@description
+@history
+</pre>
+---------------------------------
+
+<h3><i>Singleton</i></h3><pre>
+    单例模式
+
+    e.g.::
+
+        # 比如使类A为单例模式
+        class A(metaclass=utils.Singleton):
+            pass
+
+        # res: 得到一个单例类A
+    </pre>
+
+<h3><i>Chars</i></h3><pre>
+    字符
+
+    e.g.::
+
+        # 比如获取小写字母
+        low_cases = utils.Chars.lowercases
+
+        # res: 返回指定的字符
+
+        +++++[更多详见参数或源码]+++++
+    </pre>
+
+<h3><i>now2str</i></h3><pre>
+    now datetime to str (获取当前时间的字符串)
+
+    e.g.::
+
+        # 比如获取当前时间
+        now = utils.now2str()
+
+        # 比如获取当前日期
+        now_year = utils.now2str(fmt='d')  # 或者 fmt='%Y-%m-%d'
+
+        # res: 返回指定格式时间的字符串
+
+        +++++[更多详见参数或源码]+++++
+
+    :param fmt:
+    :return:
+    </pre>
+
+<h3><i>str2datetime</i></h3><pre>
+    时间字符串转换成日期（默认自动识别 fmt）
+
+    e.g.::
+
+        time_str = '2021-12-12'
+        date = utils.str2datetime(time_str)
+
+        # res: datetime.datetime(2021, 12, 12, 0, 0)
+
+        +++++[更多详见参数或源码]+++++
+
+    :param time_str: 时间字符串
+    :param fmt: 格式化
+    :return:
+    </pre>
+
+<h3><i>json</i></h3><pre>
+    json loads or dumps
+
+    e.g.::
+
+        data = {'name': 'x', age: 20}
+        data_json = utils.json(data, mode='dumps')
+
+        # res: (一个json)
+
+        +++++[更多详见参数或源码]+++++
+
+    :param data:
+    :param mode: loads or dumps
+    :param default: 默认值（如果入参data为空，优先返回给定的默认值）
+    :param args:
+    :param kwargs:
+    :return:
+    </pre>
+
+<h3><i>listfile</i></h3><pre>
+    文件列表
+
+    e.g.::
+
+        # 比如获取某目录下的.py文件
+        src_dir = 'D:/tmp'
+        flist = utils.listfile(src_dir, pattern='*.py')
+
+        # res: 输出匹配的文件路径生成器
+
+        +++++[更多详见参数或源码]+++++
+
+    :param src: 源目录
+    :param pattern: 匹配模式
+    :param is_str: 是否返回字符串（True: 若为路径返回字符串，False: 若为路径返回Path类型）
+    :param is_name: 是否获取文件名（True: 返回文件路径，False: 返回文件名）
+    :param is_r: 是否递规查找
+    :return:
+    </pre>
+
+<h3><i>decompress</i></h3><pre>
+    解压文件
+
+    e.g.::
+
+        # 比如解压某目录下的.zip文件
+        src = 'D:/tmp'
+        count = utils.decompress(src, pattern='*.zip')
+
+        # res: 解压数量
+
+        +++++[更多详见参数或源码]+++++
+
+    :param src: 源目录或文件
+    :param dest: 目标目录
+    :param pattern: 匹配模式（当src为目录时生效，默认匹配所有支持的压缩包）
+    :param is_r: 是否递规查找（当src为目录时生效）
+    :param is_raise: 是否抛异常
+    :return: count（解压数量）
+    </pre>
+
+<h3><i>home</i></h3><pre>
+    家目录
+
+    e.g.::
+
+        h = utils.home()
+
+        # res: 返回家目录
+
+        +++++[更多详见参数或源码]+++++
+    </pre>
+
+<h3><i>sysname</i></h3><pre>
+    系统名称
+
+    e.g.::
+
+        s = utils.sysname()
+
+        # res: 返回系统名称
+
+        +++++[更多详见参数或源码]+++++
+    </pre>
+
+<h3><i>read_by_block</i></h3><pre>
+    分块读取
+
+    e.g.::
+
+        data = utils.read_by_block('foo.txt')
+
+        +++++[更多详见参数或源码]+++++
+
+    :param file_path: 文件路径
+    :param block_size: 块大小
+    :param mode: 模式
+    :param kwargs: open其他参数
+    :return:
+    </pre>
+
+<h3><i>RedirectStd12ToNull</i></h3><pre>
+    重定向标准输出错误到null
+
+    e.g.::
+
+        with RedirectStd12ToNull():
+            # 你要重定向的代码块
+
+        # 另：取消stderr的重定向
+        with RedirectStd12ToNull(is_stderr=False):
+            # 你要重定向的代码块
+
+        +++++[更多详见参数或源码]+++++
+    </pre>
+<br>++++++++++++++++++++++这是分隔线++++++++++++++++++++++
+<h2><i>toollib.validator</i></h2><pre>
+@author axiner
+@version v1.0.0
+@created 2022/3/5 0:03
+@abstract 校验器
+@description
+@history
+</pre>
+---------------------------------
+
+<h3><i>Attr</i></h3><pre>
+    属性校验（数据描述符）
+
+    e.g.::
+
+        请查看数据描述符中数据校验.....
+
+        +++++[更多详见参数或源码]+++++
+    </pre>
+
+<h3><i>choicer</i></h3><pre>
+    选择校验（校验通过时返回obj）
+
+    e.g.::
+
+        flag = 1
+        flag = validator.choicer(flag, choices=[1,2,3], lable='标识')
+
+        # res: 若校验不通过则报异常
+
+        +++++[更多详见参数或源码]+++++
+
+    :param obj: 对象
+    :param choices: 可选范围
+    :param lable: 标签
+    :param errmsg: 不在可选范围时报错信息
+    :return:
+    </pre>
+
+<h3><i>pyv</i></h3><pre>
+    python版本校验
+
+    e.g.::
+
+        pyv = validator.pyv(min_v='3.7')
+
+        # res: 若校验不通过则报异常
+
+        +++++[更多详见参数或源码]+++++
+
+    :param min_v: 最小版本号（包含）
+    :param max_v: 最大版本号（不包含）
+    :return:
+    </pre>
+<br>++++++++++++++++++++++这是分隔线++++++++++++++++++++++
+<h2><i>toollib.xlsx</i></h2><pre>
+@author axiner
+@version v1.0.0
+@created 2022/1/23 20:36
+@abstract xlsx（基于openpyxl库）
+@description
+@history
+</pre>
+---------------------------------
+
+<h3><i>ws_inserts</i></h3><pre>
+    插入数据
+
+    e.g.::
+
+        from openpyxl import load_workbook
+        wb = load_workbook('D:/tmp/t.xlsx')
+        ws = wb.active
+        values = [[1, 2, 3, 4, 5]]
+        xlsx.ws_inserts(ws, values, index=1)
+
+        # .....
+
+        +++++[更多详见参数或源码]+++++
+
+    :param ws: Worksheet实例（openpyxl库）
+    :param values: 值（eg: [[1, 2, 3], [4, 5, 6]]）
+    :param index: 从哪开始插入值，若为None则追加（正整数）
+    :param mode: 插入模式（r: 插入行值，c: 插入列值）
+    :param is_new: 是否插入新的行|列（True: 是，False: 否，若有值则会覆盖）
+    :return:
+    </pre>
+
+<h3><i>ws_rows_value</i></h3><pre>
+    所有行的值
+
+    e.g.::
+
+        from openpyxl import load_workbook
+        wb = load_workbook('D:/tmp/t.xlsx')
+        ws = wb.active
+        rows = xlsx.ws_rows_value()
+
+        # res: 返回所有行的值（生成器对象）
+
+        +++++[更多详见参数或源码]+++++
+
+    :param ws: Worksheet实例（openpyxl库）
+    :return:
+    </pre>
+
+<h3><i>ws_cols_value</i></h3><pre>
+    所有列的值
+
+    e.g.::
+
+        from openpyxl import load_workbook
+        wb = load_workbook('D:/tmp/t.xlsx')
+        ws = wb.active
+        cols = xlsx.ws_cols_value()
+
+        # res: 返回所有列的值（生成器对象）
+
+        +++++[更多详见参数或源码]+++++
+
+    :param ws: Worksheet实例（openpyxl库）
+    :return:
+    </pre>
+
+<h3><i>ws_styles</i></h3><pre>
+    修改样式
+
+    e.g.::
+
+        from openpyxl import load_workbook
+        from openpyxl.styles import PatternFill
+        wb = load_workbook('D:/tmp/t.xlsx')
+        ws = wb.active
+        fill = PatternFill(fill_type=None, start_color=’FFFFFF‘, end_color=‘000000’)
+        styles = {'fill': fill}
+        xlsx.ws_styles(styles, by_icells='0,0')
+
+        # .....
+
+        +++++[更多详见参数或源码]+++++
+
+    注：by_icells |by_cells |by_rows |by_cols，只支持其中一种方式（若传入多则只取第一种方式）
+
+    :param ws: Worksheet实例（openpyxl库）
+    :param styles: 样式。以字典形式传入（key可为：font, fill, border等）
+    :param by_icells: 按单元格索引（若索引为0，则表示从1至最大行或列）。eg: '1:2,1:2' >>> 左行：1至2行，右列：1至2列
+    :param by_cells: 按单元格。eg: 'A1' or ['A1', 'B1', 'C1']
+    :param by_rows: 按行。eg: 1 or [1, 2, 3]
+    :param by_cols: 按列。eg: 'A' or ['A', 'B', 'C']
+    :param exclude_icell: 排除的单元格（by_icells方式下生效）
+    :return:
+    </pre>
+
+        </div>
+    </div>
+</body>
+</html>

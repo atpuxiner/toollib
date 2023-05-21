@@ -117,3 +117,4 @@ dmypy.json
 # Myself
 .idea
 .vscode
+docs/doc2*

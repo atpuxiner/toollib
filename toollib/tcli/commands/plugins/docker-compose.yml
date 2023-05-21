@@ -1,0 +1,143 @@
+version: "3.8"
+services:
+
+  mysql:
+    image: mysql:5.7
+    container_name: mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root@123
+    volumes:
+      - /svcs/mysql:/var/lib/mysql
+    ports:
+      - "3306:3306"
+
+  postgres:
+    image: postgres
+    container_name: postgres
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres@123
+      POSTGRES_DB: postgres
+    volumes:
+      - /svcs/postgres:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  mongo:
+    image: mongo
+    container_name: mongo
+    restart: always
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: root@123
+    volumes:
+      - /svcs/mongo:/data/db
+    ports:
+      - "27017:27017"
+
+  redis:
+    image: redis
+    container_name: redis
+    restart: always
+    volumes:
+      - /svcs/redis:/data
+    ports:
+      - "6379:6379"
+    command: redis-server --requirepass admin@123
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq
+    restart: always
+    environment:
+      RABBITMQ_DEFAULT_USER: admin
+      RABBITMQ_DEFAULT_PASS: admin@123
+    volumes:
+      - /svcs/rabbitmq/data:/var/lib/rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+
+  nginx:
+    image: nginx
+    container_name: nginx
+    restart: always
+    volumes:
+#      - /svcs/nginx/conf/nginx.conf:/etc/nginx/nginx.conf
+#      - /svcs/nginx/html:/usr/share/nginx/html
+      - /svcs/nginx/log:/var/log/nginx
+    ports:
+      - "80:80"
+
+  gitlab:
+    image: gitlab/gitlab-ce:latest
+    container_name: gitlab
+    restart: always
+    hostname: gitlab.example.com
+    environment:
+      GITLAB_OMNIBUS_CONFIG: |
+        external_url "http://gitlab.example.com"
+        gitlab_rails['gitlab_shell_ssh_port'] = 9022
+    volumes:
+      - /svcs/gitlab/config:/etc/gitlab
+      - /svcs/gitlab/data:/var/opt/gitlab
+      - /svcs/gitlab/log:/var/log/gitlab
+    ports:
+      - "9080:80"
+      - "9443:443"
+      - "9022:22"
+
+  jenkins:
+    image: jenkins/jenkins:lts
+    container_name: jenkins
+    restart: always
+    volumes:
+      - /svcs/jenkins/home:/var/jenkins_home
+      - /svcs/jenkins/docker.sock:/var/run/docker.sock
+    ports:
+      - "8080:8080"
+      - "50000:50000"
+    user: "0"
+
+  vsftpd:
+    image: fauria/vsftpd
+    container_name: vsftpd
+    restart: always
+    environment:
+      FTP_USER: admin
+      FTP_PASS: admin@123
+      PASV_MIN_PORT: 21100
+      PASV_MAX_PORT: 21110
+      UTF8_FILENAMES: YES
+    volumes:
+      - /svcs/vsftpd:/home/vsftpd
+    ports:
+      - "9020:20/tcp"
+      - "9021:21/tcp"
+      - "21100-21110:21100-21110/tcp"
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.7.0
+    container_name: elasticsearch
+    restart: always
+    environment:
+      discovery.type: single-node
+      ES_JAVA_OPTS: "-Xms512m -Xmx512m"
+      bootstrap.memory_lock: true
+      xpack.security.enabled: false
+    ports:
+      - "9200:9200"
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.7.0
+    container_name: kibana
+    restart: always
+    environment:
+      ELASTICSEARCH_URL: http://elasticsearch:9200
+    ports:
+      - "5601:5601"
