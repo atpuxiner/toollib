@@ -18,6 +18,7 @@ Commands:
   set-sshkey        设置ssh免密
   docker            docker操作
   py2pyd            py转pyd
+  tmpl2bash         模板到bash
 """
 
 set_pip = """usage:
@@ -70,4 +71,13 @@ options:
   -e/--exclude      排除编译（适用正则，使用管道等注意加引号）
   -i/--ignore       忽略复制（多个逗号隔开）
   -c/--clean        清理临时
+"""
+
+tmpl2bash = """usage:
+  pytcli tmpl2bash [options]
+options:
+  -h/--help     帮助
+  -f/--file     文件
+  -c/--cmds     命令
+  -o/--opts     选项
 """
