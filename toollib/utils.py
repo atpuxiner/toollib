@@ -224,7 +224,8 @@ def decompress(
         dest: t.Union[str, Path] = None,
         pattern: str = '*[.pzr2]',
         is_r: bool = False,
-        is_raise: bool = True) -> int:
+        is_raise: bool = True,
+) -> int:
     """
     解压文件
 

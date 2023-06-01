@@ -78,6 +78,6 @@ tmpl2bash = """usage:
 options:
   -h/--help     帮助
   -f/--file     文件
-  -c/--cmds     命令
-  -o/--opts     选项
+  -c/--cmds     命令（多个用`,`隔开，且不能包含空格）
+  -o/--opts     选项（多个用`,`隔开，且不能包含空格，短选项单字符，长选项多字符，后可接`:`表示需要值，如：s/src:,d/dest:）
 """

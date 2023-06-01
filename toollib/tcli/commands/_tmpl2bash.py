@@ -41,8 +41,8 @@ class Cmd(BaseCmd):
             sys.exit(1)
         for item in opts.split(',') if opts else '':
             item = item.strip()
-            if not item or item in ['h/help', 'h', 'help']: continue
-            opts_error_msg = f'ERROR: {item}: 格式错误（多个用`,`隔开，且不能包含空格，短选项单字符，长选项多字符，后可接`:`表示需要值，如：s/src:）'
+            if not item or item in ['h/help', 'h', 'help', 'version']: continue
+            opts_error_msg = f'ERROR: {item}: 格式错误（不能包含空格，短选项单字符，长选项多字符，后可接`:`表示需要值，如：s/src:）'
             if '/' in item:
                 if not re.match(r'^[^/\s](/[^/\s]{2,})?:?$', item):
                     print(opts_error_msg)

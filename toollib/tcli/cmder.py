@@ -31,7 +31,7 @@ class Cmd:
             if command in ['-h', '--help']:
                 sys.stdout.write(self.usage)
                 sys.exit()
-            sys.stderr.write('ERROR: Unknown command "%s"\n' % command)
+            sys.stderr.write("ERROR: Unknown command '%s'\n" % command)
             sys.stderr.write(self.usage)
             sys.exit(1)
 

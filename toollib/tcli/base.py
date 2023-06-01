@@ -30,7 +30,7 @@ class BaseCmd:
     def load_options(self):
         options = self.add_options()
         if not isinstance(options, Options):
-            raise TypeError('"add_options()" return type only supported: Options')
+            raise TypeError('add_options() return type only supported: Options')
         self.options = options
 
     @property
@@ -81,7 +81,7 @@ class BaseCmd:
                 sys.stdout.write(self.curr_usage)
                 sys.exit()
             if mode == 3:
-                sys.stderr.write('ERROR: Unknown option "%s"\n' % option)
+                sys.stderr.write("ERROR: Unknown option '%s'\n" % option)
                 sys.stderr.write(self.curr_usage)
                 sys.exit(1)
 

@@ -10,6 +10,7 @@
 
 class Versions:
     ALL = [
+        ('1.4.6', 'chg@调整文档等'),
         ('1.4.5', 'add@pytcli.tmpl2bash'),
         ('1.4.4', 'chg@重整'),
         ('1.4.3', 'add@pytcli.docker'),

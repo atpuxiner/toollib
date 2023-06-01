@@ -71,7 +71,7 @@ done
 case $1 in
 @ALL_CMDS
 *)
-  echo "ERROR: Unknown command $1" >&2
+  echo "ERROR: Unknown command '$1'" >&2
   exit 1
   ;;
 esac

@@ -27,8 +27,17 @@ class Attr:
         +++++[更多详见参数或源码]+++++
     """
 
-    def __init__(self, key, ktype=None, required=False, enum=None, regex=None, callback=None,
-                 error_msg=None, empty_msg=None):
+    def __init__(
+            self,
+            key,
+            ktype=None,
+            required=False,
+            enum=None,
+            regex=None,
+            callback=None,
+            error_msg=None,
+            empty_msg=None,
+    ):
         self.key = key
         self.ktype = ktype
         self.required = required

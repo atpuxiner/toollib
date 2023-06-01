@@ -23,8 +23,13 @@ __all__ = [
 ]
 
 
-def ws_inserts(ws: Worksheet, values: t.List[list], index: int = None,
-               mode: str = 'r', is_new: bool = True):
+def ws_inserts(
+        ws: Worksheet,
+        values: t.List[list],
+        index: int = None,
+        mode: str = 'r',
+        is_new: bool = True,
+):
     """
     插入数据
 

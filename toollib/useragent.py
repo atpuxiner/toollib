@@ -1038,7 +1038,7 @@ def gen_uas(max_len: int = 1000) -> t.Generator:
 
         +++++[更多详见参数或源码]+++++
 
-    :param max_len:
+    :param max_len: 最大长度（数量）
     :return:
     """
     url = 'http://useragentstring.com/pages/useragentstring.php?typ=Browser'
