@@ -27,11 +27,11 @@ def cmd5(obj, is_file: bool = False, saltstr: str = None):
 
         # 1）针对字符
         obj = 'this is toollib'
-        cobj = crypto.cmd5(obj)
+        cobj = cipher.cmd5(obj)
 
         # 2）针对文件
         obj = 'D:/tmp/t.txt'
-        cobj = crypto.cmd5(obj, is_file=True)
+        cobj = cipher.cmd5(obj, is_file=True)
 
         # ret: 返回obj的md5
 
@@ -66,10 +66,10 @@ def curl(obj, mode: int = 1):
 
         # 加密
         obj = 'https:www.baidu.com/'
-        cobj = crypto.curl(obj)
+        cobj = cipher.curl(obj)
 
         # 解密
-        obj = crypto.curl(cobj, mode=2)
+        obj = cipher.curl(cobj, mode=2)
 
         # res: 返回相应结果
 
@@ -96,12 +96,12 @@ def cbase64(obj, mode: int = 1, to_file: t.Union[str, Path] = None, altchars=Non
 
         # 1）针对字符
         obj = b'这是一个示例'
-        cobj = crypto.cbase64(obj)
+        cobj = cipher.cbase64(obj)
 
         # 2）针对文件
         obj = 'D:/tmp/t.txt'
         to_file = 'D:/tmp/t.c'
-        cobj = crypto.cbase64(obj, to_file=to_file)
+        cobj = cipher.cbase64(obj, to_file=to_file)
 
         # 另：解密详见参数
 
@@ -153,14 +153,14 @@ def cdes(
         obj = b'这是一个示例'
         deskey = b'asdfhjkl'  #  8 bytes
         desiv = b'aaaaaaaa'  # 8 bytes
-        cobj = crypto.cdes(obj, deskey=deskey, desiv=desiv)
+        cobj = cipher.cdes(obj, deskey=deskey, desiv=desiv)
 
         # 2）针对文件
         obj = 'D:/tmp/t.txt'
         deskey = b'asdfhjkl'  #  8 bytes
         desiv = b'aaaaaaaa'  # 8 bytes
         to_file = 'D:/tmp/t.c'
-        cobj = crypto.cdes(obj, deskey=deskey, desiv=desiv, to_file=to_file)
+        cobj = cipher.cdes(obj, deskey=deskey, desiv=desiv, to_file=to_file)
 
         # 另：解密详见参数
 
