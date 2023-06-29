@@ -152,3 +152,16 @@ services:
       ELASTICSEARCH_URL: http://elasticsearch:9200
     ports:
       - "5601:5601"
+
+  neo4j:
+    image: neo4j:latest
+    container_name: neo4j
+    restart: always
+    environment:
+      NEO4J_AUTH: neo4j/neo4j@123
+    volumes:
+      - /svcs/neo4j:/data
+    ports:
+      - "7474:7474"
+      - "7687:7687"
+    user: "neo4j"

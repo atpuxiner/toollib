@@ -51,7 +51,7 @@ class Attr:
         return instance.__dict__[self.key]
 
     def __set__(self, instance, value):
-        if value is None:
+        if not value:
             if self.required is True:
                 raise TypeError(self.empty_msg)
         else:

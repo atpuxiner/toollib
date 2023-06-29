@@ -51,7 +51,7 @@ def check_optional(optional):
     for subcmd, args in optional.items():
         if callable(subcmd) is False:
             raise TypeError('"subcmd" only supported: Callable')
-        errmsg = '"optional" only supported: Union[List[Arg], None]'
+        errmsg = '"optional" value only supported: Union[List[Arg], None]'
         if not isinstance(args, (list, type(None))):
             raise TypeError(errmsg)
         if args:

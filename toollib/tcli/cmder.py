@@ -48,7 +48,7 @@ class Cmd:
 
     def execute(self):
         cmdcls = self.load_command_class()
-        cmdcls.runcmd(self.argv, self.usage)
+        cmdcls.run(self.argv, self.usage)
 
 
 def run(argv=None):

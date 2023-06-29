@@ -19,6 +19,7 @@ Commands:
   docker            docker操作
   py2pyd            py转pyd
   tmpl2bash         模板到bash
+  snowflake         雪花服务    
 """
 
 set_pip = """usage:
@@ -80,4 +81,13 @@ options:
   -f/--file     文件
   -c/--cmds     命令（多个用`,`隔开，且不能包含空格）
   -o/--opts     选项（多个用`,`隔开，且不能包含空格，短选项单字符，长选项多字符，后可接`:`表示需要值，如：s/src:,d/dest:）
+"""
+
+snowflake = """usage:
+  pytcli snowflake [options]
+options:
+  -h/--help         帮助
+  --host            host
+  --port            port
+  --workers         进程数
 """

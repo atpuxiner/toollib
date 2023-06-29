@@ -10,6 +10,7 @@
 
 class Versions:
     ALL = [
+        ('1.4.8', 'add@新增雪花服务等'),
         ('1.4.7', 'chg@crypto->cipher'),
         ('1.4.6', 'chg@调整文档等'),
         ('1.4.5', 'add@pytcli.tmpl2bash'),

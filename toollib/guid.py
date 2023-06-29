@@ -47,7 +47,7 @@ class SnowFlake(metaclass=Singleton):
             worker_id: int = 0,
             datacenter_id: int = 0,
             sequence=0,
-            epoch_timestamp: int = 1639286040000,
+            epoch_timestamp: int = 1288834974657,
             worker_id_bits: int = 5,
             datacenter_id_bits: int = 5,
             sequence_bits: int = 12,
@@ -61,7 +61,7 @@ class SnowFlake(metaclass=Singleton):
         :param worker_id: 机器ID
         :param datacenter_id: 数据中心ID
         :param sequence: 序号
-        :param epoch_timestamp: 纪元（[默认:1639286040000=>20211212131400][Twitter:1288834974657=>20101104094254]）
+        :param epoch_timestamp: 纪元（Twitter(1288834974657): 2010-11-04 09:42:54.657000）
         :param worker_id_bits: 机器id位数
         :param datacenter_id_bits: 服务id位数
         :param sequence_bits: 序号位数

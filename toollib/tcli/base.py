@@ -19,10 +19,11 @@ from toollib.tcli.option import Options
 class BaseCmd:
 
     argv: list
-    options: Options
-    parse_args: Namespace
     usage: str
+    options: Options
     curr_usage: str
+    curr_option: str
+    parse_args: Namespace
 
     def add_options(self) -> Options:
         raise NotImplementedError('subclasses of BaseCmd must provide a add_options() method')
@@ -31,33 +32,40 @@ class BaseCmd:
         options = self.add_options()
         if not isinstance(options, Options):
             raise TypeError('add_options() return type only supported: Options')
-        self.options = options
+        return options
+
+    def set_init(self, argv, usage):
+        self.argv = argv
+        self.usage = usage
+        self.options = self.load_options()
+        self.curr_usage = getattr(helper, self.argv[0], helper.usage)
+        self.curr_option = self.argv[1] if self.argv[1:] else None
+        if self.curr_option and self.curr_option in ['-h', '--help']:
+            sys.stdout.write(self.curr_usage)
+            sys.exit()
 
     @property
     def load_callcmd(self) -> t.Callable:
-        self.load_options()
-        # check
-        curr_cmd = self.argv[0]
-        self.curr_usage = getattr(helper, curr_cmd, helper.usage)
         subcmds = self.options.subcmds
         posargs = ['command']
-        curr_option = self.argv[1] if self.argv[1:] else None
+        # check
         if len(subcmds) > 1:
-            self._check_option(curr_option, mode=1)
+            if not self.curr_option:
+                sys.stderr.write('ERROR: Option is required\n')
+                sys.stderr.write(self.curr_usage)
+                sys.exit(1)
+            curr_optional = subcmds.get(self.curr_option.replace('-', '_'))
+            if not curr_optional:
+                sys.stderr.write("ERROR: Unknown option '%s'\n" % self.curr_option)
+                sys.stderr.write(self.curr_usage)
+                sys.exit(1)
             posargs.append('option')
         else:
-            if curr_option:
-                self._check_option(curr_option, mode=2)
-            curr_option = curr_cmd
-        curr_optional = subcmds.get(curr_option.replace('-', '_'))
-        if not curr_optional:
-            self._check_option(curr_option, mode=3)
+            _, curr_optional = subcmds.popitem()
         # add args
         curr_subcmd, curr_args = curr_optional
         parser = ArgumentParser(
-            prog=f'[{helper.prog}]',
-            usage=self.curr_usage.replace('usage:', ''),
-            description=helper.description,
+            add_help=False,
         )
         _ = [parser.add_argument(pos) for pos in posargs]
         if curr_args:
@@ -70,26 +78,7 @@ class BaseCmd:
                 os.environ.setdefault('sysname', self.parse_args.sysname)
         return curr_subcmd
 
-    def _check_option(self, option, mode):
-        if mode == 1:
-            if not option:
-                sys.stderr.write('ERROR: Option is required\n')
-                sys.stderr.write(self.curr_usage)
-                sys.exit(1)
-        else:
-            if option in ['-h', '--help']:
-                sys.stdout.write(self.curr_usage)
-                sys.exit()
-            if mode == 3:
-                sys.stderr.write("ERROR: Unknown option '%s'\n" % option)
-                sys.stderr.write(self.curr_usage)
-                sys.exit(1)
-
-    def execute(self):
+    def run(self, argv, usage: str):
+        self.set_init(argv, usage)
         self.load_callcmd()
         sys.exit()
-
-    def runcmd(self, argv, usage: str):
-        self.argv = argv
-        self.usage = usage
-        self.execute()
