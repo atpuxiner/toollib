@@ -36,7 +36,7 @@ class Cmd(BaseCmd):
 
     @sys_required(r'Ubuntu|Debian|CentOS|RedHat|Rocky')
     def set_sshkey(self):
-        infos = self.parse_args.infos
+        infos = self.parse_args.infos.strip()
         if not infos or infos == "''":
             sys.stderr.write('ERROR: -i/--infos: 不能为空\n')
             sys.exit(1)

@@ -17,8 +17,8 @@ from toollib.utils import listfile
 
 try:
     from Cython.Build import cythonize
-except ImportError:
-    sys.stderr.write("ERROR: No module named 'Cython'\n")
+except ImportError as err:
+    sys.stderr.write(f"ERROR: {err}\n")
     sys.exit(1)
 
 __all__ = ['Py2Pyder']

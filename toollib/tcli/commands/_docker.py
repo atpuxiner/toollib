@@ -56,20 +56,18 @@ class Cmd(BaseCmd):
 
     @sys_required(r'Ubuntu|Debian|CentOS|RedHat|Rocky')
     def set_daemon(self):
-        print('设置daemon配置.....')
         subprocess.run(['systemctl', 'stop', 'docker'])
-        docker_conf_dir = '/etc/docker'
-        if not os.path.isdir(docker_conf_dir):
-            os.mkdir(docker_conf_dir)
-        docker_conf_file = os.path.join(docker_conf_dir, 'daemon.json')
-        with open(docker_conf_file, 'w') as fp:
+        conf_dir = '/etc/docker'
+        if not os.path.isdir(conf_dir):
+            os.mkdir(conf_dir)
+        conf_file = os.path.join(conf_dir, 'daemon.json')
+        print(f'Writing to {conf_file}')
+        with open(conf_file, 'w') as fp:
             fp.write(json.dumps(constor.docker_daemon, indent=2))
-            print(f'to Path >>> {docker_conf_file}')
-            print('设置完成')
         subprocess.run(['systemctl', 'start', 'docker'])
 
     def toyml(self):
-        names = self.parse_args.names
+        names = self.parse_args.names.strip()
         if not names or names == "''":
             sys.stderr.write('ERROR: -n/--names: 不能为空\n')
             sys.exit(1)

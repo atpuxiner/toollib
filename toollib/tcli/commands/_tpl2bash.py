@@ -10,7 +10,7 @@ import re
 import sys
 
 from toollib.tcli.base import BaseCmd
-from toollib.tcli.commands.plugins import bash_tmpl
+from toollib.tcli.commands.plugins import tpl_bash
 from toollib.tcli.option import Options, Arg
 
 
@@ -21,9 +21,9 @@ class Cmd(BaseCmd):
 
     def add_options(self):
         options = Options(
-            name='tmpl2bash',
+            name='tpl2bash',
             desc='模板到bash',
-            optional={self.tmpl2bash: [
+            optional={self.tpl2bash: [
                 Arg('-f', '--file', required=True, type=str, help='文件'),
                 Arg('-c', '--cmds', required=True, type=str, help='命令'),
                 Arg('-o', '--opts', type=str, help='选项'),
@@ -31,7 +31,7 @@ class Cmd(BaseCmd):
         )
         return options
 
-    def tmpl2bash(self):
+    def tpl2bash(self):
         file = self.parse_args.file
         cmds = self.parse_args.cmds
         opts = self.parse_args.opts
@@ -53,22 +53,22 @@ class Cmd(BaseCmd):
                     sys.exit(1)
             sl = item.rstrip(':').split('/')
             sl_len = len(sl)
-            var = bash_tmpl.VAR_PREFIX + sl[-1].upper()
+            var = tpl_bash.VAR_PREFIX + sl[-1].upper()
             sc, lc = 0, 0
             if sl_len == 1:
                 if len(sl[-1]) == 1:
                     sc = 1
                     short_opts += sl[0]
-                    opt_text = bash_tmpl.OPT_DEFAULT.replace('{opt}', '-' + sl[0]).replace('{var}', var)
+                    opt_text = tpl_bash.OPT_DEFAULT.replace('{opt}', '-' + sl[0]).replace('{var}', var)
                 else:
                     lc = 1
                     long_opts += f',{sl[0]}'
-                    opt_text = bash_tmpl.OPT_DEFAULT.replace('{opt}', f'--{sl[0]}').replace('{var}', var)
+                    opt_text = tpl_bash.OPT_DEFAULT.replace('{opt}', f'--{sl[0]}').replace('{var}', var)
             else:
                 sc, lc = 1, 1
                 short_opts += sl[0]
                 long_opts += f',{sl[1]}'
-                opt_text = bash_tmpl.OPT_DEFAULT.replace('{opt}', f'-{sl[0]}|--{sl[1]}').replace('{var}', var)
+                opt_text = tpl_bash.OPT_DEFAULT.replace('{opt}', f'-{sl[0]}|--{sl[1]}').replace('{var}', var)
             if item[-1] == ':':
                 if sc:
                     short_opts += ':'
@@ -80,12 +80,13 @@ class Cmd(BaseCmd):
                 default_false_opts += f'{var}=false\n'
             all_opts += opt_text
         for cmd in cmds.split(','):
-            all_funcs += bash_tmpl.FUNC_DEFAULT.format(cmd=cmd)
-            all_cmds += bash_tmpl.CMD_DEFAULT.format(cmd=cmd)
+            all_funcs += tpl_bash.FUNC_DEFAULT.format(cmd=cmd)
+            all_cmds += tpl_bash.CMD_DEFAULT.format(cmd=cmd)
 
+        print(f'Writing to {file}')
         with open(file, 'w', encoding='utf8') as fp:
             fp.write(
-                bash_tmpl.BASH_TMPL.replace(
+                tpl_bash.BASH_TPL.replace(
                     '@SHORT_OPTS', short_opts
                 ).replace(
                     '@LONG_OPTS', long_opts.rstrip(',')

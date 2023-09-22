@@ -28,10 +28,8 @@ class Cmd(BaseCmd):
         return options
 
     def set_conda(self):
-        print('设置镜像源.....')
         _home = utils.home()
         conf_file = os.path.join(_home, '.condarc')
+        print(f'Writing to {conf_file}')
         with open(conf_file, mode='wb') as fp:
             fp.write(constor.conda_conf)
-            print(f'to Path >>> {conf_file}')
-            print('设置完成')

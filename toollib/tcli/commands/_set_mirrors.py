@@ -30,11 +30,11 @@ class Cmd(BaseCmd):
         return options
 
     def set_mirrors(self):
-        curr_sysname = self.parse_args.sysname
+        curr_sysname = self.parse_args.sysname.strip().lower()
         if not curr_sysname or curr_sysname == "''":
             sys.stderr.write('ERROR: -s/--sysname: 不能为空\n')
             sys.exit(1)
-        cmds = mirrors_cmds.get(curr_sysname.replace(' ', '').lower())
+        cmds = mirrors_cmds.get(curr_sysname)
         if not cmds:
             print(f'{curr_sysname}: 抱歉暂未收录')
             mirrors_sysname = list(mirrors_cmds.keys())

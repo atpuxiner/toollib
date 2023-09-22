@@ -33,7 +33,7 @@ class Cmd(BaseCmd):
         return options
 
     def py2pyd(self):
-        src = self.parse_args.src
+        src = self.parse_args.src.strip()
         if not src or src == "''":
             sys.stderr.write('ERROR: -s/--src: 不能为空\n')
             sys.exit(1)

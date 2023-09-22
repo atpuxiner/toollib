@@ -7,7 +7,7 @@
 @history
 """
 
-BASH_TMPL = """#!/bin/bash
+BASH_TPL = """#!/bin/bash
 
 SCRIPT_NAME=$(basename $0)
 SCRIPT_DIR=$(dirname "$(readlink -f "$0")")

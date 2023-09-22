@@ -6,13 +6,11 @@
 @description
 @history
 """
-from pathlib import Path
-from platform import platform
+import subprocess
+import sys
 
-from toollib import utils
 from toollib.tcli.base import BaseCmd
-from toollib.common import constor
-from toollib.tcli.option import Options
+from toollib.tcli.option import Options, Arg
 
 
 class Cmd(BaseCmd):
@@ -24,19 +22,26 @@ class Cmd(BaseCmd):
         options = Options(
             name='set-pip',
             desc='设置pip源',
-            optional={self.set_pip: None}
+            optional={self.set_pip: [
+                Arg('-s', '--src', default='tsinghua', type=str, help='源（tsinghua|aliyun|bfsu|douban|pypi）'),
+                Arg('-t', '--timeout', default=120, type=int, help='超时'),
+            ]}
         )
         return options
 
     def set_pip(self):
-        print('设置镜像源.....')
-        _home = utils.home()
-        if platform().find('Windows') != -1:
-            conf_file = Path(_home, 'pip', 'pip.ini')
-        else:
-            conf_file = Path(_home, '.pip', 'pip.conf')
-        conf_file.parent.mkdir(parents=True, exist_ok=True)
-        with open(conf_file, mode='wb') as fp:
-            fp.write(constor.pip_conf)
-            print(f'to Path >>> {conf_file.as_posix()}')
-            print('设置完成')
+        src = self.parse_args.src
+        timeout = self.parse_args.timeout
+        srcs = {
+            'tsinghua': 'https://pypi.tuna.tsinghua.edu.cn/simple/',
+            'aliyun': 'https://mirrors.aliyun.com/pypi/simple/',
+            'bfsu': 'https://mirrors.bfsu.edu.cn/pypi/web/simple/',
+            'douban': 'https://pypi.doubanio.com/simple/',
+            'pypi': 'https://pypi.python.org/simple/',
+        }
+        set_src = srcs.get(src)
+        if not set_src:
+            print(f'ERROR: {src}：暂未收录，请选择源（tsinghua|aliyun|bfsu|douban|pypi）')
+            sys.exit(1)
+        subprocess.run(f'pip config set global.timeout {timeout}', shell=True, capture_output=True)
+        subprocess.run(f'pip config set global.index-url {set_src}', shell=True)
