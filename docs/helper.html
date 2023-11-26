@@ -61,13 +61,14 @@
 
     e.g.::
 
-        # 不指定浏览器版本，则下载当前浏览器对应的版本（针对win平台，mac|linux则下载最新版本（可查看浏览器版本自行指定））
         import time
         from selenium import webdriver
         from selenium.webdriver.chrome.service import Service
         from toollib import autodriver
 
-        driver_path = autodriver.chromedriver()  # 自动下载驱动
+        # 自动下载驱动，默认下载本地浏览器对应的版本（各参数可自行指定）
+        driver_path = autodriver.chromedriver()
+        # 以下为selenium模拟操作
         driver = webdriver.Chrome(service=Service(driver_path))
         driver.get('https://www.baidu.com')
         driver.find_element(value='kw').send_keys('python toollib')
@@ -78,8 +79,8 @@
         +++++[更多详见参数或源码]+++++
 
     :param driver_dir: 驱动目录（默认当前执行目录）
-    :param version: 版本（谷歌浏览器）
-    :param platform: 平台（默认：win64）-支持：['win32', 'win64', 'mac64', 'linux64']
+    :param platform: 平台（支持：['win32', 'win64', 'mac64', 'mac-arm64', 'linux64']）
+    :param browser_version: 浏览器版本
     </pre>
 <br>++++++++++++++++++++++这是分隔线++++++++++++++++++++++
 <h2><i>toollib.cipher</i></h2><pre>

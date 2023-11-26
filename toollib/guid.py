@@ -11,7 +11,7 @@ from datetime import datetime, timedelta
 
 import typing as t
 
-from toollib.common.error import InvalidSystemClock
+from toollib.common.error import SystemClockError
 from toollib.utils import Singleton, now2str
 
 __all__ = [
@@ -101,7 +101,7 @@ class SnowFlake(metaclass=Singleton):
             to_str = self.to_str
         timestamp = self._current_timestamp()
         if timestamp < self.last_timestamp:
-            raise InvalidSystemClock("Clock moved backwards. Refusing to generate id for %s milliseconds" % (
+            raise SystemClockError("Clock moved backwards. Refusing to generate id for %s milliseconds" % (
                     self.last_timestamp - timestamp))
         if timestamp == self.last_timestamp:
             self.sequence = (self.sequence + 1) & self.sequence_mask

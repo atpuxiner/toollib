@@ -21,8 +21,12 @@ class Error(Exception):
 
 
 class ExpireError(Error):
-    """expire error"""
+    """过期异常"""
 
 
-class InvalidSystemClock(Error):
-    """时钟回拨异常"""
+class SystemClockError(Error):
+    """系统时钟异常"""
+
+
+class DriverError(Error):
+    """驱动异常"""
