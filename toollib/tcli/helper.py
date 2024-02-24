@@ -19,8 +19,8 @@ Commands:
   docker            docker操作
   py2pyd            py转pyd
   snowflake         雪花服务    
-  tpl2bash          模板到bash
-  tpl2grpc          模板到grpc
+  bash              bash模板
+  grpc              grpc模板
 """
 
 set_pip = """usage:
@@ -86,8 +86,8 @@ options:
   --workers         进程数[可选]
 """
 
-tpl2bash = """usage:
-  pytcli tpl2bash [options]
+bash = """usage:
+  pytcli bash [options]
 options:
   -h/--help     帮助
   -f/--file     文件
@@ -95,8 +95,8 @@ options:
   -o/--opts     选项（多个用`,`隔开，且不能包含空格，短选项单字符，长选项多字符，后可接`:`表示需要值，如：s/src:,d/dest:）[可选]
 """
 
-tpl2grpc = """usage:
-  pytcli tpl2grpc [options]
+grpc = """usage:
+  pytcli grpc [options]
 options:
   -h/--help     帮助
   -n/--name     名称[可选]

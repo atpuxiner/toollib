@@ -28,8 +28,8 @@ class Cmd(BaseCmd):
 
     def add_options(self):
         options = Options(
-            name='tpl2grpc',
-            desc='模板到grpc',
+            name='grpc',
+            desc='grpc模板',
             optional={self.tpl2bash: [
                 Arg('-n', '--name', default='hello', type=str, help='名称'),
                 Arg('-d', '--dir', default='tplgrpc', type=str, help='目录'),

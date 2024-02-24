@@ -27,7 +27,7 @@ class Cmd(BaseCmd):
 
     def add_options(self):
         options = Options(
-            name='docker操作',
+            name='docker',
             desc='docker操作',
             optional={
                 self.install: [

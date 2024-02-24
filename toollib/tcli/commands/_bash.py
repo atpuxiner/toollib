@@ -21,8 +21,8 @@ class Cmd(BaseCmd):
 
     def add_options(self):
         options = Options(
-            name='tpl2bash',
-            desc='模板到bash',
+            name='bash',
+            desc='bash模板',
             optional={self.tpl2bash: [
                 Arg('-f', '--file', required=True, type=str, help='文件'),
                 Arg('-c', '--cmds', required=True, type=str, help='命令'),
