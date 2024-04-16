@@ -68,11 +68,11 @@ class Py2Pyder:
         self.src = os.path.abspath(src)
         if os.path.isdir(self.src):
             self.src_is_dir = True
-            self.dest = self.src + (postfix or 'Pyd')
+            self.dst = self.src + (postfix or 'Pyd')
         elif os.path.isfile(self.src):
             self.src_is_dir = False
             if self.src.endswith('.py'):
-                self.dest = os.path.join(
+                self.dst = os.path.join(
                     os.path.dirname(self.src),
                     os.path.basename(self.src)[:-3] + (postfix or 'Pyd'))
             else:
@@ -84,7 +84,7 @@ class Py2Pyder:
         self.exclude = exclude
         self.ignore = ignore
         self.clean = clean
-        self.setuppy = os.path.join(self.dest, '.setuppy')
+        self.setuppy = os.path.join(self.dst, '.setuppy')
 
     def run(self):
         """
@@ -95,20 +95,20 @@ class Py2Pyder:
         self._build()
 
     def _init_setup(self):
-        if not os.path.isdir(self.dest):
-            os.mkdir(self.dest)
+        if not os.path.isdir(self.dst):
+            os.mkdir(self.dst)
         if self.src_is_dir:
             ignore_cp = shutil.ignore_patterns(*self.ignore.split(',')) if self.ignore else None
-            shutil.copytree(self.src, self.dest, ignore=ignore_cp, dirs_exist_ok=True)
+            shutil.copytree(self.src, self.dst, ignore=ignore_cp, dirs_exist_ok=True)
         else:
-            shutil.copy(self.src, self.dest)
+            shutil.copy(self.src, self.dst)
         with open(self.setuppy, 'wb') as fp:
             fp.write(constor.pyd_setup)
 
     def _build(self):
-        os.chdir(self.dest)
-        _ = len(self.dest)
-        for pyfile in listfile(self.dest, '*.py', is_str=True, is_r=True):
+        os.chdir(self.dst)
+        _ = len(self.dst)
+        for pyfile in listfile(self.dst, '*.py', is_str=True, is_r=True):
             if pyfile.endswith('__init__.py'):
                 print(f'跳过init：{pyfile}')
                 continue
@@ -139,5 +139,5 @@ class Py2Pyder:
                 os.remove(cpyfile)
         if self.clean is True:
             subprocess.run(['python', self.setuppy, 'clean', 'xxx', 'xxx'])
-            shutil.rmtree(os.path.join(self.dest, 'build'), ignore_errors=True)
+            shutil.rmtree(os.path.join(self.dst, 'build'), ignore_errors=True)
         os.remove(self.setuppy)

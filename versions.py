@@ -10,6 +10,7 @@
 
 class Versions:
     ALL = [
+        ('1.5.2', 'opt@优化代码'),
         ('1.5.1', 'chg@pytcli'),
         ('1.5.0', 'fix@autodriver'),
         ('1.4.9', 'chg@pytcli'),

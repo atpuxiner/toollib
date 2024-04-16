@@ -11,7 +11,7 @@ import sys
 from pathlib import Path
 
 from toollib.tcli.base import BaseCmd
-from toollib.tcli.commands.plugins import tpl_grpc
+from toollib.tcli.commands.plugins import grpc_tpl
 from toollib.tcli.option import Options, Arg
 
 try:
@@ -32,7 +32,7 @@ class Cmd(BaseCmd):
             desc='grpc模板',
             optional={self.tpl2bash: [
                 Arg('-n', '--name', default='hello', type=str, help='名称'),
-                Arg('-d', '--dir', default='tplgrpc', type=str, help='目录'),
+                Arg('-d', '--dir', default='grpctpl', type=str, help='目录'),
             ]}
         )
         return options
@@ -54,9 +54,9 @@ class Cmd(BaseCmd):
         with open(proto_path, 'wb') as f1, \
                 open(server_path, 'wb') as f2, \
                 open(client_path, 'wb') as f3:
-            f1.write(self.__replace(tpl_grpc.HELLO_PROTO, name))
-            f2.write(self.__replace(tpl_grpc.HELLO_SERVER, name))
-            f3.write(self.__replace(tpl_grpc.HELLO_CLIENT, name))
+            f1.write(self.__replace(grpc_tpl.HELLO_PROTO, name))
+            f2.write(self.__replace(grpc_tpl.HELLO_SERVER, name))
+            f3.write(self.__replace(grpc_tpl.HELLO_CLIENT, name))
         cmd = 'python -m grpc_tools.protoc -I {0} --python_out {0} --grpc_python_out {0} {1}'.format(dir_path, proto_path)
         subprocess.run(cmd, shell=True)
 

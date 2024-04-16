@@ -221,7 +221,7 @@ def listfile(
 
 def decompress(
         src: t.Union[str, Path],
-        dest: t.Union[str, Path] = None,
+        dst: t.Union[str, Path] = None,
         pattern: str = '*[.pzr2]',
         is_r: bool = False,
         is_raise: bool = True,
@@ -240,7 +240,7 @@ def decompress(
         +++++[更多详见参数或源码]+++++
 
     :param src: 源目录或文件
-    :param dest: 目标目录
+    :param dst: 目标目录
     :param pattern: 匹配模式（当src为目录时生效，默认匹配所有支持的压缩包）
     :param is_r: 是否递规查找（当src为目录时生效）
     :param is_raise: 是否抛异常
@@ -263,12 +263,12 @@ def decompress(
         if src.suffix not in __support_types:
             raise ValueError('only supported: %s' % __support_types)
         src_files = [src]
-    if not dest:
-        dest_dir = src.absolute() if src_is_dir else src.absolute().parent
+    if not dst:
+        dst_dir = src.absolute() if src_is_dir else src.absolute().parent
     else:
-        dest_dir = Path(dest).absolute()
-        dest_dir.mkdir(parents=True, exist_ok=True)
-    dest_dir.chmod(stat.S_IRWXU)
+        dst_dir = Path(dst).absolute()
+        dst_dir.mkdir(parents=True, exist_ok=True)
+    dst_dir.chmod(stat.S_IRWXU)
     count = 0
     for src_file in src_files:
         file_name, file_type = src_file.name, src_file.suffix
@@ -282,16 +282,16 @@ def decompress(
             if file_type == '.zip':
                 zip_file = zipfile.ZipFile(src_file)
                 for f in zip_file.namelist():
-                    zip_file.extract(f, dest_dir)
+                    zip_file.extract(f, dst_dir)
                 zip_file.close()
             elif file_type == '.rar':
                 rar_file = rarfile.RarFile(src_file)
-                rar_file.extractall(dest_dir)
+                rar_file.extractall(dst_dir)
                 rar_file.close()
             else:
                 tar_file = tarfile.open(src_file)
                 for name in tar_file.getnames():
-                    tar_file.extract(name, dest_dir)
+                    tar_file.extract(name, dst_dir)
                 tar_file.close()
         except:
             if is_raise is True:

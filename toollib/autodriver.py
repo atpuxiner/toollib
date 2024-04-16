@@ -96,12 +96,12 @@ class ChromeDriver:
             _driver_unpack_dir = download_file.rstrip('.zip')
             if os.path.isdir(_driver_unpack_dir):
                 for f in [exec_file, 'LICENSE.chromedriver']:
-                    dest_file = os.path.join(_driver_unpack_dir, f)
-                    if os.path.isfile(dest_file):
+                    dst_file = os.path.join(_driver_unpack_dir, f)
+                    if os.path.isfile(dst_file):
                         local_file = driver_dir.joinpath(f)
                         if local_file.is_file():
                             os.remove(local_file)
-                        shutil.move(dest_file, driver_dir)
+                        shutil.move(dst_file, driver_dir)
                 shutil.rmtree(_driver_unpack_dir, ignore_errors=True)
             if os.path.isfile(driver_file):
                 return driver_file
