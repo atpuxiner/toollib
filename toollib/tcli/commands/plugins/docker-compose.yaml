@@ -1,0 +1,181 @@
+version: "3.8"
+services:
+
+  mysql57:
+    image: mysql:5.7
+    container_name: mysql57
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: Mimmm@129
+    volumes:
+      - /volumes/mysql57:/var/lib/mysql
+    ports:
+      - "3306:3306"
+
+  mysql80:
+    image: mysql:8.0
+    container_name: mysql80
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: Mimmm@129
+    volumes:
+      - /volumes/mysql80:/var/lib/mysql
+    ports:
+      - "3306:3306"
+
+  postgres:
+    image: postgres
+    container_name: postgres
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: Mimmm@129
+      POSTGRES_DB: postgres
+    volumes:
+      - /volumes/postgres:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  mongo:
+    image: mongo
+    container_name: mongo
+    restart: always
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: Mimmm@129
+    volumes:
+      - /volumes/mongo:/data/db
+    ports:
+      - "27017:27017"
+
+  redis:
+    image: redis
+    container_name: redis
+    restart: always
+    volumes:
+      - /volumes/redis:/data
+    ports:
+      - "6379:6379"
+    command: redis-server --requirepass Mimmm@129
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq
+    restart: always
+    environment:
+      RABBITMQ_DEFAULT_USER: admin
+      RABBITMQ_DEFAULT_PASS: Mimmm@129
+    volumes:
+      - /volumes/rabbitmq/data:/var/lib/rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+
+  neo4j:
+    image: neo4j:latest
+    container_name: neo4j
+    restart: always
+    environment:
+      NEO4J_AUTH: neo4j/Mimmm@129
+    volumes:
+      - /volumes/neo4j:/data
+    ports:
+      - "7474:7474"
+      - "7687:7687"
+    user: "neo4j"
+    # Before starting the container:
+    # 1. Create the directory (if it does not exist)
+    #    sudo mkdir -p /volumes/neo4j
+    # 2. Adjust the ownership and permissions of the directory
+    #    sudo chown -R 7474:7474 /volumes/neo4j
+    #    sudo chmod -R 770 /volumes/neo4j
+
+  opensearch-node1:
+    image: opensearchproject/opensearch:2.11.1
+    container_name: opensearch-node1
+    restart: always
+    environment:
+      cluster.name: opensearch-cluster
+      node.name: opensearch-node1
+      discovery.type: single-node
+      bootstrap.memory_lock: true
+      OPENSEARCH_JAVA_OPTS: "-Xms512m -Xmx512m"
+      plugins.security.disabled: true
+    volumes:
+      - /volumes/opensearch-node1:/usr/share/opensearch/data
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    # Before starting the container:
+    # 1. Create the directory (if it does not exist)
+    #    sudo mkdir -p /volumes/opensearch-node1
+    # 2. Adjust the ownership and permissions of the directory
+    #    sudo chown -R 1000:1000 /volumes/opensearch-node1
+    #    sudo chmod -R 770 /volumes/opensearch-node1
+
+  vsftpd:
+    image: fauria/vsftpd
+    container_name: vsftpd
+    restart: always
+    environment:
+      FTP_USER: admin
+      FTP_PASS: Mimmm@129
+      PASV_MIN_PORT: 21100
+      PASV_MAX_PORT: 21110
+      UTF8_FILENAMES: YES
+    volumes:
+      - /volumes/vsftpd:/home/vsftpd
+    ports:
+      - "9020:20/tcp"
+      - "9021:21/tcp"
+      - "21100-21110:21100-21110/tcp"
+
+  nginx:
+    image: nginx
+    container_name: nginx
+    restart: always
+    volumes:
+#      - /volumes/nginx/conf/nginx.conf:/etc/nginx/nginx.conf
+#      - /volumes/nginx/html:/usr/share/nginx/html
+      - /volumes/nginx/log:/var/log/nginx
+    ports:
+      - "80:80"
+
+  gitlab:
+    image: gitlab/gitlab-ce:latest
+    container_name: gitlab
+    restart: always
+    hostname: gitlab.example.com
+    environment:
+      GITLAB_OMNIBUS_CONFIG: |
+        external_url "http://gitlab.example.com"
+        gitlab_rails['gitlab_shell_ssh_port'] = 9022
+    volumes:
+      - /volumes/gitlab/config:/etc/gitlab
+      - /volumes/gitlab/data:/var/opt/gitlab
+      - /volumes/gitlab/log:/var/log/gitlab
+    ports:
+      - "9080:80"
+      - "9443:443"
+      - "9022:22"
+
+  jenkins:
+    image: jenkins/jenkins:lts
+    container_name: jenkins
+    restart: always
+    volumes:
+      - /volumes/jenkins/home:/var/jenkins_home
+      - /volumes/jenkins/docker.sock:/var/run/docker.sock
+    ports:
+      - "8080:8080"
+      - "50000:50000"
+    # Before starting the container:
+    # 1. Create the directory (if it does not exist)
+    #    sudo mkdir -p /volumes/jenkins
+    # 2. Adjust the ownership and permissions of the directory
+    #    sudo chown -R 1000:1000 /volumes/jenkins
+    #    sudo chmod -R 770 /volumes/jenkins

@@ -56,11 +56,9 @@ docker = """usage:
   pytcli docker [options]
 options:
   -h/--help     帮助
-  install       安装
-    --sysname   系统名称（以防自动获取不精确）[可选]
   set-daemon    设置daemon配置（镜像源等）
     --sysname   系统名称（以防自动获取不精确）[可选]
-  toyml         yml写入（服务配置）
+  yaml          yaml配置
     -n/--name       服务名称（多个用逗号隔开）
     -o/--outdir     输出目录[可选]
     -f/--filename   文件名称[可选]
