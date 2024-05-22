@@ -15,6 +15,8 @@ import sys
 import typing as t
 import urllib.request as urlrequest
 from pathlib import Path
+from urllib.error import URLError
+
 from packaging.version import parse as version_parse
 
 from toollib.common.error import DriverError
@@ -71,7 +73,7 @@ class ChromeDriver:
             exec_file = 'chromedriver'
             if platform == 'mac-arm64':
                 platform = 'mac_arm64'
-        browser_latest_version = cls.__rurl('https://chromedriver.storage.googleapis.com/LATEST_RELEASE')
+        browser_latest_version = cls.__rurl("https://cdn.npmmirror.com/binaries/chromedriver/LATEST_RELEASE")
         if not browser_version:
             browser_version = browser_latest_version
         driver_file = driver_dir.joinpath(exec_file).as_posix()
@@ -80,7 +82,7 @@ class ChromeDriver:
             is_eq, local_driver_version = cls.__check_local_driver(driver_file, browser_version)
             if is_eq:
                 return driver_file
-        download_url, sml_version = cls.__get_download_url(platform, browser_version, browser_latest_version)
+        download_url, sml_version, is_test_version = cls.__get_download_url(platform, browser_version, browser_latest_version)
         if not download_url:
             raise DriverError('This version may not exist')
         if local_driver_version and sml_version \
@@ -89,8 +91,7 @@ class ChromeDriver:
         try:
             download_name = download_url.split('/')[-1]
             download_file = driver_dir.joinpath(download_name).as_posix()
-            print(f'Download driver({download_name}) start.....')
-            urlrequest.urlretrieve(download_url, download_file)
+            cls.__download_driver(download_url, download_file, is_test_version, browser_latest_version)
             shutil.unpack_archive(download_file, driver_dir, 'zip')
             os.remove(download_file)
             _driver_unpack_dir = download_file.rstrip('.zip')
@@ -113,6 +114,22 @@ class ChromeDriver:
                 sys.exit()
             else:
                 raise
+
+    @staticmethod
+    def __download_driver(url, filename, is_test_version, browser_latest_version, timeout=60):
+        print(f'Downloading driver may take some time, please wait.')
+        try:
+            with urlrequest.urlopen(url, timeout=timeout) as response, open(filename, 'wb') as outfile:
+                shutil.copyfileobj(response, outfile)
+        except URLError as err:
+            print(str(err))
+            msg = f"因不可抗因素下载失败（请尝试开启VPN或手动下载）"
+            if is_test_version:
+                msg = msg[:-1] + f"或降低浏览器版本为{browser_latest_version}）"
+            msg += f"：{url}"
+            print(msg)
+            shutil.rmtree(filename, ignore_errors=True)
+            sys.exit(1)
 
     @staticmethod
     def __rurl(url: str):
@@ -184,8 +201,9 @@ class ChromeDriver:
     @classmethod
     def __get_download_url(cls, platform: str, browser_version: str, browser_latest_version: str):
         _download_url = 'https://cdn.npmmirror.com/binaries/chromedriver/{version}/chromedriver_{platform}.zip'
-        _download_test_url = 'https://edgedl.me.gvt1.com/edgedl/chrome/chrome-for-testing/{version}/{platform}/chromedriver-{platform}.zip'
-        download_url,  sml_version = None, None
+        # _download_test_url = 'https://edgedl.me.gvt1.com/edgedl/chrome/chrome-for-testing/{version}/{platform}/chromedriver-{platform}.zip'
+        _download_test_url = 'https://storage.googleapis.com/chrome-for-testing-public/{version}/{platform}/chromedriver-{platform}.zip'
+        download_url,  sml_version, is_test_version = None, None, False
 
         try:
             browser_version_split = browser_version.split('.')
@@ -211,6 +229,7 @@ class ChromeDriver:
                     if sml_version:
                         download_url = _download_url.format(version=sml_version, platform=platform)
             else:
+                is_test_version = True
                 sml_version = cls.__find_test_version(browser_version_short=".".join(browser_version_split[:3]))
                 if sml_version:
                     if platform == 'mac64':
@@ -220,12 +239,15 @@ class ChromeDriver:
                     download_url = _download_test_url.format(version=sml_version, platform=platform)
         finally:
             pass
-        return download_url, sml_version
+        return download_url, sml_version, is_test_version
 
     @classmethod
     def __find_test_version(cls, browser_version_short):
+        # https://github.com/GoogleChromeLabs/chrome-for-testing
         resp = cls.__rurl("https://googlechromelabs.github.io/chrome-for-testing/latest-patch-versions-per-build.json")
-        reg = "".join(['"', browser_version_short, '(?:\.\d+)*":{"version":"(.*?)",'])
+        reg = "".join(['"', browser_version_short, '(?:\.\d+)*":{"version":"(.*?)"'])
         sml_versions = re.findall(reg, resp)
-        if sml_versions:
-            return sml_versions[-1]
+        if not sml_versions:
+            reg = "".join(['"', browser_version_short[:-2], '\d\d(?:\.\d+)*":{"version":"(.*?)"'])
+            sml_versions = re.findall(reg, resp)
+        return sml_versions[-1] if sml_versions else None
