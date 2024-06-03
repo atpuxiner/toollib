@@ -148,8 +148,6 @@ class ChromeDriver:
             _platform = sys.platform.lower()
             if _platform.startswith('win') or _platform.startswith('cygwin'):
                 platform = 'win32'
-                if _platform.endswith('64'):
-                    platform = 'win64'
             elif _platform.startswith('darwin'):
                 if sysplatform.platform().lower().endswith('arm64'):
                     platform = 'mac-arm64'
