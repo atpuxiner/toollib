@@ -134,6 +134,22 @@ services:
       - "9021:21/tcp"
       - "21100-21110:21100-21110/tcp"
 
+  minio:
+    image: minio/minio:latest
+    container_name: minio
+    restart: always
+    environment:
+      MINIO_ROOT_USER: admin
+      MINIO_ROOT_PASSWORD: Mimmm@129
+#      MINIO_ACCESS_KEY: YOUR_ACCESS_KEY
+#      MINIO_SECRET_KEY: YOUR_SECRET_KEY
+    volumes:
+      - /volumes/minio:/data
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    command: server /data --console-address ":9001"
+
   nginx:
     image: nginx
     container_name: nginx

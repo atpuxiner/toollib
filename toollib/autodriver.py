@@ -17,10 +17,9 @@ import urllib.request as urlrequest
 from pathlib import Path
 from urllib.error import URLError
 
-from packaging.version import parse as version_parse
-
 from toollib.common.error import DriverError
 from toollib.useragent import random_ua
+from toollib.utils import VersionCmper
 from toollib.validator import choicer
 
 
@@ -117,7 +116,7 @@ class ChromeDriver:
 
     @staticmethod
     def __download_driver(url, filename, is_test_version, browser_latest_version, timeout=60):
-        print(f'Downloading driver may take some time, please wait.')
+        print(f'Downloading driver, please wait. This may take several minutes depending upon your network connection')
         try:
             with urlrequest.urlopen(url, timeout=timeout) as response, open(filename, 'wb') as outfile:
                 shutil.copyfileobj(response, outfile)
@@ -149,6 +148,8 @@ class ChromeDriver:
             _platform = sys.platform.lower()
             if _platform.startswith('win') or _platform.startswith('cygwin'):
                 platform = 'win32'
+                if _platform.endswith('64'):
+                    platform = 'win64'
             elif _platform.startswith('darwin'):
                 if sysplatform.platform().lower().endswith('arm64'):
                     platform = 'mac-arm64'
@@ -207,7 +208,7 @@ class ChromeDriver:
 
         try:
             browser_version_split = browser_version.split('.')
-            if version_parse(browser_version) <= version_parse(browser_latest_version):
+            if VersionCmper(browser_version) <= VersionCmper(browser_latest_version):
                 resp = cls.__rurl('https://registry.npmmirror.com/-/binary/chromedriver')
                 vs = re.findall(r'"name":"([^"]+)/"', resp)
                 vs_dict = {}
