@@ -40,8 +40,6 @@ class KV(metaclass=Singleton):
         +++++[更多详见参数或源码]+++++
     """
 
-    # __slots__ = ('__kvfile', '__kvtable')
-
     __support_types = (str, list,  dict, int, float, bool, type(None))
 
     def __init__(self, kvfile: t.Union[str, Path], kvtable: str = 'kvalues', *args, **kwargs):

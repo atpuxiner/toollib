@@ -30,11 +30,11 @@ with open('requirements.txt', 'r', encoding='utf8') as f:
 def update_version():
     """update version"""
     vfile = here.joinpath('toollib/__init__.py').as_posix()
-    with open(vfile, 'r', encoding='utf8') as fp:
-        file = fp.read()
-    with open(vfile, 'w', encoding='utf8') as fp:
+    with open(vfile, 'r', encoding='utf8') as f:
+        file = f.read()
+    with open(vfile, 'w', encoding='utf8', newline='\n') as f:
         file = re.sub(r'__version__ = "[\d.]+"', rf'__version__ = "{__verison__}"', file)
-        fp.write(file)
+        f.write(file)
 
 
 def bu():

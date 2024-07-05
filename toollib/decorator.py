@@ -17,45 +17,18 @@ from functools import wraps
 from toollib.utils import sysname
 
 __all__ = [
-    'print_return',
     'catch_exception',
     'timer',
     'sys_required',
 ]
 
-# config of print
-FLWIDTH = 66
-FLCHAR = '-'
 
-
-def print_return(is_print: bool = True):
-    """
-    打印返回结果
-
-    e.g.::
-
-        @decorator.print_return()
-        def foo():
-            return 'this is toollib'
-
-        +++++[更多详见参数或源码]+++++
-
-    :param is_print: 是否打印
-    :return:
-    """
-    def wrapper(func: t.Callable):
-        @wraps(func)
-        def inner(*args, **kwargs):
-            result = func(*args, **kwargs)
-            if is_print is True:
-                print('func: "{0}", return: {1}\t【@type: {2}】'.format(
-                    func.__name__, result, type(result)).center(FLWIDTH, FLCHAR))
-            return result
-        return inner
-    return wrapper
-
-
-def catch_exception(is_raise: bool = True):
+def catch_exception(
+        is_raise: bool = True,
+        default_return: t.Any = None,
+        exception: t.Type[Exception] = None,
+        errmsg: str = None,
+):
     """
     捕获异常
 
@@ -68,6 +41,9 @@ def catch_exception(is_raise: bool = True):
         +++++[更多详见参数或源码]+++++
 
     :param is_raise: 是否raise
+    :param default_return: 默认返回
+    :param exception: 异常类
+    :param errmsg: 异常信息
     :return:
     """
     def wrapper(func: t.Callable):
@@ -75,11 +51,14 @@ def catch_exception(is_raise: bool = True):
         def inner(*args, **kwargs):
             try:
                 return func(*args, **kwargs)
-            except:
+            except Exception as e:
                 if is_raise is True:
+                    if exception is not None:
+                        raise exception(errmsg or str(e))
                     raise
                 else:
                     traceback.print_exc()
+                    return default_return
         return inner
     return wrapper
 
@@ -101,12 +80,11 @@ def timer(func: t.Callable):
     """
     @wraps(func)
     def wrapper(*args, **kwargs):
-        print('func: "{0}", start.....'.format(func.__name__).center(FLWIDTH, FLCHAR))
+        _funcname = func.__name__
+        print('[{0}]starting...'.format(_funcname))
         start_time = time.time()
         result = func(*args, **kwargs)
-        end_time = time.time()
-        print('func: "{0}" finished, spent time: {1:.2f}s'.format(
-            func.__name__, end_time - start_time).center(FLWIDTH, FLCHAR))
+        print('[{0}]completed({1:.2f}s)'.format(_funcname, time.time() - start_time))
         return result
     return wrapper
 

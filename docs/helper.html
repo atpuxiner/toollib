@@ -83,122 +83,6 @@
     :param browser_version: 浏览器版本
     </pre>
 <br>++++++++++++++++++++++这是分隔线++++++++++++++++++++++
-<h2><i>toollib.cipher</i></h2><pre>
-@author axiner
-@version v1.0.0
-@created 2022/2/27 11:46
-@abstract 加密
-@description
-@history
-</pre>
----------------------------------
-
-<h3><i>cmd5</i></h3><pre>
-    md5加密
-
-    e.g.::
-
-        # 1）针对字符
-        obj = 'this is toollib'
-        cobj = cipher.cmd5(obj)
-
-        # 2）针对文件
-        obj = 'D:/tmp/t.txt'
-        cobj = cipher.cmd5(obj, is_file=True)
-
-        # ret: 返回obj的md5
-
-        +++++[更多详见参数或源码]+++++
-
-    :param obj: 对象
-    :param is_file: 是否针对文件对象
-    :param saltstr: 加盐字符串
-    :return:
-    </pre>
-
-<h3><i>curl</i></h3><pre>
-    url加密与解密
-
-    e.g.::
-
-        # 加密
-        obj = 'https:www.baidu.com/'
-        cobj = cipher.curl(obj)
-
-        # 解密
-        obj = cipher.curl(cobj, mode=2)
-
-        # res: 返回相应结果
-
-        +++++[更多详见参数或源码]+++++
-
-    :param obj: 对象
-    :param mode: 模式（1-加密；2-解密）
-    :return:
-    </pre>
-
-<h3><i>cbase64</i></h3><pre>
-    base64加密与解密
-
-    e.g.::
-
-        # 1）针对字符
-        obj = b'这是一个示例'
-        cobj = cipher.cbase64(obj)
-
-        # 2）针对文件
-        obj = 'D:/tmp/t.txt'
-        to_file = 'D:/tmp/t.c'
-        cobj = cipher.cbase64(obj, to_file=to_file)
-
-        # 另：解密详见参数
-
-        # res: 返回相应结果
-
-        +++++[更多详见参数或源码]+++++
-
-    :param obj: 对象
-    :param mode: 模式（1-加密；2-解密）
-    :param to_file: 输出指定文件（针对obj为文件对象）
-    :param altchars: altchars（2 bytes, 用于指定替换'/'和'+'）
-    :param validate:
-    :return:
-    </pre>
-
-<h3><i>cdes</i></h3><pre>
-    des加密与解密（des mode: ECB or CBC）
-
-    e.g.::
-
-        # 1）针对字符
-        obj = b'这是一个示例'
-        deskey = b'asdfhjkl'  #  8 bytes
-        desiv = b'aaaaaaaa'  # 8 bytes
-        cobj = cipher.cdes(obj, deskey=deskey, desiv=desiv)
-
-        # 2）针对文件
-        obj = 'D:/tmp/t.txt'
-        deskey = b'asdfhjkl'  #  8 bytes
-        desiv = b'aaaaaaaa'  # 8 bytes
-        to_file = 'D:/tmp/t.c'
-        cobj = cipher.cdes(obj, deskey=deskey, desiv=desiv, to_file=to_file)
-
-        # 另：解密详见参数
-
-        # res: 返回相应结果
-
-        +++++[更多详见参数或源码]+++++
-
-    :param obj: 对象
-    :param deskey: des key（8 bytes）
-    :param desiv: des iv向量（8 bytes）
-    :param mode: 模式（1-加密；2-解密）
-    :param to_file: 输出指定文件（针对obj为文件对象）
-    :param desmode: des mode (ECB or CBC, 默认为 CBC)
-    :param despadmode: despad mode (PAD_NORMAL or PAD_PKCS5, 默认为 PAD_PKCS5)
-    :return:
-    </pre>
-<br>++++++++++++++++++++++这是分隔线++++++++++++++++++++++
 <h2><i>toollib.decorator</i></h2><pre>
 @author axiner
 @version v1.0.0
@@ -208,21 +92,6 @@
 @history
 </pre>
 ---------------------------------
-
-<h3><i>print_return</i></h3><pre>
-    打印返回结果
-
-    e.g.::
-
-        @decorator.print_return()
-        def foo():
-            return 'this is toollib'
-
-        +++++[更多详见参数或源码]+++++
-
-    :param is_print: 是否打印
-    :return:
-    </pre>
 
 <h3><i>catch_exception</i></h3><pre>
     捕获异常
@@ -236,6 +105,9 @@
         +++++[更多详见参数或源码]+++++
 
     :param is_raise: 是否raise
+    :param default_return: 默认返回
+    :param exception: 异常类
+    :param errmsg: 异常信息
     :return:
     </pre>
 
@@ -876,104 +748,6 @@
 
     :param min_v: 最小版本号（包含）
     :param max_v: 最大版本号（不包含）
-    :return:
-    </pre>
-<br>++++++++++++++++++++++这是分隔线++++++++++++++++++++++
-<h2><i>toollib.xlsx</i></h2><pre>
-@author axiner
-@version v1.0.0
-@created 2022/1/23 20:36
-@abstract xlsx（基于openpyxl库）
-@description
-@history
-</pre>
----------------------------------
-
-<h3><i>ws_inserts</i></h3><pre>
-    插入数据
-
-    e.g.::
-
-        from openpyxl import load_workbook
-        wb = load_workbook('D:/tmp/t.xlsx')
-        ws = wb.active
-        values = [[1, 2, 3, 4, 5]]
-        xlsx.ws_inserts(ws, values, index=1)
-
-        # .....
-
-        +++++[更多详见参数或源码]+++++
-
-    :param ws: Worksheet实例（openpyxl库）
-    :param values: 值（eg: [[1, 2, 3], [4, 5, 6]]）
-    :param index: 从哪开始插入值，若为None则追加（正整数）
-    :param mode: 插入模式（r: 插入行值，c: 插入列值）
-    :param is_new: 是否插入新的行|列（True: 是，False: 否，若有值则会覆盖）
-    :return:
-    </pre>
-
-<h3><i>ws_rows_value</i></h3><pre>
-    所有行的值
-
-    e.g.::
-
-        from openpyxl import load_workbook
-        wb = load_workbook('D:/tmp/t.xlsx')
-        ws = wb.active
-        rows = xlsx.ws_rows_value()
-
-        # res: 返回所有行的值（生成器对象）
-
-        +++++[更多详见参数或源码]+++++
-
-    :param ws: Worksheet实例（openpyxl库）
-    :return:
-    </pre>
-
-<h3><i>ws_cols_value</i></h3><pre>
-    所有列的值
-
-    e.g.::
-
-        from openpyxl import load_workbook
-        wb = load_workbook('D:/tmp/t.xlsx')
-        ws = wb.active
-        cols = xlsx.ws_cols_value()
-
-        # res: 返回所有列的值（生成器对象）
-
-        +++++[更多详见参数或源码]+++++
-
-    :param ws: Worksheet实例（openpyxl库）
-    :return:
-    </pre>
-
-<h3><i>ws_styles</i></h3><pre>
-    修改样式
-
-    e.g.::
-
-        from openpyxl import load_workbook
-        from openpyxl.styles import PatternFill
-        wb = load_workbook('D:/tmp/t.xlsx')
-        ws = wb.active
-        fill = PatternFill(fill_type=None, start_color=’FFFFFF‘, end_color=‘000000’)
-        styles = {'fill': fill}
-        xlsx.ws_styles(styles, by_icells='0,0')
-
-        # .....
-
-        +++++[更多详见参数或源码]+++++
-
-    注：by_icells |by_cells |by_rows |by_cols，只支持其中一种方式（若传入多则只取第一种方式）
-
-    :param ws: Worksheet实例（openpyxl库）
-    :param styles: 样式。以字典形式传入（key可为：font, fill, border等）
-    :param by_icells: 按单元格索引（若索引为0，则表示从1至最大行或列）。eg: '1:2,1:2' >>> 左行：1至2行，右列：1至2列
-    :param by_cells: 按单元格。eg: 'A1' or ['A1', 'B1', 'C1']
-    :param by_rows: 按行。eg: 1 or [1, 2, 3]
-    :param by_cols: 按列。eg: 'A' or ['A', 'B', 'C']
-    :param exclude_icell: 排除的单元格（by_icells方式下生效）
     :return:
     </pre>
 
