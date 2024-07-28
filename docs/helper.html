@@ -83,6 +83,23 @@
     :param browser_version: 浏览器版本
     </pre>
 <br>++++++++++++++++++++++这是分隔线++++++++++++++++++++++
+<h2><i>toollib.codec</i></h2><pre>暂无文档</pre>
+---------------------------------
+
+<h3><i>detect_encoding</i></h3><pre>
+    检测编码
+
+    e.g.::
+
+        encoding = utils.detect_encoding(data)
+
+        +++++[更多详见参数或源码]+++++
+
+    :param data: 数据
+    :param default: 默认编码
+    :return:
+    </pre>
+<br>++++++++++++++++++++++这是分隔线++++++++++++++++++++++
 <h2><i>toollib.decorator</i></h2><pre>
 @author axiner
 @version v1.0.0
@@ -223,8 +240,6 @@
         kv.exists(key='name')
         kv.delete(key='name')
 
-        # res: 结果存储于kvfile的db文件里
-
         +++++[更多详见参数或源码]+++++
     </pre>
 
@@ -342,13 +357,16 @@
         +++++[更多详见参数或源码]+++++
 
     config: dict
-        - file_format: 文件日志格式
         - console_format: 控制台日志格式
+        - file_format: 文件日志格式
         - datefmt: 日期格式
-        - info_filename: info日志文件名称
-        - error_filename: error日志文件名称
-        - file_maxBytes: 文件日志最大字节
-        - file_backupCount: 文件日志备份数
+        - file_infoname: 文件info名称
+        - file_errorname: 文件error名称
+        - file_encoding: 文件编码
+        - file_maxBytes: 文件轮转最大字节
+        - file_when: 文件轮转时间
+        - file_interval: 文件轮转间隔
+        - file_backupCount: 文件轮转备份数
 
     :param name: 名称
     :param config: 配置
@@ -356,6 +374,8 @@
     :param log_dir: 日志目录
     :param is_file: 是否文件日志
     :param is_console: 是否控制台日志
+    :param is_time_rotating: 是否时间日志轮转
+    :param is_disable_existing_logger: 是否禁用已存在的日志记录器
     :return:
     </pre>
 <br>++++++++++++++++++++++这是分隔线++++++++++++++++++++++
@@ -486,8 +506,6 @@
 
         uas = useragent.gen_uas()
 
-        # res: 返回uas生成器
-
         +++++[更多详见参数或源码]+++++
 
     :param max_len: 最大长度（数量）
@@ -513,7 +531,7 @@
         class A(metaclass=utils.Singleton):
             pass
 
-        # res: 得到一个单例类A
+        +++++[更多详见参数或源码]+++++
     </pre>
 
 <h3><i>Chars</i></h3><pre>
@@ -524,13 +542,40 @@
         # 比如获取小写字母
         low_cases = utils.Chars.lowercases
 
-        # res: 返回指定的字符
-
         +++++[更多详见参数或源码]+++++
     </pre>
 
-<h3><i>now2str</i></h3><pre>
-    now datetime to str (获取当前时间的字符串)
+<h3><i>now2timestamp</i></h3><pre>
+    获取当前时间的时间戳
+
+    e.g.::
+
+        timestamp = utils.now2timestamp()
+
+        +++++[更多详见参数或源码]+++++
+
+    :param fmt: 格式化（s-秒，ms-毫秒，us-微秒）
+    :param tz_str: 时区字符串
+    :return:
+    </pre>
+
+<h3><i>timestamp2time</i></h3><pre>
+    时间戳转换为时间对象或时间字符串
+
+    e.g.::
+
+        timestamp = utils.timestamp2time()
+
+        +++++[更多详见参数或源码]+++++
+
+    :param timestamp: 时间戳
+    :param fmt: 格式化，空则返回时间对象
+    :param tz_str: 时区字符串
+    :return:
+    </pre>
+
+<h3><i>now2timestr</i></h3><pre>
+    获取当前时间的字符串
 
     e.g.::
 
@@ -540,23 +585,20 @@
         # 比如获取当前日期
         now_year = utils.now2str(fmt='d')  # 或者 fmt='%Y-%m-%d'
 
-        # res: 返回指定格式时间的字符串
-
         +++++[更多详见参数或源码]+++++
 
-    :param fmt:
+    :param fmt: 格式化
+    :param tz_str: 时区字符串
     :return:
     </pre>
 
-<h3><i>str2datetime</i></h3><pre>
-    时间字符串转换成日期（默认自动识别 fmt）
+<h3><i>timestr2time</i></h3><pre>
+    时间字符串转换为时间对象（默认自动识别 fmt）
 
     e.g.::
 
         time_str = '2021-12-12'
         date = utils.str2datetime(time_str)
-
-        # res: datetime.datetime(2021, 12, 12, 0, 0)
 
         +++++[更多详见参数或源码]+++++
 
@@ -565,76 +607,12 @@
     :return:
     </pre>
 
-<h3><i>json</i></h3><pre>
-    json loads or dumps
-
-    e.g.::
-
-        data = {'name': 'x', age: 20}
-        data_json = utils.json(data, mode='dumps')
-
-        # res: (一个json)
-
-        +++++[更多详见参数或源码]+++++
-
-    :param data:
-    :param mode: loads or dumps
-    :param default: 默认值（如果入参data为空，优先返回给定的默认值）
-    :param args:
-    :param kwargs:
-    :return:
-    </pre>
-
-<h3><i>listfile</i></h3><pre>
-    文件列表
-
-    e.g.::
-
-        # 比如获取某目录下的.py文件
-        src_dir = 'D:/tmp'
-        flist = utils.listfile(src_dir, pattern='*.py')
-
-        # res: 输出匹配的文件路径生成器
-
-        +++++[更多详见参数或源码]+++++
-
-    :param src: 源目录
-    :param pattern: 匹配模式
-    :param is_str: 是否返回字符串（True: 若为路径返回字符串，False: 若为路径返回Path类型）
-    :param is_name: 是否获取文件名（True: 返回文件路径，False: 返回文件名）
-    :param is_r: 是否递规查找
-    :return:
-    </pre>
-
-<h3><i>decompress</i></h3><pre>
-    解压文件
-
-    e.g.::
-
-        # 比如解压某目录下的.zip文件
-        src = 'D:/tmp'
-        count = utils.decompress(src, pattern='*.zip')
-
-        # res: 解压数量
-
-        +++++[更多详见参数或源码]+++++
-
-    :param src: 源目录或文件
-    :param dst: 目标目录
-    :param pattern: 匹配模式（当src为目录时生效，默认匹配所有支持的压缩包）
-    :param is_r: 是否递规查找（当src为目录时生效）
-    :param is_raise: 是否抛异常
-    :return: count（解压数量）
-    </pre>
-
 <h3><i>home</i></h3><pre>
     家目录
 
     e.g.::
 
         h = utils.home()
-
-        # res: 返回家目录
 
         +++++[更多详见参数或源码]+++++
     </pre>
@@ -646,25 +624,7 @@
 
         s = utils.sysname()
 
-        # res: 返回系统名称
-
         +++++[更多详见参数或源码]+++++
-    </pre>
-
-<h3><i>read_by_block</i></h3><pre>
-    分块读取
-
-    e.g.::
-
-        data = utils.read_by_block('foo.txt')
-
-        +++++[更多详见参数或源码]+++++
-
-    :param file_path: 文件路径
-    :param block_size: 块大小
-    :param mode: 模式
-    :param kwargs: open其他参数
-    :return:
     </pre>
 
 <h3><i>RedirectStd12ToNull</i></h3><pre>
@@ -694,6 +654,93 @@
         print(ver1 > ver2)  # Out: False
 
         +++++[更多详见参数或源码]+++++
+    </pre>
+
+<h3><i>json</i></h3><pre>
+    json loads or dumps
+
+    e.g.::
+
+        data = {'name': 'x', age: 20}
+        data_json = utils.json(data, is_dumps=True)
+
+        +++++[更多详见参数或源码]+++++
+
+    :param data:
+    :param is_dumps: 是否dumps，否则loads
+    :param default: 默认值（如果入参data为空，优先返回给定的默认值）
+    :param args:
+    :param kwargs:
+    :return:
+    </pre>
+
+<h3><i>read_by_block</i></h3><pre>
+    分块读取
+
+    e.g.::
+
+        data = utils.read_by_block('foo.txt')
+
+        +++++[更多详见参数或源码]+++++
+
+    :param file_path: 文件路径
+    :param block_size: 块大小
+    :param mode: 模式
+    :param kwargs: open其他参数
+    :return:
+    </pre>
+
+<h3><i>gen_tmp_file</i></h3><pre>
+    生成临时文件
+
+    e.g.::
+
+        file_path = utils.gen_tmp_file(file_data)
+
+        +++++[更多详见参数或源码]+++++
+
+    :param file_data: 文件内容
+    :param file_suffix: 文件后缀
+    :param kwargs: kwargs
+    :return:
+    </pre>
+
+<h3><i>listfile</i></h3><pre>
+    文件列表
+
+    e.g.::
+
+        # 比如获取某目录下的.py文件
+        src_dir = 'D:/tmp'
+        flist = utils.listfile(src_dir, pattern='*.py')
+
+        +++++[更多详见参数或源码]+++++
+
+    :param src: 源目录
+    :param pattern: 匹配模式
+    :param is_str: 是否返回字符串（True: 若为路径返回字符串，False: 若为路径返回Path类型）
+    :param is_name: 是否获取文件名（True: 返回文件路径，False: 返回文件名）
+    :param is_r: 是否递规查找
+    :return:
+    </pre>
+
+<h3><i>decompress</i></h3><pre>
+    解压文件
+
+    e.g.::
+
+        # 比如解压某目录下的.zip文件
+        src = 'D:/tmp'
+        count = utils.decompress(src, pattern='*.zip')
+
+        +++++[更多详见参数或源码]+++++
+
+    :param src: 源目录或文件
+    :param dst: 目标目录
+    :param pattern: 匹配模式（当src为目录时生效，默认匹配所有支持的压缩包）
+    :param is_r: 是否递规查找（当src为目录时生效）
+    :param is_raise: 是否抛异常
+    :return: count（解压数量）
     </pre>
 <br>++++++++++++++++++++++这是分隔线++++++++++++++++++++++
 <h2><i>toollib.validator</i></h2><pre>

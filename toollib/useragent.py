@@ -1034,8 +1034,6 @@ def gen_uas(max_len: int = 1000) -> t.Generator:
 
         uas = useragent.gen_uas()
 
-        # res: 返回uas生成器
-
         +++++[更多详见参数或源码]+++++
 
     :param max_len: 最大长度（数量）

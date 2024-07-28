@@ -12,29 +12,34 @@ import re
 import stat
 import subprocess
 import tarfile
+import tempfile
 import traceback
-from datetime import datetime
+from datetime import datetime, timezone
 import typing as t
 from json import dumps, loads
 from pathlib import Path
 from threading import Lock
+from zoneinfo import ZoneInfo
 
+from toollib.codec import detect_encoding
 from toollib.common import rarfile, zipfile
-from toollib.validator import choicer
 
 __all__ = [
     'Singleton',
     'Chars',
-    'now2str',
-    'str2datetime',
-    'json',
-    'listfile',
-    'decompress',
+    'now2timestamp',
+    'timestamp2time',
+    'now2timestr',
+    'timestr2time',
     'home',
     'sysname',
-    'read_by_block',
     'RedirectStd12ToNull',
     "VersionCmper",
+    'json',
+    'read_by_block',
+    'gen_tmp_file',
+    'listfile',
+    'decompress',
 ]
 
 
@@ -48,21 +53,20 @@ class Singleton(type):
         class A(metaclass=utils.Singleton):
             pass
 
-        # res: 得到一个单例类A
+        +++++[更多详见参数或源码]+++++
     """
 
-    __instance_lock = Lock()
-
-    def __init__(cls, *args, **kwargs):
-        cls.__instance = None
-        super(Singleton, cls).__init__(*args, **kwargs)
+    _instances = {}
+    _locks = {}
 
     def __call__(cls, *args, **kwargs):
-        if cls.__instance is None:
-            with cls.__instance_lock:
-                if cls.__instance is None:
-                    cls.__instance = super(Singleton, cls).__call__(*args, **kwargs)
-        return cls.__instance
+        if cls not in cls._instances:
+            if cls not in cls._locks:
+                cls._locks[cls] = Lock()
+            with cls._locks[cls]:
+                if cls not in cls._instances:
+                    cls._instances[cls] = super(Singleton, cls).__call__(*args, **kwargs)
+        return cls._instances[cls]
 
 
 class Chars:
@@ -74,8 +78,6 @@ class Chars:
         # 比如获取小写字母
         low_cases = utils.Chars.lowercases
 
-        # res: 返回指定的字符
-
         +++++[更多详见参数或源码]+++++
     """
     lowercases = 'abcdefghijklmnopqrstuvwxyz'
@@ -85,9 +87,62 @@ class Chars:
     whitespace = ' \t\n\r\v\f'
 
 
-def now2str(fmt: str = 'S') -> str:
+def now2timestamp(
+        fmt: str = "s",
+        tz_str: str = "Asia/Shanghai",
+) -> int:
     """
-    now datetime to str (获取当前时间的字符串)
+    获取当前时间的时间戳
+
+    e.g.::
+
+        timestamp = utils.now2timestamp()
+
+        +++++[更多详见参数或源码]+++++
+
+    :param fmt: 格式化（s-秒，ms-毫秒，us-微秒）
+    :param tz_str: 时区字符串
+    :return:
+    """
+    tz = ZoneInfo(tz_str)
+    now_timestamp_tz = datetime.utcnow().timestamp() + tz.utcoffset(datetime.now().astimezone(tz)).total_seconds()
+    tos = {"s": 1, "ms": 1000, "us": 1000000}
+    return int(now_timestamp_tz * tos.get(fmt, 1))
+
+
+def timestamp2time(
+        timestamp: int,
+        fmt: t.Optional[str] = "%Y-%m-%d %H:%M:%S",
+        tz_str="Asia/Shanghai",
+) -> t.Union[str, datetime]:
+    """
+    时间戳转换为时间对象或时间字符串
+
+    e.g.::
+
+        timestamp = utils.timestamp2time()
+
+        +++++[更多详见参数或源码]+++++
+
+    :param timestamp: 时间戳
+    :param fmt: 格式化，空则返回时间对象
+    :param tz_str: 时区字符串
+    :return:
+    """
+    if len(str(timestamp)) > 10:
+        timestamp = timestamp / 1000.0
+    time_tz = datetime.utcfromtimestamp(timestamp).replace(tzinfo=timezone.utc).astimezone(ZoneInfo(tz_str))
+    if fmt:
+        return time_tz.strftime(fmt)
+    return time_tz
+
+
+def now2timestr(
+        fmt: str = 'S',
+        tz_str="Asia/Shanghai",
+) -> str:
+    """
+    获取当前时间的字符串
 
     e.g.::
 
@@ -97,11 +152,10 @@ def now2str(fmt: str = 'S') -> str:
         # 比如获取当前日期
         now_year = utils.now2str(fmt='d')  # 或者 fmt='%Y-%m-%d'
 
-        # res: 返回指定格式时间的字符串
-
         +++++[更多详见参数或源码]+++++
 
-    :param fmt:
+    :param fmt: 格式化
+    :param tz_str: 时区字符串
     :return:
     """
     _ = {
@@ -112,21 +166,20 @@ def now2str(fmt: str = 'S') -> str:
         'm': '%Y-%m',
         'Y': '%Y'
     }
-    fmt = _.get(fmt, fmt)
-    str_now = datetime.now().strftime(fmt)
-    return str_now
+    return datetime.now(timezone.utc).astimezone(ZoneInfo(tz_str)).strftime(_.get(fmt, fmt))
 
 
-def str2datetime(time_str: str, fmt: str = None) -> datetime:
+def timestr2time(
+        time_str: str,
+        fmt: str = None,
+) -> datetime:
     """
-    时间字符串转换成日期（默认自动识别 fmt）
+    时间字符串转换为时间对象（默认自动识别 fmt）
 
     e.g.::
 
         time_str = '2021-12-12'
         date = utils.str2datetime(time_str)
-
-        # res: datetime.datetime(2021, 12, 12, 0, 0)
 
         +++++[更多详见参数或源码]+++++
 
@@ -143,165 +196,7 @@ def str2datetime(time_str: str, fmt: str = None) -> datetime:
         4: '%Y'
     }
     fmt = fmt if fmt else _.get(len(time_str))
-    dt = datetime.strptime(time_str, fmt)
-    return dt
-
-
-def json(data, mode='loads', default=None, *args, **kwargs):
-    """
-    json loads or dumps
-
-    e.g.::
-
-        data = {'name': 'x', age: 20}
-        data_json = utils.json(data, mode='dumps')
-
-        # res: (一个json)
-
-        +++++[更多详见参数或源码]+++++
-
-    :param data:
-    :param mode: loads or dumps
-    :param default: 默认值（如果入参data为空，优先返回给定的默认值）
-    :param args:
-    :param kwargs:
-    :return:
-    """
-    mode = choicer(mode, choices=['loads', 'dumps'], lable='mode')
-    if not data:
-        data = default or data
-    else:
-        if mode == 'loads':
-            data = loads(data, *args, **kwargs)
-        else:
-            data = dumps(data, *args, **kwargs)
-    return data
-
-
-def listfile(
-        src: t.Union[str, Path],
-        pattern: str = '*',
-        is_str: bool = False,
-        is_name: bool = False,
-        is_r: bool = False,
-) -> t.Generator:
-    """
-    文件列表
-
-    e.g.::
-
-        # 比如获取某目录下的.py文件
-        src_dir = 'D:/tmp'
-        flist = utils.listfile(src_dir, pattern='*.py')
-
-        # res: 输出匹配的文件路径生成器
-
-        +++++[更多详见参数或源码]+++++
-
-    :param src: 源目录
-    :param pattern: 匹配模式
-    :param is_str: 是否返回字符串（True: 若为路径返回字符串，False: 若为路径返回Path类型）
-    :param is_name: 是否获取文件名（True: 返回文件路径，False: 返回文件名）
-    :param is_r: 是否递规查找
-    :return:
-    """
-    src_dir = Path(src).absolute()
-    if not src_dir.is_dir():
-        raise FileNotFoundError(f'{src} directory does not exist')
-    src_files = src_dir.rglob(pattern) if is_r is True else src_dir.glob(pattern)
-    for f in src_files:
-        if f.is_file():
-            if is_name is True:
-                yield f.name
-            else:
-                if is_str is True:
-                    yield f.as_posix()
-                else:
-                    yield f
-
-
-def decompress(
-        src: t.Union[str, Path],
-        dst: t.Union[str, Path] = None,
-        pattern: str = '*[.pzr2]',
-        is_r: bool = False,
-        is_raise: bool = True,
-) -> int:
-    """
-    解压文件
-
-    e.g.::
-
-        # 比如解压某目录下的.zip文件
-        src = 'D:/tmp'
-        count = utils.decompress(src, pattern='*.zip')
-
-        # res: 解压数量
-
-        +++++[更多详见参数或源码]+++++
-
-    :param src: 源目录或文件
-    :param dst: 目标目录
-    :param pattern: 匹配模式（当src为目录时生效，默认匹配所有支持的压缩包）
-    :param is_r: 是否递规查找（当src为目录时生效）
-    :param is_raise: 是否抛异常
-    :return: count（解压数量）
-    """
-    __support_types = [
-        '.zip',
-        '.rar',
-        '.tar',
-        '.gz', '.tgz',
-        '.xz', '.txz',
-        '.bz2', '.tbz', '.tbz2', '.tb2',
-    ]
-    src = Path(src).absolute()
-    src_is_dir = False
-    if src.is_dir():
-        src_is_dir = True
-        src_files = listfile(src, pattern=pattern, is_r=is_r)
-    else:
-        if src.suffix not in __support_types:
-            raise ValueError('only supported: %s' % __support_types)
-        src_files = [src]
-    if not dst:
-        dst_dir = src.absolute() if src_is_dir else src.absolute().parent
-    else:
-        dst_dir = Path(dst).absolute()
-        dst_dir.mkdir(parents=True, exist_ok=True)
-    dst_dir.chmod(stat.S_IRWXU)
-    count = 0
-    for src_file in src_files:
-        file_name, file_type = src_file.name, src_file.suffix
-        if file_type:
-            file_type = file_type.lower()
-            if file_type not in __support_types:
-                continue
-        else:
-            continue
-        try:
-            if file_type == '.zip':
-                zip_file = zipfile.ZipFile(src_file)
-                for f in zip_file.namelist():
-                    zip_file.extract(f, dst_dir)
-                zip_file.close()
-            elif file_type == '.rar':
-                rar_file = rarfile.RarFile(src_file)
-                rar_file.extractall(dst_dir)
-                rar_file.close()
-            else:
-                tar_file = tarfile.open(src_file)
-                for name in tar_file.getnames():
-                    tar_file.extract(name, dst_dir)
-                tar_file.close()
-        except:
-            if is_raise is True:
-                raise
-            else:
-                traceback.print_exc()
-        else:
-            count += 1
-    return count
+    return datetime.strptime(time_str, fmt)
 
 
 def home() -> str:
@@ -311,8 +206,6 @@ def home() -> str:
     e.g.::
 
         h = utils.home()
-
-        # res: 返回家目录
 
         +++++[更多详见参数或源码]+++++
     """
@@ -326,8 +219,6 @@ def sysname() -> str:
     e.g.::
 
         s = utils.sysname()
-
-        # res: 返回系统名称
 
         +++++[更多详见参数或源码]+++++
     """
@@ -343,34 +234,11 @@ def sysname() -> str:
             )
             r = re.search(r'[\n\s]+ID=(.*?)[\n\s]+', result.stdout)
             name = r.group(1) if r else name
-        except Exception: pass
-    elif name == 'Darwin': name = 'macOS'
+        except Exception:
+            pass
+    elif name == 'Darwin':
+        name = 'macOS'
     return name.lower().replace(' ', '')
-
-
-def read_by_block(file_path: str, block_size: int = 10240, mode: str = 'rb', **kwargs) -> t.Generator:
-    """
-    分块读取
-
-    e.g.::
-
-        data = utils.read_by_block('foo.txt')
-
-        +++++[更多详见参数或源码]+++++
-
-    :param file_path: 文件路径
-    :param block_size: 块大小
-    :param mode: 模式
-    :param kwargs: open其他参数
-    :return:
-    """
-    with open(file_path, mode=mode, **kwargs) as fp:
-        while True:
-            block = fp.read(block_size)
-            if block:
-                yield block
-            else:
-                break
 
 
 class RedirectStd12ToNull:
@@ -476,3 +344,205 @@ class VersionCmper:
 
     def __ne__(self, other):
         return self._compare_parts(other.parts) != 0
+
+
+def json(data, is_dumps: bool = False, default=None, *args, **kwargs):
+    """
+    json loads or dumps
+
+    e.g.::
+
+        data = {'name': 'x', age: 20}
+        data_json = utils.json(data, is_dumps=True)
+
+        +++++[更多详见参数或源码]+++++
+
+    :param data:
+    :param is_dumps: 是否dumps，否则loads
+    :param default: 默认值（如果入参data为空，优先返回给定的默认值）
+    :param args:
+    :param kwargs:
+    :return:
+    """
+    if not data:
+        return default or data
+    if is_dumps is True:
+        return dumps(data, *args, **kwargs)
+    return loads(data, *args, **kwargs)
+
+
+def read_by_block(file_path: str, block_size: int = 10240, mode: str = 'rb', **kwargs) -> t.Generator:
+    """
+    分块读取
+
+    e.g.::
+
+        data = utils.read_by_block('foo.txt')
+
+        +++++[更多详见参数或源码]+++++
+
+    :param file_path: 文件路径
+    :param block_size: 块大小
+    :param mode: 模式
+    :param kwargs: open其他参数
+    :return:
+    """
+    with open(file_path, mode=mode, **kwargs) as fp:
+        while True:
+            block = fp.read(block_size)
+            if block:
+                yield block
+            else:
+                break
+
+
+def gen_tmp_file(file_data: t.Union[bytes, str], file_suffix: str, **kwargs) -> str:
+    """
+    生成临时文件
+
+    e.g.::
+
+        file_path = utils.gen_tmp_file(file_data)
+
+        +++++[更多详见参数或源码]+++++
+
+    :param file_data: 文件内容
+    :param file_suffix: 文件后缀
+    :param kwargs: kwargs
+    :return:
+    """
+    mode = "w+b"
+    if isinstance(file_data, str):
+        mode = "w+"
+    with tempfile.NamedTemporaryFile(
+            suffix=file_suffix,
+            mode=mode,
+            encoding=detect_encoding(file_data),
+            delete=False,
+            **kwargs,
+    ) as tmp_file:
+        tmp_file.write(file_data)
+        tmp_file.close()
+        return tmp_file.name
+
+
+def listfile(
+        src: t.Union[str, Path],
+        pattern: str = '*',
+        is_str: bool = False,
+        is_name: bool = False,
+        is_r: bool = False,
+) -> t.Generator:
+    """
+    文件列表
+
+    e.g.::
+
+        # 比如获取某目录下的.py文件
+        src_dir = 'D:/tmp'
+        flist = utils.listfile(src_dir, pattern='*.py')
+
+        +++++[更多详见参数或源码]+++++
+
+    :param src: 源目录
+    :param pattern: 匹配模式
+    :param is_str: 是否返回字符串（True: 若为路径返回字符串，False: 若为路径返回Path类型）
+    :param is_name: 是否获取文件名（True: 返回文件路径，False: 返回文件名）
+    :param is_r: 是否递规查找
+    :return:
+    """
+    src_dir = Path(src).absolute()
+    if not src_dir.is_dir():
+        raise FileNotFoundError(f'{src} directory does not exist')
+    src_files = src_dir.rglob(pattern) if is_r is True else src_dir.glob(pattern)
+    for f in src_files:
+        if f.is_file():
+            if is_name is True:
+                yield f.name
+            else:
+                if is_str is True:
+                    yield f.as_posix()
+                else:
+                    yield f
+
+
+def decompress(
+        src: t.Union[str, Path],
+        dst: t.Union[str, Path] = None,
+        pattern: str = '*[.pzr2]',
+        is_r: bool = False,
+        is_raise: bool = True,
+) -> int:
+    """
+    解压文件
+
+    e.g.::
+
+        # 比如解压某目录下的.zip文件
+        src = 'D:/tmp'
+        count = utils.decompress(src, pattern='*.zip')
+
+        +++++[更多详见参数或源码]+++++
+
+    :param src: 源目录或文件
+    :param dst: 目标目录
+    :param pattern: 匹配模式（当src为目录时生效，默认匹配所有支持的压缩包）
+    :param is_r: 是否递规查找（当src为目录时生效）
+    :param is_raise: 是否抛异常
+    :return: count（解压数量）
+    """
+    __support_types = [
+        '.zip',
+        '.rar',
+        '.tar',
+        '.gz', '.tgz',
+        '.xz', '.txz',
+        '.bz2', '.tbz', '.tbz2', '.tb2',
+    ]
+    src = Path(src).absolute()
+    src_is_dir = False
+    if src.is_dir():
+        src_is_dir = True
+        src_files = listfile(src, pattern=pattern, is_r=is_r)
+    else:
+        if src.suffix not in __support_types:
+            raise ValueError('only supported: %s' % __support_types)
+        src_files = [src]
+    if not dst:
+        dst_dir = src.absolute() if src_is_dir else src.absolute().parent
+    else:
+        dst_dir = Path(dst).absolute()
+        dst_dir.mkdir(parents=True, exist_ok=True)
+    dst_dir.chmod(stat.S_IRWXU)
+    count = 0
+    for src_file in src_files:
+        file_name, file_type = src_file.name, src_file.suffix
+        if file_type:
+            file_type = file_type.lower()
+            if file_type not in __support_types:
+                continue
+        else:
+            continue
+        try:
+            if file_type == '.zip':
+                zip_file = zipfile.ZipFile(src_file)
+                for f in zip_file.namelist():
+                    zip_file.extract(f, dst_dir)
+                zip_file.close()
+            elif file_type == '.rar':
+                rar_file = rarfile.RarFile(src_file)
+                rar_file.extractall(dst_dir)
+                rar_file.close()
+            else:
+                tar_file = tarfile.open(src_file)
+                for name in tar_file.getnames():
+                    tar_file.extract(name, dst_dir)
+                tar_file.close()
+        except:
+            if is_raise is True:
+                raise
+            else:
+                traceback.print_exc()
+        else:
+            count += 1
+    return count

@@ -12,7 +12,7 @@ from datetime import datetime, timedelta
 import typing as t
 
 from toollib.common.error import SystemClockError
-from toollib.utils import Singleton, now2str
+from toollib.utils import Singleton, now2timestr
 
 __all__ = [
     'SnowFlake',
@@ -199,7 +199,7 @@ class RedisUid:
             self.redis_cli.set(self.seq_name, self.seq_beg)
             self.redis_cli.expireat(self.seq_name, self._set_ex(self.seq_ex))
         _prefix = self.prefix or ''
-        _date_value = now2str(self.date_fmt) if self.date_fmt else ''
+        _date_value = now2timestr(self.date_fmt) if self.date_fmt else ''
         _seq_value = self.redis_cli.incrby(self.seq_name, seq_step)
         uid = self.sep.join([
             _prefix,

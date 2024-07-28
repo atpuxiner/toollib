@@ -118,5 +118,5 @@ class Locker:
                 except WatchError:
                     pipe.unwatch()
 
-    def __exit__(self, t, v, tb):
+    def __exit__(self, exc_type, exc_val, exc_tb):
         self.release()

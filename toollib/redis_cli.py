@@ -84,7 +84,4 @@ class RedisCli:
         return self.__conn
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        if exc_type is None:
-            self.__conn.close()
-        else:
-            return True
+        self.__conn.close()

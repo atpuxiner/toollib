@@ -11,14 +11,29 @@ import os
 
 __all__ = ['init_logger']
 
+default_config = {
+    "console_format": "%(asctime)s.%(msecs)03d %(levelname)s %(filename)s:%(lineno)d %(message)s",
+    "file_format": "%(asctime)s.%(msecs)03d %(levelname)s %(filename)s:%(lineno)d %(message)s",
+    "datefmt": "%Y-%m-%d %H:%M:%S",
+    "file_infoname": "info.log",
+    "file_errorname": "error.log",
+    "file_encoding": "utf-8",
+    "file_maxBytes": 1024 * 1024 * 50,
+    "file_when": "midnight",
+    "file_interval": 1,
+    "file_backupCount": 15,
+}
+
 
 def init_logger(
-        name: str,
+        name: str = None,
         config: dict = None,
         debug: bool = True,
         log_dir: str = None,
         is_file: bool = True,
         is_console: bool = True,
+        is_time_rotating: bool = False,
+        is_disable_existing_logger: bool = False
 ):
     """
     初始化日志器
@@ -32,13 +47,16 @@ def init_logger(
         +++++[更多详见参数或源码]+++++
 
     config: dict
-        - file_format: 文件日志格式
         - console_format: 控制台日志格式
+        - file_format: 文件日志格式
         - datefmt: 日期格式
-        - info_filename: info日志文件名称
-        - error_filename: error日志文件名称
-        - file_maxBytes: 文件日志最大字节
-        - file_backupCount: 文件日志备份数
+        - file_infoname: 文件info名称
+        - file_errorname: 文件error名称
+        - file_encoding: 文件编码
+        - file_maxBytes: 文件轮转最大字节
+        - file_when: 文件轮转时间
+        - file_interval: 文件轮转间隔
+        - file_backupCount: 文件轮转备份数
 
     :param name: 名称
     :param config: 配置
@@ -46,44 +64,25 @@ def init_logger(
     :param log_dir: 日志目录
     :param is_file: 是否文件日志
     :param is_console: 是否控制台日志
+    :param is_time_rotating: 是否时间日志轮转
+    :param is_disable_existing_logger: 是否禁用已存在的日志记录器
     :return:
     """
     config = config or {}
-    file_format = config.get("file_format", "%(asctime)s.%(msecs)03d %(levelname)s %(filename)s:%(lineno)d %(message)s")
-    console_format = config.get("console_format", "%(asctime)s.%(msecs)03d %(levelname)s %(message)s")
-    datefmt = config.get("datefmt", "%Y-%m-%d %H:%M:%S")
-    info_filename = config.get("info_filename", "info.log")
-    error_filename = config.get("error_filename", "error.log")
-    file_maxBytes = config.get("file_maxBytes", 1024*1024*50)
-    file_backupCount = config.get("file_backupCount", 10)
+    console_format = config.get("console_format", default_config["console_format"])
+    file_format = config.get("file_format", default_config["file_format"])
+    datefmt = config.get("datefmt", default_config["datefmt"])
+    file_infoname = config.get("file_infoname", default_config["file_infoname"])
+    file_errorname = config.get("file_errorname", default_config["file_errorname"])
+    file_encoding = config.get("file_encoding", default_config["file_encoding"])
+    file_maxBytes = config.get("file_maxBytes", default_config["file_maxBytes"])
+    file_when = config.get("file_when", default_config["file_when"])
+    file_interval = config.get("file_interval", default_config["file_interval"])
+    file_backupCount = config.get("file_backupCount", default_config["file_backupCount"])
     root_level = logging.DEBUG if debug is True else logging.INFO
     log_dir = log_dir or os.path.join(os.getcwd(), "logs")
     handlers, root_handlers = {}, []
     if any([is_file, is_console]):
-        if is_file is True:
-            if not os.path.isdir(log_dir):
-                os.makedirs(log_dir, exist_ok=True)
-            handlers.update(
-                info_file_handler={
-                    "level": logging.INFO,
-                    "class": "logging.handlers.RotatingFileHandler",
-                    "filename": os.path.join(log_dir, info_filename),
-                    "maxBytes": file_maxBytes,
-                    "backupCount": file_backupCount,
-                    "formatter": "file",
-                    "encoding": "utf-8",
-                },
-                error_file_handler={
-                    "level": logging.ERROR,
-                    "class": "logging.handlers.RotatingFileHandler",
-                    "filename": os.path.join(log_dir, error_filename),
-                    "maxBytes": file_maxBytes,
-                    "backupCount": file_backupCount,
-                    "formatter": "file",
-                    "encoding": "utf-8",
-                }
-            )
-            root_handlers.extend(["info_file_handler", "error_file_handler"])
         if is_console is True:
             handlers.update(
                 console_handler={
@@ -93,11 +92,53 @@ def init_logger(
                 }
             )
             root_handlers.append("console_handler")
+        if is_file is True:
+            if not os.path.isdir(log_dir):
+                os.makedirs(log_dir, exist_ok=True)
+            info_file_handler = {
+                "level": logging.INFO,
+                "class": "logging.handlers.RotatingFileHandler",
+                "formatter": "file",
+                "filename": os.path.join(log_dir, file_infoname),
+                "encoding": file_encoding,
+                "maxBytes": file_maxBytes,
+                "backupCount": file_backupCount,
+            }
+            error_file_handler = {
+                "level": logging.ERROR,
+                "class": "logging.handlers.RotatingFileHandler",
+                "formatter": "file",
+                "filename": os.path.join(log_dir, file_errorname),
+                "encoding": file_encoding,
+                "maxBytes": file_maxBytes,
+                "backupCount": file_backupCount,
+            }
+            if is_time_rotating is True:
+                info_file_handler["class"] = "logging.handlers.TimedRotatingFileHandler"
+                info_file_handler["when"] = file_when
+                info_file_handler["interval"] = file_interval
+                info_file_handler.pop("maxBytes")
+                error_file_handler["class"] = "logging.handlers.TimedRotatingFileHandler"
+                error_file_handler["when"] = file_when
+                error_file_handler["interval"] = file_interval
+                error_file_handler.pop("maxBytes")
+            handlers.update(
+                info_file_handler=info_file_handler,
+                error_file_handler=error_file_handler,
+            )
+            root_handlers.extend(["info_file_handler", "error_file_handler"])
     else:
-        raise ValueError("`is_console`与`is_filelog`至少一个为真")
+        handlers.update(
+            console_handler={
+                "level": logging.DEBUG,
+                "class": "logging.StreamHandler",
+                "formatter": "console",
+            }
+        )
+        root_handlers.append("console_handler")
     logging_config = {
         "version": 1,
-        "disable_existing_loggers": False,
+        "disable_existing_loggers": is_disable_existing_logger,
         "formatters": {
             "file": {
                 "format": file_format,

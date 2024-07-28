@@ -35,8 +35,6 @@ class KV(metaclass=Singleton):
         kv.exists(key='name')
         kv.delete(key='name')
 
-        # res: 结果存储于kvfile的db文件里
-
         +++++[更多详见参数或源码]+++++
     """
 
