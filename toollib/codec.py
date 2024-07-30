@@ -1,3 +1,11 @@
+"""
+@author axiner
+@version v1.0.0
+@created 2024/2/28 10:20
+@abstract 编解码
+@description
+@history
+"""
 import encodings
 import typing as t
 

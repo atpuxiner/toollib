@@ -88,7 +88,7 @@ class Chars:
 
 
 def now2timestamp(
-        fmt: str = "s",
+        fmt: str = "ms",
         tz_str: str = "Asia/Shanghai",
 ) -> int:
     """
@@ -107,7 +107,7 @@ def now2timestamp(
     tz = ZoneInfo(tz_str)
     now_timestamp_tz = datetime.utcnow().timestamp() + tz.utcoffset(datetime.now().astimezone(tz)).total_seconds()
     tos = {"s": 1, "ms": 1000, "us": 1000000}
-    return int(now_timestamp_tz * tos.get(fmt, 1))
+    return int(now_timestamp_tz * tos.get(fmt, 1000))
 
 
 def timestamp2time(

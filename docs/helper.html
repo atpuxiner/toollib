@@ -83,7 +83,14 @@
     :param browser_version: 浏览器版本
     </pre>
 <br>++++++++++++++++++++++这是分隔线++++++++++++++++++++++
-<h2><i>toollib.codec</i></h2><pre>暂无文档</pre>
+<h2><i>toollib.codec</i></h2><pre>
+@author axiner
+@version v1.0.0
+@created 2024/2/28 10:20
+@abstract 编解码
+@description
+@history
+</pre>
 ---------------------------------
 
 <h3><i>detect_encoding</i></h3><pre>
@@ -339,7 +346,7 @@
 @author axiner
 @version v1.0.0
 @created 2023/5/20 13:19
-@abstract
+@abstract 日志
 @description
 @history
 </pre>
@@ -357,20 +364,20 @@
         +++++[更多详见参数或源码]+++++
 
     config: dict
-        - console_format: 控制台日志格式
-        - file_format: 文件日志格式
-        - datefmt: 日期格式
         - file_infoname: 文件info名称
         - file_errorname: 文件error名称
         - file_encoding: 文件编码
+        - file_format: 文件日志格式
         - file_maxBytes: 文件轮转最大字节
         - file_when: 文件轮转时间
         - file_interval: 文件轮转间隔
         - file_backupCount: 文件轮转备份数
 
     :param name: 名称
-    :param config: 配置
     :param debug: 是否调试
+    :param format: 日志格式
+    :param datefmt: 时间格式
+    :param config: 配置
     :param log_dir: 日志目录
     :param is_file: 是否文件日志
     :param is_console: 是否控制台日志
