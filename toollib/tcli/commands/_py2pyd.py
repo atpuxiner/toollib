@@ -27,7 +27,7 @@ class Cmd(BaseCmd):
                 Arg('-p', '--postfix', type=str, help='后缀（默认为Pyd）'),
                 Arg('-e', '--exclude', type=str, help='排除编译（适用正则，使用管道等注意加引号）'),
                 Arg('-i', '--ignore', type=str, default='.git,.idea,__pycache__', help='忽略复制（多个逗号隔开）'),
-                Arg('-c', '--clean', action='store_true', help='清理临时'),
+                Arg('--clean', action='store_true', help='是否清理（默认不清理）'),
             ]}
         )
         return options
@@ -37,9 +37,11 @@ class Cmd(BaseCmd):
         if not src or src == "''":
             sys.stderr.write('ERROR: -s/--src: 不能为空\n')
             sys.exit(1)
-        postfix = self.parse_args.postfix
-        exclude = self.parse_args.exclude
-        ignore = self.parse_args.ignore
-        clean = self.parse_args.clean
-        py2pyder = Py2Pyder(src, postfix, exclude, ignore, clean)
+        py2pyder = Py2Pyder(
+            src=src,
+            postfix=self.parse_args.postfix,
+            exclude=self.parse_args.exclude,
+            ignore=self.parse_args.ignore,
+            is_clean=self.parse_args.clean,
+        )
         py2pyder.run()

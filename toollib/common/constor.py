@@ -11,9 +11,9 @@ conda_conf = b'channels:\n  - https://mirrors.tuna.tsinghua.edu.cn/anaconda/pkgs
 pyd_setup = b'import sys\nfrom distutils.core import setup, Extension\nfrom Cython.Build import cythonize\nsetup(ext_modules=cythonize(Extension(sys.argv.pop(), sources=[sys.argv.pop()]), language_level="3"))'
 docker_daemon = {
     "registry-mirrors": [
-        "https://hub-mirror.c.163.com",
-        "https://docker.mirrors.ustc.edu.cn",
+        "https://docker.m.daocloud.io",
         "https://registry.docker-cn.com",
+        "https://registry-1.docker.io/v2/",
     ],
     "dns": ["8.8.8.8", "8.8.4.4", "223.5.5.5", "223.6.6.6"]
 }

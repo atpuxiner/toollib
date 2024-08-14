@@ -32,6 +32,7 @@ class Cmd(BaseCmd):
             optional={
                 self.set_daemon: [
                     Arg('--sysname', type=str, help='系统名称（以防自动获取不精确）'),
+                    Arg('--dns', action='store_true', help='是否dns配置（默认不配置）'),
                 ],
                 self.yaml: [
                     Arg('-n', '--names', required=True, type=str, help='服务名称（多个用逗号隔开）'),
@@ -51,7 +52,10 @@ class Cmd(BaseCmd):
         conf_file = os.path.join(conf_dir, 'daemon.json')
         print(f'Writing to {conf_file}')
         with open(conf_file, 'w') as fp:
-            fp.write(json.dumps(constor.docker_daemon, indent=2))
+            _docker_daemon = constor.docker_daemon
+            if not self.parse_args.dns:
+                _docker_daemon.pop('dns', None)
+            fp.write(json.dumps(_docker_daemon, indent=2))
         subprocess.run(['systemctl', 'start', 'docker'])
 
     def yaml(self):
@@ -88,7 +92,7 @@ class Cmd(BaseCmd):
                 if mode == 'a':
                     yaml_conf = '\n' + yaml_conf
                 else:
-                    yaml_conf = 'version: "3.8"\nservices:\n' + yaml_conf
+                    yaml_conf = '#version: "3.9"\nservices:\n' + yaml_conf
                 with open(yaml_path, mode) as fp:
                     fp.write(yaml_conf)
                     print(f'{name}: `{yaml_path}`写入成功')

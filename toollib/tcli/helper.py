@@ -58,6 +58,7 @@ options:
   -h/--help     帮助
   set-daemon    设置daemon配置（镜像源等）
     --sysname   系统名称（以防自动获取不精确）[可选]
+    --dns       是否dns配置（默认不配置）[可选]
   yaml          yaml配置
     -n/--name       服务名称（多个用逗号隔开）
     -o/--outdir     输出目录[可选]
@@ -72,7 +73,7 @@ options:
   -p/--postfix      后缀（默认为Pyd）[可选]
   -e/--exclude      排除编译（适用正则，使用管道等注意加引号）[可选]
   -i/--ignore       忽略复制（多个逗号隔开）[可选]
-  -c/--clean        清理临时[可选]
+  --clean           是否清理（默认不清理）[可选]
 """
 
 snowflake = """usage:

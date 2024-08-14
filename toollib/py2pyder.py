@@ -55,7 +55,7 @@ class Py2Pyder:
             postfix: str = 'Pyd',
             exclude: str = None,
             ignore: str = '.git,.idea,__pycache__',
-            clean: bool = False,
+            is_clean: bool = False,
     ):
         """
         初始化
@@ -63,7 +63,7 @@ class Py2Pyder:
         :param postfix: 后缀（默认为Pyd）
         :param exclude: 排除编译（适用正则）
         :param ignore: 忽略复制（多个逗号隔开）
-        :param clean: 清理临时
+        :param is_clean: 是否清理（默认不清理）
         """
         self.src = os.path.abspath(src)
         if os.path.isdir(self.src):
@@ -83,7 +83,7 @@ class Py2Pyder:
             sys.exit(1)
         self.exclude = exclude
         self.ignore = ignore
-        self.clean = clean
+        self.is_clean = is_clean
         self.setuppy = os.path.join(self.dst, '.setuppy')
 
     def run(self):
@@ -137,7 +137,7 @@ class Py2Pyder:
             cpyfile = pyfile[:-3] + '.c'
             if os.path.isfile(cpyfile):
                 os.remove(cpyfile)
-        if self.clean is True:
+        if self.is_clean:
             subprocess.run(['python', self.setuppy, 'clean', 'xxx', 'xxx'])
             shutil.rmtree(os.path.join(self.dst, 'build'), ignore_errors=True)
         os.remove(self.setuppy)

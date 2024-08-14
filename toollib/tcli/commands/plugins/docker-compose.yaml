@@ -1,4 +1,4 @@
-version: "3.8"
+#version: "3.9"
 services:
 
   mysql57:
@@ -24,7 +24,7 @@ services:
       - "3306:3306"
 
   postgres:
-    image: postgres
+    image: postgres:latest
     container_name: postgres
     restart: always
     environment:
@@ -37,7 +37,7 @@ services:
       - "5432:5432"
 
   mongo:
-    image: mongo
+    image: mongo:latest
     container_name: mongo
     restart: always
     environment:
@@ -49,7 +49,7 @@ services:
       - "27017:27017"
 
   redis:
-    image: redis
+    image: redis:latest
     container_name: redis
     restart: always
     volumes:
@@ -118,7 +118,7 @@ services:
     #    sudo chmod -R 770 /volumes/opensearch-node1
 
   vsftpd:
-    image: fauria/vsftpd
+    image: fauria/vsftpd:latest
     container_name: vsftpd
     restart: always
     environment:
@@ -151,7 +151,7 @@ services:
     command: server /data --console-address ":9001"
 
   nginx:
-    image: nginx
+    image: nginx:latest
     container_name: nginx
     restart: always
     volumes:
