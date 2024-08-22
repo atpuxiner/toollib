@@ -40,9 +40,18 @@ def init_logger(
 
     e.g.::
 
+        # 直接使用
         from toollib import log
-
         logger = log.init_logger(__name__)
+        # # 后续直接引用logger对象即可
+
+        # 另：可先初始化，再使用
+        # 1. 入口模块初始化
+        from toollib import log
+        log.init_logger()
+        # 2. 其他模块通过logging获取日志器
+        import logging
+        logger = logging.getLogger(__name__)
 
         +++++[更多详见参数或源码]+++++
 

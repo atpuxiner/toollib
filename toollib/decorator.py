@@ -25,7 +25,7 @@ __all__ = [
 
 def catch_exception(
         is_raise: bool = True,
-        default_return: t.Any = None,
+        default_result: t.Any = None,
         exception: t.Type[Exception] = None,
         errmsg: str = None,
 ):
@@ -41,7 +41,7 @@ def catch_exception(
         +++++[更多详见参数或源码]+++++
 
     :param is_raise: 是否raise
-    :param default_return: 默认返回
+    :param default_result: 默认结果
     :param exception: 异常类
     :param errmsg: 异常信息
     :return:
@@ -58,7 +58,7 @@ def catch_exception(
                     raise
                 else:
                     traceback.print_exc()
-                    return default_return
+                    return default_result
         return inner
     return wrapper
 
@@ -80,11 +80,10 @@ def timer(func: t.Callable):
     """
     @wraps(func)
     def wrapper(*args, **kwargs):
-        _funcname = func.__name__
-        print('[{0}]starting...'.format(_funcname))
+        print('[{0}]starting...'.format(func.__name__))
         start_time = time.time()
         result = func(*args, **kwargs)
-        print('[{0}]completed({1:.2f}s)'.format(_funcname, time.time() - start_time))
+        print('[{0}]completed({1:.2f}s)'.format(func.__name__, time.time() - start_time))
         return result
     return wrapper
 

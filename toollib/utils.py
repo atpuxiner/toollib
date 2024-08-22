@@ -21,7 +21,6 @@ from pathlib import Path
 from threading import Lock
 from zoneinfo import ZoneInfo
 
-from toollib.codec import detect_encoding
 from toollib.common import rarfile, zipfile
 
 __all__ = [
@@ -31,6 +30,7 @@ __all__ = [
     'timestamp2time',
     'now2timestr',
     'timestr2time',
+    'get_time_range',
     'home',
     'sysname',
     'RedirectStd12ToNull',
@@ -106,8 +106,8 @@ def now2timestamp(
     """
     tz = ZoneInfo(tz_str)
     now_timestamp_tz = datetime.utcnow().timestamp() + tz.utcoffset(datetime.now().astimezone(tz)).total_seconds()
-    tos = {"s": 1, "ms": 1000, "us": 1000000}
-    return int(now_timestamp_tz * tos.get(fmt, 1000))
+    timestamp_fmts = {"s": 1, "ms": 1000, "us": 1000000}
+    return int(now_timestamp_tz * timestamp_fmts.get(fmt, 1000))
 
 
 def timestamp2time(
@@ -197,6 +197,51 @@ def timestr2time(
     }
     fmt = fmt if fmt else _.get(len(time_str))
     return datetime.strptime(time_str, fmt)
+
+
+def get_time_range(
+        start_timestr: str,
+        end_timestr: str = None,
+        result_type: str = "datetime",
+        timestr_fmt: str = "%Y-%m-%d %H:%M:%S",
+        timestamp_fmt: str = "ms",
+) -> tuple:
+    """
+        获取时间范围
+
+        e.g.::
+
+            start_timestr = '2021-12-12'
+            date = utils.get_time_range(start_timestr)
+
+            +++++[更多详见参数或源码]+++++
+
+        :param start_timestr: 开始时间字符串
+        :param end_timestr: 结束时间字符串
+        :param result_type: 结果类型：(datetime: 时间对象，timestr: 时间字符串，timestamp: 时间戳)
+        :param timestr_fmt: 时间字符串格式
+        :param timestamp_fmt: 时间戳格式
+        :return:
+        """
+    start_time = timestr2time(start_timestr)
+    end_time = timestr2time(end_timestr or start_timestr)
+    if not end_timestr or len(end_timestr) == 10:
+        end_time = end_time.replace(hour=23, minute=59, second=59, microsecond=999999)
+    if result_type == "timestr":
+        return (
+            start_time.strftime(timestr_fmt),
+            end_time.strftime(timestr_fmt)
+        )
+    elif result_type == "timestamp":
+        timestamp_fmts = {"s": 1, "ms": 1000, "us": 1000000}
+        return (
+            int(start_time.timestamp() * timestamp_fmts.get(timestamp_fmt, 1000)),
+            int(end_time.timestamp() * timestamp_fmts.get(timestamp_fmt, 1000))
+        )
+    return (
+        start_time,
+        end_time
+    )
 
 
 def home() -> str:
@@ -411,18 +456,13 @@ def gen_tmp_file(file_data: t.Union[bytes, str], file_suffix: str, **kwargs) -> 
     :param kwargs: kwargs
     :return:
     """
-    mode = "w+b"
-    if isinstance(file_data, str):
-        mode = "w+"
     with tempfile.NamedTemporaryFile(
             suffix=file_suffix,
-            mode=mode,
-            encoding=detect_encoding(file_data),
+            mode="w+b" if isinstance(file_data, bytes) else "w+",
             delete=False,
             **kwargs,
     ) as tmp_file:
         tmp_file.write(file_data)
-        tmp_file.close()
         return tmp_file.name
 
 

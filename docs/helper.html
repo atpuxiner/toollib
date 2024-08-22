@@ -129,7 +129,7 @@
         +++++[更多详见参数或源码]+++++
 
     :param is_raise: 是否raise
-    :param default_return: 默认返回
+    :param default_result: 默认结果
     :param exception: 异常类
     :param errmsg: 异常信息
     :return:
@@ -357,9 +357,18 @@
 
     e.g.::
 
+        # 直接使用
         from toollib import log
-
         logger = log.init_logger(__name__)
+        # # 后续直接引用logger对象即可
+
+        # 另：可先初始化，再使用
+        # 1. 入口模块初始化
+        from toollib import log
+        log.init_logger()
+        # 2. 其他模块通过logging获取日志器
+        import logging
+        logger = logging.getLogger(__name__)
 
         +++++[更多详见参数或源码]+++++
 
@@ -613,6 +622,24 @@
     :param fmt: 格式化
     :return:
     </pre>
+
+<h3><i>get_time_range</i></h3><pre>
+        获取时间范围
+
+        e.g.::
+
+            start_timestr = '2021-12-12'
+            date = utils.get_time_range(start_timestr)
+
+            +++++[更多详见参数或源码]+++++
+
+        :param start_timestr: 开始时间字符串
+        :param end_timestr: 结束时间字符串
+        :param result_type: 结果类型：(datetime: 时间对象，timestr: 时间字符串，timestamp: 时间戳)
+        :param timestr_fmt: 时间字符串格式
+        :param timestamp_fmt: 时间戳格式
+        :return:
+        </pre>
 
 <h3><i>home</i></h3><pre>
     家目录
