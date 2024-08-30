@@ -63,14 +63,14 @@ def detect_encoding(data: t.Union[bytes, str], default: str = "utf-8"):
     """
     if isinstance(data, str):
         return default
-    for c in all_encodings:
+    for e in all_encodings:
         try:
-            data[:1024].decode(c)
-            return c
+            data[:1024].decode(e)
+            return e
         except:
             try:
-                data.decode(c)
-                return c
+                data.decode(e)
+                return e
             except:
                 pass
     return default

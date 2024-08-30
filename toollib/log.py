@@ -110,7 +110,7 @@ def init_logger(
             file_interval = config.get("file_interval") or default_config["file_interval"]
             file_backupCount = config.get("file_backupCount") or default_config["file_backupCount"]
             info_file_handler = {
-                "level": logging.INFO,
+                "level": logging.DEBUG,
                 "class": "logging.handlers.RotatingFileHandler",
                 "formatter": "file",
                 "filename": os.path.join(log_dir, file_infoname),
