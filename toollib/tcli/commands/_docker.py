@@ -51,11 +51,17 @@ class Cmd(BaseCmd):
             os.mkdir(conf_dir)
         conf_file = os.path.join(conf_dir, 'daemon.json')
         print(f'Writing to {conf_file}')
-        with open(conf_file, 'w') as fp:
-            _docker_daemon = constor.docker_daemon
-            if not self.parse_args.dns:
-                _docker_daemon.pop('dns', None)
-            fp.write(json.dumps(_docker_daemon, indent=2))
+        daemon_config = {}
+        if os.path.isfile(conf_file):
+            with open(conf_file, 'r', encoding='utf-8') as f:
+                _ftext = f.read().strip('\r\n ')
+                if _ftext:
+                    daemon_config = json.loads(_ftext)
+        daemon_config['registry-mirrors'] = constor.docker_daemon['registry-mirrors']
+        if self.parse_args.dns:
+            daemon_config['dns'] = constor.docker_daemon['dns']
+        with open(conf_file, 'w', encoding='utf-8') as f:
+            f.write(json.dumps(daemon_config, indent=2))
         subprocess.run(['systemctl', 'start', 'docker'])
 
     def yaml(self):

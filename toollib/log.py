@@ -12,8 +12,8 @@ import os
 __all__ = ['init_logger']
 
 default_config = {
-    "file_infoname": "info.log",
-    "file_errorname": "error.log",
+    "file_access_name": "access.log",
+    "file_error_name": "error.log",
     "file_encoding": "utf-8",
     "file_format": "%(asctime)s.%(msecs)03d %(levelname)s %(filename)s:%(lineno)d %(message)s",
     "file_maxBytes": 1024 * 1024 * 50,
@@ -56,8 +56,8 @@ def init_logger(
         +++++[更多详见参数或源码]+++++
 
     config: dict
-        - file_infoname: 文件info名称
-        - file_errorname: 文件error名称
+        - file_access_name: 文件access名称
+        - file_error_name: 文件error名称
         - file_encoding: 文件编码
         - file_format: 文件日志格式
         - file_maxBytes: 文件轮转最大字节
@@ -101,19 +101,19 @@ def init_logger(
             log_dir = log_dir or os.path.join(os.getcwd(), "logs")
             if not os.path.isdir(log_dir):
                 os.makedirs(log_dir, exist_ok=True)
-            file_infoname = config.get("file_infoname") or default_config["file_infoname"]
-            file_errorname = config.get("file_errorname") or default_config["file_errorname"]
+            file_access_name = config.get("file_access_name") or default_config["file_access_name"]
+            file_error_name = config.get("file_error_name") or default_config["file_error_name"]
             file_encoding = config.get("file_encoding") or default_config["file_encoding"]
             file_format = config.get("file_format") or format
             file_maxBytes = config.get("file_maxBytes") or default_config["file_maxBytes"]
             file_when = config.get("file_when") or default_config["file_when"]
             file_interval = config.get("file_interval") or default_config["file_interval"]
             file_backupCount = config.get("file_backupCount") or default_config["file_backupCount"]
-            info_file_handler = {
+            access_file_handler = {
                 "level": logging.DEBUG,
                 "class": "logging.handlers.RotatingFileHandler",
                 "formatter": "file",
-                "filename": os.path.join(log_dir, file_infoname),
+                "filename": os.path.join(log_dir, file_access_name),
                 "encoding": file_encoding,
                 "maxBytes": file_maxBytes,
                 "backupCount": file_backupCount,
@@ -122,16 +122,16 @@ def init_logger(
                 "level": logging.ERROR,
                 "class": "logging.handlers.RotatingFileHandler",
                 "formatter": "file",
-                "filename": os.path.join(log_dir, file_errorname),
+                "filename": os.path.join(log_dir, file_error_name),
                 "encoding": file_encoding,
                 "maxBytes": file_maxBytes,
                 "backupCount": file_backupCount,
             }
             if is_time_rotating is True:
-                info_file_handler["class"] = "logging.handlers.TimedRotatingFileHandler"
-                info_file_handler["when"] = file_when
-                info_file_handler["interval"] = file_interval
-                info_file_handler.pop("maxBytes")
+                access_file_handler["class"] = "logging.handlers.TimedRotatingFileHandler"
+                access_file_handler["when"] = file_when
+                access_file_handler["interval"] = file_interval
+                access_file_handler.pop("maxBytes")
                 error_file_handler["class"] = "logging.handlers.TimedRotatingFileHandler"
                 error_file_handler["when"] = file_when
                 error_file_handler["interval"] = file_interval
@@ -143,10 +143,10 @@ def init_logger(
                 }
             )
             handlers.update(
-                info_file_handler=info_file_handler,
+                access_file_handler=access_file_handler,
                 error_file_handler=error_file_handler,
             )
-            root_handlers.extend(["info_file_handler", "error_file_handler"])
+            root_handlers.extend(["access_file_handler", "error_file_handler"])
     else:
         formatters.update(
             console={
