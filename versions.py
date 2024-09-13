@@ -10,6 +10,7 @@
 
 class Versions:
     ALL = [
+        ('1.6.3', 'chg@docker.yaml'),
         ('1.6.2', 'chg@log&pytcli'),
         ('1.6.1', 'opt@codec&log'),
         ('1.6.0', 'opt@调优'),

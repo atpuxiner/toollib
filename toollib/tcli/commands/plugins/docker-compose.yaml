@@ -85,24 +85,27 @@ services:
     user: "neo4j"
     # Before starting the container:
     # 1. Create the directory (if it does not exist)
-    #    sudo mkdir -p /volumes/neo4j
+    #    - sudo mkdir -p /volumes/neo4j
     # 2. Adjust the ownership and permissions of the directory
-    #    sudo chown -R 7474:7474 /volumes/neo4j
-    #    sudo chmod -R 770 /volumes/neo4j
+    #    - sudo chown -R 7474:7474 /volumes/neo4j
+    #    - sudo chmod -R 770 /volumes/neo4j
 
-  opensearch-node1:
-    image: opensearchproject/opensearch:2.11.1
-    container_name: opensearch-node1
+  opensearch-single:
+    image: opensearchproject/opensearch:latest
+    container_name: opensearch-single
     restart: always
     environment:
       cluster.name: opensearch-cluster
-      node.name: opensearch-node1
+      node.name: opensearch-single
       discovery.type: single-node
+      opensearch_java_opts: "-Xms512m -Xmx512m"
       bootstrap.memory_lock: true
-      OPENSEARCH_JAVA_OPTS: "-Xms512m -Xmx512m"
+      mem_limit: 4g
       plugins.security.disabled: true
+      network.host: 0.0.0.0
+      OPENSEARCH_INITIAL_ADMIN_PASSWORD: Mimmm@129
     volumes:
-      - /volumes/opensearch-node1:/usr/share/opensearch/data
+      - /volumes/opensearch-single:/usr/share/opensearch/data
     ports:
       - "9200:9200"
       - "9300:9300"
@@ -112,10 +115,16 @@ services:
         hard: -1
     # Before starting the container:
     # 1. Create the directory (if it does not exist)
-    #    sudo mkdir -p /volumes/opensearch-node1
+    #    - sudo mkdir -p /volumes/opensearch-single
     # 2. Adjust the ownership and permissions of the directory
-    #    sudo chown -R 1000:1000 /volumes/opensearch-node1
-    #    sudo chmod -R 770 /volumes/opensearch-node1
+    #    - sudo chown -R 1000:1000 /volumes/opensearch-single
+    #    - sudo chmod -R 770 /volumes/opensearch-single
+    # 3. vm-map config
+    #   - template:
+    #       - sudo sysctl -w vm.max_map_count=262144
+    #   - forever:
+    #       - sudo echo "vm.max_map_count=262144" >> /etc/sysctl.conf
+    #       - sudo sysctl -p
 
   vsftpd:
     image: fauria/vsftpd:latest
@@ -191,7 +200,7 @@ services:
       - "50000:50000"
     # Before starting the container:
     # 1. Create the directory (if it does not exist)
-    #    sudo mkdir -p /volumes/jenkins
+    #    - sudo mkdir -p /volumes/jenkins
     # 2. Adjust the ownership and permissions of the directory
-    #    sudo chown -R 1000:1000 /volumes/jenkins
-    #    sudo chmod -R 770 /volumes/jenkins
+    #    - sudo chown -R 1000:1000 /volumes/jenkins
+    #    - sudo chmod -R 770 /volumes/jenkins
