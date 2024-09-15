@@ -126,6 +126,23 @@ services:
     #       - sudo echo "vm.max_map_count=262144" >> /etc/sysctl.conf
     #       - sudo sysctl -p
 
+  zincsearch:
+    image: public.ecr.aws/zinclabs/zincsearch:latest
+    container_name: zincsearch
+    restart: always
+    environment:
+      ZINC_SERVER_ADDRESS: 0.0.0.0
+      ZINC_DATA_PATH: "/data"
+      ZINC_FIRST_ADMIN_USER: admin
+      ZINC_FIRST_ADMIN_PASSWORD: Mimmm@129
+    volumes:
+      - /volumes/zincsearch:/data
+    ports:
+      - "4080:4080"
+    # Before starting the container:
+    # 1. Adjust permissions of the directory
+    #    - sudo chmod a+rwx /volumes/zincsearch
+
   vsftpd:
     image: fauria/vsftpd:latest
     container_name: vsftpd
