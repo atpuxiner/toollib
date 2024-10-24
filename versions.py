@@ -10,6 +10,7 @@
 
 class Versions:
     ALL = [
+        ('1.6.5', 'chg@pytcli.set_mirrors'),
         ('1.6.4', 'add@docker.yaml.zincsearch'),
         ('1.6.3', 'chg@docker.yaml'),
         ('1.6.2', 'chg@log&pytcli'),
