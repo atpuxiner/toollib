@@ -10,6 +10,7 @@
 
 class Versions:
     ALL = [
+        ('1.6.6', 'chg@相关优化&新增转为异步函数装饰器'),
         ('1.6.5', 'chg@pytcli.set_mirrors'),
         ('1.6.4', 'add@docker.yaml.zincsearch'),
         ('1.6.3', 'chg@docker.yaml'),

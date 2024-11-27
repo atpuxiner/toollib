@@ -88,7 +88,7 @@ class Chars:
 
 
 def now2timestamp(
-        fmt: str = "ms",
+        fmt: t.Literal['s', 'ms', 'us'] = "ms",
         tz_str: str = "Asia/Shanghai",
 ) -> int:
     """
@@ -204,7 +204,7 @@ def get_time_range(
         end_timestr: str = None,
         result_type: str = "datetime",
         timestr_fmt: str = "%Y-%m-%d %H:%M:%S",
-        timestamp_fmt: str = "ms",
+        timestamp_fmt: t.Literal['s', 'ms', 'us'] = "ms",
 ) -> tuple:
     """
         获取时间范围
@@ -220,7 +220,7 @@ def get_time_range(
         :param end_timestr: 结束时间字符串
         :param result_type: 结果类型：(datetime: 时间对象，timestr: 时间字符串，timestamp: 时间戳)
         :param timestr_fmt: 时间字符串格式
-        :param timestamp_fmt: 时间戳格式
+        :param timestamp_fmt: 时间戳格式（s-秒，ms-毫秒，us-微秒）
         :return:
         """
     start_time = timestr2time(start_timestr)

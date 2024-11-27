@@ -47,7 +47,7 @@ common_encodings = [
 all_encodings = common_encodings + sorted(set(encodings.aliases.aliases.values()) - set(common_encodings))
 
 
-def detect_encoding(data: t.Union[bytes, str], default: str = "utf-8"):
+def detect_encoding(data: t.Union[bytes, str], default: str = "utf-8") -> str:
     """
     检测编码
 

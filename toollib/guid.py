@@ -74,9 +74,9 @@ class SnowFlake(metaclass=Singleton):
         max_worker_id = -1 ^ (-1 << worker_id_bits)
         max_datacenter_id = -1 ^ (-1 << datacenter_id_bits)
         if worker_id > max_worker_id or worker_id < 0:
-            raise ValueError(f'"worker_id" only supported: 0, {max_worker_id}')
+            raise ValueError(f'"worker_id" only supported: 0 ~ {max_worker_id}')
         if datacenter_id > max_datacenter_id or datacenter_id < 0:
-            raise ValueError(f'"datacenter_id" only supported: 0, {max_datacenter_id}')
+            raise ValueError(f'"datacenter_id" only supported: 0 ~ {max_datacenter_id}')
 
         self.worker_id = worker_id
         self.datacenter_id = datacenter_id

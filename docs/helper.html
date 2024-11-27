@@ -168,6 +168,22 @@
     :param is_raise: 是否raise
     :return:
     </pre>
+
+<h3><i>to_async</i></h3><pre>
+    转为异步函数
+
+    e.g.::
+
+        @decorator.to_async()
+        def foo():
+            pass
+
+        +++++[更多详见参数或源码]+++++
+
+    :param pool_type: 池的类型（['thread', 'process']）
+    :param max_workers: 池的最大工作数
+    :return:
+    </pre>
 <br>++++++++++++++++++++++这是分隔线++++++++++++++++++++++
 <h2><i>toollib.guid</i></h2><pre>
 @author axiner
@@ -637,7 +653,7 @@
         :param end_timestr: 结束时间字符串
         :param result_type: 结果类型：(datetime: 时间对象，timestr: 时间字符串，timestamp: 时间戳)
         :param timestr_fmt: 时间字符串格式
-        :param timestamp_fmt: 时间戳格式
+        :param timestamp_fmt: 时间戳格式（s-秒，ms-毫秒，us-微秒）
         :return:
         </pre>
 
