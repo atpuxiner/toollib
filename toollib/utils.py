@@ -40,6 +40,8 @@ __all__ = [
     'gen_tmp_file',
     'listfile',
     'decompress',
+    'gen_level_dirs',
+    'map_json_type',
 ]
 
 
@@ -76,7 +78,7 @@ class Chars:
     e.g.::
 
         # 比如获取小写字母
-        low_cases = utils.Chars.lowercases
+        lowercases = utils.Chars.lowercases
 
         +++++[更多详见参数或源码]+++++
     """
@@ -586,3 +588,77 @@ def decompress(
         else:
             count += 1
     return count
+
+
+def gen_level_dirs(
+        tag: str,
+        number: int = 3,
+        length: int = 2,
+        is_keep_extra: bool = False,
+        prefix: str = None,
+        sep: str = os.sep,
+):
+    """
+    生成层级目录
+
+    e.g.::
+
+        tag = "abcdef"
+        d = utils.gen_level_dirs(tag)
+
+        +++++[更多详见参数或源码]+++++
+
+    :param tag: 目标
+    :param number: 数量
+    :param length: 长度
+    :param is_keep_extra: 是否保留额外的
+    :param prefix: 前级
+    :param sep: 分隔符
+    :return:
+    """
+    dirs = [d for i in range(0, number * length, length) if (d := tag[i:i + length])]
+    if is_keep_extra:
+        dirs.append(tag[len(''.join(dirs)):])
+    if prefix:
+        dirs.insert(0, prefix)
+    return sep.join(filter(bool, dirs))
+
+
+def map_json_type(
+        t: str,
+        is_title: bool = False,
+        is_keep_integer: bool = False,
+):
+    """
+    映射json类型
+
+    e.g.::
+
+        t = "str"
+        mt = utils.map_json_type(t)
+
+        +++++[更多详见参数或源码]+++++
+
+    :param t: 类型
+    :param is_title: 是否首字母大写
+    :param is_keep_integer: 是否保留integer
+    :return:
+    """
+    maps = {
+        'NoneType': 'null',
+        'None': 'null',
+        'bool': 'boolean',
+        'str': 'string',
+        'int': 'number',
+        'float': 'number',
+        'list': 'array',
+        'tuple': 'array',
+        'dict': 'object',
+    }
+    if is_keep_integer:
+        maps['int'] = 'integer'
+    if jt := maps.get(t):
+        if is_title:
+            return jt.title()
+        return jt
+    return t

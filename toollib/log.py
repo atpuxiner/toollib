@@ -25,7 +25,7 @@ default_config = {
 
 def init_logger(
         name: str = None,
-        debug: bool = True,
+        debug: bool = False,
         format: str = "%(asctime)s.%(msecs)03d %(levelname)s %(filename)s:%(lineno)d %(message)s",
         datefmt: str = "%Y-%m-%d %H:%M:%S",
         config: dict = None,

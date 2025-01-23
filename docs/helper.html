@@ -572,7 +572,7 @@
     e.g.::
 
         # 比如获取小写字母
-        low_cases = utils.Chars.lowercases
+        lowercases = utils.Chars.lowercases
 
         +++++[更多详见参数或源码]+++++
     </pre>
@@ -791,6 +791,41 @@
     :param is_r: 是否递规查找（当src为目录时生效）
     :param is_raise: 是否抛异常
     :return: count（解压数量）
+    </pre>
+
+<h3><i>gen_level_dirs</i></h3><pre>
+    生成层级目录
+
+    e.g.::
+
+        tag = "abcdef"
+        d = utils.gen_level_dirs(tag)
+
+        +++++[更多详见参数或源码]+++++
+
+    :param tag: 目标
+    :param number: 数量
+    :param length: 长度
+    :param is_keep_extra: 是否保留额外的
+    :param prefix: 前级
+    :param sep: 分隔符
+    :return:
+    </pre>
+
+<h3><i>map_json_type</i></h3><pre>
+    映射json类型
+
+    e.g.::
+
+        t = "str"
+        mt = utils.map_json_type(t)
+
+        +++++[更多详见参数或源码]+++++
+
+    :param t: 类型
+    :param is_title: 是否首字母大写
+    :param is_keep_integer: 是否保留integer
+    :return:
     </pre>
 <br>++++++++++++++++++++++这是分隔线++++++++++++++++++++++
 <h2><i>toollib.validator</i></h2><pre>
