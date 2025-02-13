@@ -193,7 +193,7 @@ class ChromeDriver:
                     is_eq = local_driver_version.startswith('.'.join(browser_version_split[:3]))
                 else:
                     is_eq = (browser_version_split == local_driver_version.split('.')[:1])
-        except:
+        except Exception:
             pass
         return is_eq, local_driver_version
 

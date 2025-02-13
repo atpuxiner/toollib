@@ -26,22 +26,22 @@ from toollib.common import rarfile, zipfile
 __all__ = [
     'Singleton',
     'Chars',
-    'now2timestamp',
-    'timestamp2time',
     'now2timestr',
     'timestr2time',
-    'get_time_range',
+    'now2timestamp',
+    'timestamp2time',
+    'timerange',
     'home',
     'sysname',
     'RedirectStd12ToNull',
     "VersionCmper",
     'json',
-    'read_by_block',
-    'gen_tmp_file',
+    'readblock',
     'listfile',
     'decompress',
-    'gen_level_dirs',
-    'map_json_type',
+    'writetemp',
+    'gen_leveldirs',
+    'map_jsontype',
 ]
 
 
@@ -89,12 +89,70 @@ class Chars:
     whitespace = ' \t\n\r\v\f'
 
 
-def now2timestamp(
-        fmt: t.Literal['s', 'ms', 'us'] = "ms",
-        tz_str: str = "Asia/Shanghai",
-) -> int:
+def now2timestr(
+        fmt: str = "%Y-%m-%d %H:%M:%S",
+        tzname="Asia/Shanghai",
+) -> str:
     """
-    获取当前时间的时间戳
+    获取当前时间字符串
+
+    e.g.::
+
+        now = utils.now2timestr()
+
+        +++++[更多详见参数或源码]+++++
+
+    :param fmt: 格式化
+    :param tzname: 时区名称
+    :return:
+    """
+    return datetime.now(timezone.utc).astimezone(ZoneInfo(tzname)).strftime(fmt)
+
+
+def timestr2time(
+        timestr: str,
+        fmt: str = None,
+        unit: t.Literal['fs', 's', 'ms', 'us', 'ns'] = None,
+        tzname: str = None,
+) -> t.Union[datetime, int, float]:
+    """
+    时间字符串转时间对象或时间戳(unit若存在)
+
+    e.g.::
+
+        dt = utils.timestr2time('2021-12-12')
+
+        +++++[更多详见参数或源码]+++++
+
+    :param timestr: 时间字符串
+    :param fmt: 格式化
+    :param unit: 单位（fs-浮点型秒, s-秒，ms-毫秒，us-微秒，ns-纳秒）
+    :param tzname: 时区名称
+    :return:
+    """
+    if "T" in timestr:
+        timestr = timestr.replace("Z", "+00:00")
+    if not fmt:
+        dt = datetime.fromisoformat(timestr)
+    else:
+        dt = datetime.strptime(timestr, fmt)
+    if unit:
+        if tzname:
+            dt = dt.replace(tzinfo=ZoneInfo(tzname))
+        if unit == "fs":
+            return dt.timestamp()
+        return int(dt.timestamp() * {"s": 1, "ms": 1000, "us": 1000000, "ns": 1000000000}.get(unit, 1000))
+    if tzname:
+        return dt.astimezone(ZoneInfo(tzname))
+    return dt
+
+
+def now2timestamp(
+        unit: t.Literal['fs', 's', 'ms', 'us', 'ns'] = "ms",
+        tzname: str = "Asia/Shanghai",
+) -> t.Union[int, float]:
+    """
+    获取当前时间戳
 
     e.g.::
 
@@ -102,148 +160,90 @@ def now2timestamp(
 
         +++++[更多详见参数或源码]+++++
 
-    :param fmt: 格式化（s-秒，ms-毫秒，us-微秒）
-    :param tz_str: 时区字符串
+    :param unit: 单位（fs-浮点型秒, s-秒，ms-毫秒，us-微秒，ns-纳秒）
+    :param tzname: 时区名称
     :return:
     """
-    tz = ZoneInfo(tz_str)
-    now_timestamp_tz = datetime.utcnow().timestamp() + tz.utcoffset(datetime.now().astimezone(tz)).total_seconds()
-    timestamp_fmts = {"s": 1, "ms": 1000, "us": 1000000}
-    return int(now_timestamp_tz * timestamp_fmts.get(fmt, 1000))
+    zinfo = ZoneInfo(tzname)
+    timestamp = datetime.utcnow().timestamp() + zinfo.utcoffset(datetime.now().astimezone(zinfo)).total_seconds()
+    if unit == "fs":
+        return timestamp
+    return int(timestamp * {"s": 1, "ms": 1000, "us": 1000000, "ns": 1000000000}.get(unit, 1000))
 
 
 def timestamp2time(
-        timestamp: int,
-        fmt: t.Optional[str] = "%Y-%m-%d %H:%M:%S",
-        tz_str="Asia/Shanghai",
-) -> t.Union[str, datetime]:
+        timestamp: t.Union[int, float],
+        unit: t.Literal['s', 'ms', 'us', 'ns'] = "ms",
+        fmt: str = None,
+        tzname: str = None,
+) -> t.Union[datetime, str]:
     """
-    时间戳转换为时间对象或时间字符串
+    时间戳转时间对象或时间字符串(fmt若存在)
 
     e.g.::
 
-        timestamp = utils.timestamp2time()
+        dt = utils.timestamp2time()
 
         +++++[更多详见参数或源码]+++++
 
     :param timestamp: 时间戳
-    :param fmt: 格式化，空则返回时间对象
-    :param tz_str: 时区字符串
+    :param unit: 单位（s-秒，ms-毫秒，us-微秒，ns-纳秒）
+    :param fmt: 格式化
+    :param tzname: 时区名称
     :return:
     """
-    if len(str(timestamp)) > 10:
+    if unit == "ms":
         timestamp = timestamp / 1000.0
-    time_tz = datetime.utcfromtimestamp(timestamp).replace(tzinfo=timezone.utc).astimezone(ZoneInfo(tz_str))
+    elif unit == "s":
+        pass
+    elif unit == "us":
+        timestamp = timestamp / 1000000.0
+    elif unit == "ns":
+        timestamp = timestamp / 1000000000.0
+    dt = datetime.fromtimestamp(timestamp)
+    if tzname:
+        dt = dt.astimezone(ZoneInfo(tzname))
     if fmt:
-        return time_tz.strftime(fmt)
-    return time_tz
+        return dt.strftime(fmt)
+    return dt
 
 
-def now2timestr(
-        fmt: str = 'S',
-        tz_str="Asia/Shanghai",
-) -> str:
-    """
-    获取当前时间的字符串
-
-    e.g.::
-
-        # 比如获取当前时间
-        now = utils.now2str()
-
-        # 比如获取当前日期
-        now_year = utils.now2str(fmt='d')  # 或者 fmt='%Y-%m-%d'
-
-        +++++[更多详见参数或源码]+++++
-
-    :param fmt: 格式化
-    :param tz_str: 时区字符串
-    :return:
-    """
-    _ = {
-        'S': '%Y-%m-%d %H:%M:%S',
-        'M': '%Y-%m-%d %H:%M',
-        'H': '%Y-%m-%d %H',
-        'd': '%Y-%m-%d',
-        'm': '%Y-%m',
-        'Y': '%Y'
-    }
-    return datetime.now(timezone.utc).astimezone(ZoneInfo(tz_str)).strftime(_.get(fmt, fmt))
-
-
-def timestr2time(
-        time_str: str,
+def timerange(
+        start: str,
+        end: str = None,
         fmt: str = None,
-) -> datetime:
-    """
-    时间字符串转换为时间对象（默认自动识别 fmt）
-
-    e.g.::
-
-        time_str = '2021-12-12'
-        date = utils.str2datetime(time_str)
-
-        +++++[更多详见参数或源码]+++++
-
-    :param time_str: 时间字符串
-    :param fmt: 格式化
-    :return:
-    """
-    _ = {
-        19: '%Y-%m-%d %H:%M:%S',
-        16: '%Y-%m-%d %H:%M',
-        13: '%Y-%m-%d %H',
-        10: '%Y-%m-%d',
-        7: '%Y-%m',
-        4: '%Y'
-    }
-    fmt = fmt if fmt else _.get(len(time_str))
-    return datetime.strptime(time_str, fmt)
-
-
-def get_time_range(
-        start_timestr: str,
-        end_timestr: str = None,
-        result_type: str = "datetime",
-        timestr_fmt: str = "%Y-%m-%d %H:%M:%S",
-        timestamp_fmt: t.Literal['s', 'ms', 'us'] = "ms",
+        unit: t.Literal['fs', 's', 'ms', 'us', 'ns'] = None,
 ) -> tuple:
     """
-        获取时间范围
+    时间范围
+        - fmt存在，返回时间字符串
+        - fmt不存在 & unit存在，返回时间戳
+        - fmt不存在 & unit不存在，返回时间对象
 
-        e.g.::
+    e.g.::
 
-            start_timestr = '2021-12-12'
-            date = utils.get_time_range(start_timestr)
+        tr = utils.timerange('2021-12-12')
 
-            +++++[更多详见参数或源码]+++++
+        +++++[更多详见参数或源码]+++++
 
-        :param start_timestr: 开始时间字符串
-        :param end_timestr: 结束时间字符串
-        :param result_type: 结果类型：(datetime: 时间对象，timestr: 时间字符串，timestamp: 时间戳)
-        :param timestr_fmt: 时间字符串格式
-        :param timestamp_fmt: 时间戳格式（s-秒，ms-毫秒，us-微秒）
-        :return:
-        """
-    start_time = timestr2time(start_timestr)
-    end_time = timestr2time(end_timestr or start_timestr)
-    if not end_timestr or len(end_timestr) == 10:
+    :param start: 开始
+    :param end: 结束
+    :param fmt: 格式化
+    :param unit: 单位（fs-浮点型秒, s-秒，ms-毫秒，us-微秒，ns-纳秒）
+    :return:
+    """
+    start_time = timestr2time(start)
+    end_time = timestr2time(end or start)
+    if not end or len(end) == 10:
         end_time = end_time.replace(hour=23, minute=59, second=59, microsecond=999999)
-    if result_type == "timestr":
-        return (
-            start_time.strftime(timestr_fmt),
-            end_time.strftime(timestr_fmt)
-        )
-    elif result_type == "timestamp":
-        timestamp_fmts = {"s": 1, "ms": 1000, "us": 1000000}
-        return (
-            int(start_time.timestamp() * timestamp_fmts.get(timestamp_fmt, 1000)),
-            int(end_time.timestamp() * timestamp_fmts.get(timestamp_fmt, 1000))
-        )
-    return (
-        start_time,
-        end_time
-    )
+    if fmt:
+        return start_time.strftime(fmt), end_time.strftime(fmt)
+    if unit:
+        if unit == "fs":
+            return start_time.timestamp(), end_time.timestamp()
+        units = {"s": 1, "ms": 1000, "us": 1000000, "ns": 1000000000}
+        return int(start_time.timestamp() * units.get(unit, 1000)), int(end_time.timestamp() * units.get(unit, 1000))
+    return start_time, end_time
 
 
 def home() -> str:
@@ -418,54 +418,29 @@ def json(data, is_dumps: bool = False, default=None, *args, **kwargs):
     return loads(data, *args, **kwargs)
 
 
-def read_by_block(file_path: str, block_size: int = 10240, mode: str = 'rb', **kwargs) -> t.Generator:
+def readblock(filepath: str, block: int = 8192, mode: str = 'rb', **kwargs) -> t.Generator:
     """
     分块读取
 
     e.g.::
 
-        data = utils.read_by_block('foo.txt')
+        content = utils.readblock('foo.txt')
 
         +++++[更多详见参数或源码]+++++
 
-    :param file_path: 文件路径
-    :param block_size: 块大小
+    :param filepath: 文件路径
+    :param block: 块
     :param mode: 模式
     :param kwargs: open其他参数
     :return:
     """
-    with open(file_path, mode=mode, **kwargs) as fp:
+    with open(filepath, mode=mode, **kwargs) as fp:
         while True:
-            block = fp.read(block_size)
-            if block:
-                yield block
+            content = fp.read(block)
+            if content:
+                yield content
             else:
                 break
-
-
-def gen_tmp_file(file_data: t.Union[bytes, str], file_suffix: str, **kwargs) -> str:
-    """
-    生成临时文件
-
-    e.g.::
-
-        file_path = utils.gen_tmp_file(file_data)
-
-        +++++[更多详见参数或源码]+++++
-
-    :param file_data: 文件内容
-    :param file_suffix: 文件后缀
-    :param kwargs: kwargs
-    :return:
-    """
-    with tempfile.NamedTemporaryFile(
-            suffix=file_suffix,
-            mode="w+b" if isinstance(file_data, bytes) else "w+",
-            delete=False,
-            **kwargs,
-    ) as tmp_file:
-        tmp_file.write(file_data)
-        return tmp_file.name
 
 
 def listfile(
@@ -533,7 +508,7 @@ def decompress(
     :param is_raise: 是否抛异常
     :return: count（解压数量）
     """
-    __support_types = [
+    _support_types = [
         '.zip',
         '.rar',
         '.tar',
@@ -547,8 +522,8 @@ def decompress(
         src_is_dir = True
         src_files = listfile(src, pattern=pattern, is_r=is_r)
     else:
-        if src.suffix not in __support_types:
-            raise ValueError('only supported: %s' % __support_types)
+        if src.suffix not in _support_types:
+            raise ValueError('only supported: %s' % _support_types)
         src_files = [src]
     if not dst:
         dst_dir = src.absolute() if src_is_dir else src.absolute().parent
@@ -561,7 +536,7 @@ def decompress(
         file_name, file_type = src_file.name, src_file.suffix
         if file_type:
             file_type = file_type.lower()
-            if file_type not in __support_types:
+            if file_type not in _support_types:
                 continue
         else:
             continue
@@ -590,7 +565,32 @@ def decompress(
     return count
 
 
-def gen_level_dirs(
+def writetemp(content: t.Union[bytes, str], suffix: str, **kwargs) -> str:
+    """
+    写入临时文件
+
+    e.g.::
+
+        filepath = utils.writetemp(content)
+
+        +++++[更多详见参数或源码]+++++
+
+    :param content: 内容
+    :param suffix: 后缀
+    :param kwargs: kwargs
+    :return:
+    """
+    with tempfile.NamedTemporaryFile(
+            suffix=suffix,
+            mode="w+b" if isinstance(content, bytes) else "w+",
+            delete=False,
+            **kwargs,
+    ) as f:
+        f.write(content)
+        return f.name
+
+
+def gen_leveldirs(
         tag: str,
         number: int = 3,
         length: int = 2,
@@ -604,7 +604,7 @@ def gen_level_dirs(
     e.g.::
 
         tag = "abcdef"
-        d = utils.gen_level_dirs(tag)
+        dirs = utils.gen_leveldirs(tag)
 
         +++++[更多详见参数或源码]+++++
 
@@ -624,8 +624,8 @@ def gen_level_dirs(
     return sep.join(filter(bool, dirs))
 
 
-def map_json_type(
-        t: str,
+def map_jsontype(
+        typename: str,
         is_title: bool = False,
         is_keep_integer: bool = False,
 ):
@@ -634,12 +634,12 @@ def map_json_type(
 
     e.g.::
 
-        t = "str"
-        mt = utils.map_json_type(t)
+        typename = "str"
+        mt = utils.map_jsontype(typename)
 
         +++++[更多详见参数或源码]+++++
 
-    :param t: 类型
+    :param typename: 类型名称
     :param is_title: 是否首字母大写
     :param is_keep_integer: 是否保留integer
     :return:
@@ -657,8 +657,8 @@ def map_json_type(
     }
     if is_keep_integer:
         maps['int'] = 'integer'
-    if jt := maps.get(t):
+    if jt := maps.get(typename):
         if is_title:
             return jt.title()
         return jt
-    return t
+    return typename

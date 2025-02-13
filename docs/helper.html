@@ -103,7 +103,7 @@
         +++++[更多详见参数或源码]+++++
 
     :param data: 数据
-    :param default: 默认编码
+    :param default: 默认值
     :return:
     </pre>
 <br>++++++++++++++++++++++这是分隔线++++++++++++++++++++++
@@ -129,7 +129,7 @@
         +++++[更多详见参数或源码]+++++
 
     :param is_raise: 是否raise
-    :param default_result: 默认结果
+    :param default: 默认值
     :param exception: 异常类
     :param errmsg: 异常信息
     :return:
@@ -577,8 +577,38 @@
         +++++[更多详见参数或源码]+++++
     </pre>
 
+<h3><i>now2timestr</i></h3><pre>
+    获取当前时间字符串
+
+    e.g.::
+
+        now = utils.now2timestr()
+
+        +++++[更多详见参数或源码]+++++
+
+    :param fmt: 格式化
+    :param tzname: 时区名称
+    :return:
+    </pre>
+
+<h3><i>timestr2time</i></h3><pre>
+    时间字符串转时间对象或时间戳(unit若存在)
+
+    e.g.::
+
+        dt = utils.timestr2time('2021-12-12')
+
+        +++++[更多详见参数或源码]+++++
+
+    :param timestr: 时间字符串
+    :param fmt: 格式化
+    :param unit: 单位（fs-浮点型秒, s-秒，ms-毫秒，us-微秒，ns-纳秒）
+    :param tzname: 时区名称
+    :return:
+    </pre>
+
 <h3><i>now2timestamp</i></h3><pre>
-    获取当前时间的时间戳
+    获取当前时间戳
 
     e.g.::
 
@@ -586,76 +616,45 @@
 
         +++++[更多详见参数或源码]+++++
 
-    :param fmt: 格式化（s-秒，ms-毫秒，us-微秒）
-    :param tz_str: 时区字符串
+    :param unit: 单位（fs-浮点型秒, s-秒，ms-毫秒，us-微秒，ns-纳秒）
+    :param tzname: 时区名称
     :return:
     </pre>
 
 <h3><i>timestamp2time</i></h3><pre>
-    时间戳转换为时间对象或时间字符串
+    时间戳转时间对象或时间字符串(fmt若存在)
 
     e.g.::
 
-        timestamp = utils.timestamp2time()
+        dt = utils.timestamp2time()
 
         +++++[更多详见参数或源码]+++++
 
     :param timestamp: 时间戳
-    :param fmt: 格式化，空则返回时间对象
-    :param tz_str: 时区字符串
+    :param unit: 单位（s-秒，ms-毫秒，us-微秒，ns-纳秒）
+    :param fmt: 格式化
+    :param tzname: 时区名称
     :return:
     </pre>
 
-<h3><i>now2timestr</i></h3><pre>
-    获取当前时间的字符串
+<h3><i>timerange</i></h3><pre>
+    时间范围
+        - fmt存在，返回时间字符串
+        - fmt不存在 & unit存在，返回时间戳
+        - fmt不存在 & unit不存在，返回时间对象
 
     e.g.::
 
-        # 比如获取当前时间
-        now = utils.now2str()
-
-        # 比如获取当前日期
-        now_year = utils.now2str(fmt='d')  # 或者 fmt='%Y-%m-%d'
+        tr = utils.timerange('2021-12-12')
 
         +++++[更多详见参数或源码]+++++
 
+    :param start: 开始
+    :param end: 结束
     :param fmt: 格式化
-    :param tz_str: 时区字符串
+    :param unit: 单位（fs-浮点型秒, s-秒，ms-毫秒，us-微秒，ns-纳秒）
     :return:
     </pre>
-
-<h3><i>timestr2time</i></h3><pre>
-    时间字符串转换为时间对象（默认自动识别 fmt）
-
-    e.g.::
-
-        time_str = '2021-12-12'
-        date = utils.str2datetime(time_str)
-
-        +++++[更多详见参数或源码]+++++
-
-    :param time_str: 时间字符串
-    :param fmt: 格式化
-    :return:
-    </pre>
-
-<h3><i>get_time_range</i></h3><pre>
-        获取时间范围
-
-        e.g.::
-
-            start_timestr = '2021-12-12'
-            date = utils.get_time_range(start_timestr)
-
-            +++++[更多详见参数或源码]+++++
-
-        :param start_timestr: 开始时间字符串
-        :param end_timestr: 结束时间字符串
-        :param result_type: 结果类型：(datetime: 时间对象，timestr: 时间字符串，timestamp: 时间戳)
-        :param timestr_fmt: 时间字符串格式
-        :param timestamp_fmt: 时间戳格式（s-秒，ms-毫秒，us-微秒）
-        :return:
-        </pre>
 
 <h3><i>home</i></h3><pre>
     家目录
@@ -724,34 +723,19 @@
     :return:
     </pre>
 
-<h3><i>read_by_block</i></h3><pre>
+<h3><i>readblock</i></h3><pre>
     分块读取
 
     e.g.::
 
-        data = utils.read_by_block('foo.txt')
+        content = utils.readblock('foo.txt')
 
         +++++[更多详见参数或源码]+++++
 
-    :param file_path: 文件路径
-    :param block_size: 块大小
+    :param filepath: 文件路径
+    :param block: 块
     :param mode: 模式
     :param kwargs: open其他参数
-    :return:
-    </pre>
-
-<h3><i>gen_tmp_file</i></h3><pre>
-    生成临时文件
-
-    e.g.::
-
-        file_path = utils.gen_tmp_file(file_data)
-
-        +++++[更多详见参数或源码]+++++
-
-    :param file_data: 文件内容
-    :param file_suffix: 文件后缀
-    :param kwargs: kwargs
     :return:
     </pre>
 
@@ -793,13 +777,28 @@
     :return: count（解压数量）
     </pre>
 
-<h3><i>gen_level_dirs</i></h3><pre>
+<h3><i>writetemp</i></h3><pre>
+    写入临时文件
+
+    e.g.::
+
+        filepath = utils.writetemp(content)
+
+        +++++[更多详见参数或源码]+++++
+
+    :param content: 内容
+    :param suffix: 后缀
+    :param kwargs: kwargs
+    :return:
+    </pre>
+
+<h3><i>gen_leveldirs</i></h3><pre>
     生成层级目录
 
     e.g.::
 
         tag = "abcdef"
-        d = utils.gen_level_dirs(tag)
+        dirs = utils.gen_leveldirs(tag)
 
         +++++[更多详见参数或源码]+++++
 
@@ -812,17 +811,17 @@
     :return:
     </pre>
 
-<h3><i>map_json_type</i></h3><pre>
+<h3><i>map_jsontype</i></h3><pre>
     映射json类型
 
     e.g.::
 
-        t = "str"
-        mt = utils.map_json_type(t)
+        typename = "str"
+        mt = utils.map_jsontype(typename)
 
         +++++[更多详见参数或源码]+++++
 
-    :param t: 类型
+    :param typename: 类型名称
     :param is_title: 是否首字母大写
     :param is_keep_integer: 是否保留integer
     :return:

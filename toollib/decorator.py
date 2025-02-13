@@ -28,7 +28,7 @@ __all__ = [
 
 def catch_exception(
         is_raise: bool = True,
-        default_result: t.Any = None,
+        default: t.Any = None,
         exception: t.Type[Exception] = None,
         errmsg: str = None,
 ):
@@ -44,7 +44,7 @@ def catch_exception(
         +++++[更多详见参数或源码]+++++
 
     :param is_raise: 是否raise
-    :param default_result: 默认结果
+    :param default: 默认值
     :param exception: 异常类
     :param errmsg: 异常信息
     :return:
@@ -62,7 +62,7 @@ def catch_exception(
                     raise
                 else:
                     traceback.print_exc()
-                    return default_result
+                    return default
 
         return inner
 

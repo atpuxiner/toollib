@@ -58,7 +58,7 @@ def detect_encoding(data: t.Union[bytes, str], default: str = "utf-8") -> str:
         +++++[更多详见参数或源码]+++++
 
     :param data: 数据
-    :param default: 默认编码
+    :param default: 默认值
     :return:
     """
     if isinstance(data, str):
@@ -67,10 +67,10 @@ def detect_encoding(data: t.Union[bytes, str], default: str = "utf-8") -> str:
         try:
             data[:1024].decode(e)
             return e
-        except:
+        except Exception:
             try:
                 data.decode(e)
                 return e
-            except:
+            except Exception:
                 pass
     return default
