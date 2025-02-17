@@ -21,6 +21,7 @@ Commands:
   snowflake         雪花服务    
   bash              bash模板
   grpc              grpc模板
+  repkgs            刷新包
 """
 
 set_pip = """usage:
@@ -100,4 +101,12 @@ options:
   -h/--help     帮助
   -n/--name     名称[可选]
   -d/--dir      目录[可选]
+"""
+
+repkgs = """usage:
+  pytcli repkgs [options]
+options:
+  -h/--help             帮助
+  -r/--requirements     依赖文件
+  -o/--overwrite        是否覆盖（默认不覆盖）[可选]
 """

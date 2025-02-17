@@ -14,6 +14,7 @@ import subprocess
 import tarfile
 import tempfile
 import traceback
+import urllib.request as request
 from datetime import datetime, timezone
 import typing as t
 from json import dumps, loads
@@ -42,6 +43,7 @@ __all__ = [
     'writetemp',
     'gen_leveldirs',
     'map_jsontype',
+    'pkg_lver',
 ]
 
 
@@ -662,3 +664,27 @@ def map_jsontype(
             return jt.title()
         return jt
     return typename
+
+
+def pkg_lver(pkg_name: str) -> str:
+    """
+    包的最新版本
+
+    e.g.::
+
+        v = utils.pkg_lver("toollib")
+
+        +++++[更多详见参数或源码]+++++
+
+    :param pkg_name: 包名
+    :return:
+    """
+    try:
+        with request.urlopen(f"https://pypi.org/pypi/{pkg_name}/json") as resp:
+            if resp.status == 200:
+                data = loads(resp.read().decode("utf-8"))
+                return data["info"]["version"]
+            else:
+                raise Exception(f"Failed to fetch data. Status code: {resp.status}")
+    except Exception:
+        raise
