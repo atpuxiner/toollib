@@ -10,6 +10,7 @@
 
 class Versions:
     ALL = [
+        ('1.7.0', 'chg@pytcli.repkgs->pkgup'),
         ('1.6.9', 'add@包刷新等'),
         ('1.6.8', 'opt@utils等优化'),
         ('1.6.7', 'chg@utils&log'),
