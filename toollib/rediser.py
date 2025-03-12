@@ -20,21 +20,16 @@ class RedisCli:
 
     e.g.::
 
-        # 1) 单个连接使用
-        r = RedisCli(host='127.0.0.1')
-
-        # 或，使用with
-        with RedisCli(host='127.0.0.1') as r:
-            pass
-
-        #2）以连接池的方式
-
-        # 2.1）创建连接池
+        # 创建
         redis_cli = RedisCli(host='127.0.0.1', max_connections=100)
-        redis_conn = redis_cli.connection
-
-        # 2.2）调用连接（每次获取连接池中连接）
-        r = redis_conn()
+        # 使用方式1
+        r = redis_cli.connection()
+        value = r.get("xxx")
+        # 使用方式2（不推荐）
+        value = redis_cli.get("xxx")
+        # 使用方式3
+        with redis_cli.connection() as r:
+            value = r.get("xxx")
 
         +++++[更多详见参数或源码]+++++
     """
@@ -65,23 +60,24 @@ class RedisCli:
             max_connections=max_connections,
             **kwargs,
         )
-        self.__conn = redis.StrictRedis(connection_pool=self._redis_pool)
+        self._conn = redis.StrictRedis(connection_pool=self._redis_pool)
 
     def connection(self):
         """
         创建连接
         :return:
         """
-        self.__conn = redis.StrictRedis(connection_pool=self._redis_pool)
-        return self.__conn
+        self._conn = redis.StrictRedis(connection_pool=self._redis_pool)
+        return self._conn
 
     def __getattr__(self, cmd):
-        def exec_cmd(*args, **kwargs):
-            return getattr(self.__conn, cmd)(*args, **kwargs)
-        return exec_cmd
+        def _exec_cmd(*args, **kwargs):
+            return getattr(self._conn, cmd)(*args, **kwargs)
+
+        return _exec_cmd
 
     def __enter__(self):
-        return self.__conn
+        return self._conn
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        self.__conn.close()
+        self._conn.close()

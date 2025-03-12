@@ -208,8 +208,8 @@
     e.g.::
 
         from toollib.guid import SnowFlake
-        snow = SnowFlake()
-        uid = snow.gen_uid()
+        snow_cli = SnowFlake()
+        uid = snow_cli.gen_uid()
 
         +++++[更多详见参数或源码]+++++
     </pre>
@@ -226,8 +226,8 @@
     e.g.::
 
         from toollib.guid import RedisUid
-        ruid = RedisUid(redis_cli, prefix='ABC')
-        uid = ruid.gen_uid()
+        ruid_cli = RedisUid(redis_cli, prefix='ABC')
+        uid = ruid_cli.gen_uid()
 
         +++++[更多详见参数或源码]+++++
     </pre>
@@ -451,7 +451,7 @@
         :return:
         </pre>
 <br>++++++++++++++++++++++这是分隔线++++++++++++++++++++++
-<h2><i>toollib.redis_cli</i></h2><pre>
+<h2><i>toollib.rediser</i></h2><pre>
 @author axiner
 @version v1.0.0
 @created 2022/10/28 14:23
@@ -466,21 +466,16 @@
 
     e.g.::
 
-        # 1) 单个连接使用
-        r = RedisCli(host='127.0.0.1')
-
-        # 或，使用with
-        with RedisCli(host='127.0.0.1') as r:
-            pass
-
-        #2）以连接池的方式
-
-        # 2.1）创建连接池
+        # 创建
         redis_cli = RedisCli(host='127.0.0.1', max_connections=100)
-        redis_conn = redis_cli.connection
-
-        # 2.2）调用连接（每次获取连接池中连接）
-        r = redis_conn()
+        # 使用方式1
+        r = redis_cli.connection()
+        value = r.get("xxx")
+        # 使用方式2（不推荐）
+        value = redis_cli.get("xxx")
+        # 使用方式3
+        with redis_cli.connection() as r:
+            value = r.get("xxx")
 
         +++++[更多详见参数或源码]+++++
     </pre>

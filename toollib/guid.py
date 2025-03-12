@@ -36,8 +36,8 @@ class SnowFlake(metaclass=Singleton):
     e.g.::
 
         from toollib.guid import SnowFlake
-        snow = SnowFlake()
-        uid = snow.gen_uid()
+        snow_cli = SnowFlake()
+        uid = snow_cli.gen_uid()
 
         +++++[更多详见参数或源码]+++++
     """
@@ -135,8 +135,8 @@ class RedisUid:
     e.g.::
 
         from toollib.guid import RedisUid
-        ruid = RedisUid(redis_cli, prefix='ABC')
-        uid = ruid.gen_uid()
+        ruid_cli = RedisUid(redis_cli, prefix='ABC')
+        uid = ruid_cli.gen_uid()
 
         +++++[更多详见参数或源码]+++++
     """
