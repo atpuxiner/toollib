@@ -7,7 +7,7 @@
 @history
 """
 try:
-    import redis
+    from redis import Redis, ConnectionPool
 except ImportError:
     raise
 
@@ -52,7 +52,7 @@ class RedisCli:
         :param max_connections: 最大连接数
         :param kwargs: 其他参数
         """
-        self._redis_pool = redis.ConnectionPool(
+        self._redis_pool = ConnectionPool(
             host=host,
             port=port,
             db=db,
@@ -60,14 +60,14 @@ class RedisCli:
             max_connections=max_connections,
             **kwargs,
         )
-        self._conn = redis.StrictRedis(connection_pool=self._redis_pool)
+        self._conn = Redis(connection_pool=self._redis_pool)
 
     def connection(self):
         """
         创建连接
         :return:
         """
-        self._conn = redis.StrictRedis(connection_pool=self._redis_pool)
+        self._conn = Redis(connection_pool=self._redis_pool)
         return self._conn
 
     def __getattr__(self, cmd):

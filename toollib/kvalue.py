@@ -6,123 +6,86 @@
 @description
 @history
 """
+import json
 import os
 import sqlite3
 import time
-import typing as t
-from pathlib import Path
+from typing import Generator, Union
 
 from toollib.common.error import ExpireError
-from toollib.utils import json, Singleton
 
-__all__ = ['KV']
+__all__ = ['KValue']
 
 
-class KV(metaclass=Singleton):
+class KValue:
     """
-
-    key-value容器
+    key - value 容器
+    - key 支持类型：
+        - str
+    - value 支持类型：
+        - str
+        - list
+        - dict
+        - int
+        - float
+        - bool
+        - NoneType
 
     e.g.::
 
-        # 创建一个kv实例
-        kv = kvalue.KV(kvfile='D:/tmp/kv.db')
+        # 创建一个 kvalue 实例
+        kv = KValue()
 
-        # 增改查删操作
+        # 增改查删等操作
         kv.set(key='name', value='xxx')
-        kv.expire(key='name', ex=60)  # 过期时间
         kv.get(key='name')
         kv.exists(key='name')
         kv.delete(key='name')
+        ...
 
         +++++[更多详见参数或源码]+++++
     """
 
-    __support_types = (str, list,  dict, int, float, bool, type(None))
+    __slots__ = ('file', 'tbname', 'columns', 'conn')
+    _support_types = (str, list, dict, int, float, bool, type(None))
 
-    def __init__(self, kvfile: t.Union[str, Path], kvtable: str = 'kvalues', *args, **kwargs):
-        self.__kvfile, self.__kvtable = self.__check_g(kvfile, kvtable)
-        self.__new_db()
-        super(KV, self).__init__(*args, **kwargs)
+    def __init__(self, file: str = "kvalue.db", tbname: str = 'kvalue'):
+        self.file = os.path.abspath(file)
+        self.tbname = tbname
+        self.columns = (('key', 'text'), ('value', 'text'), ('expire', 'real'))
+        self.conn = None
+        self._new_db()
 
-    def __check_g(self, kvfile, kvtable):
-        if isinstance(kvfile, (str, Path)):
-            if not kvfile:
-                raise ValueError('"kvfile" cannot be empty')
-            kvfile = str(kvfile)
-        else:
-            raise TypeError('"kvfile" only supported: str or Path')
-        if isinstance(kvtable, str):
-            if not kvtable:
-                raise ValueError('"kvtable" cannot be empty')
-        else:
-            raise TypeError('"kvtable" only supported: str')
-        return kvfile, kvtable
+    def __enter__(self):
+        # 连接数据库
+        self.conn = sqlite3.connect(self.file)
+        return self
 
-    def __conn(self):
-        return sqlite3.connect(self.__kvfile)
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        if self.conn:
+            self.conn.close()
 
-    def get(self, key: str, check_expire: bool = True, get_expire: bool = False):
-        """
-        获取key的value
-        :param key:
-        :param check_expire: 是否检测过期（True: 若过期则会raise）
-        :param get_expire: 是否返回过期时间（True: 返回格式为元组(value, expire)）
-        :return:
-        """
-        sql = 'select v, expire from {tb} where k=?'.format(tb=self.__kvtable)
-        parameters = (key,)
-        value, expire = self.__queryone(sql, parameters)
-        if isinstance(check_expire, bool):
-            if check_expire is True:
-                if expire > 0:
-                    is_expire = expire - time.time()
-                    if is_expire < 0:
-                        raise ExpireError('"%s" has expired' % key)
-        else:
-            raise TypeError('"check_expire" only supported: bool')
-        if value:
-            value = json(value)
-        if get_expire is True:
-            return value, expire
-        return value
+    def _new_db(self):
+        if not self.conn:
+            self.conn = sqlite3.connect(self.file)
+        with self.conn as conn:
+            sql = f'create table if not exists {self.tbname}(' \
+                  'key text not null primary key, ' \
+                  'value text, ' \
+                  'expire real)'
+            cursor = conn.cursor()
+            cursor.execute(sql)
 
-    def set(self, key: str, value, expire: t.Union[int, float] = 0) -> None:
-        """
-        设置kye-value
-        :param key:
-        :param value:
-        :param expire: 默认为0（表不设置过期时间）
-        :return:
-        """
-        parameters = self.__check_parameters(key, value, expire)
-        sql = 'replace into {tb} (k, v, expire) values(?, ?, ?)'.format(tb=self.__kvtable)
-        self.__execute(sql, parameters)
-
-    def expire(self, key: str, ex: t.Union[int, float] = 0):
-        """
-        设置key的过期时间
-        :param key:
-        :param ex: 默认为0（表不设置过期时间）
-        :return:
-        """
-        key, _, ex = self.__check_parameters(key=key, expire=ex)
-        parameters = (ex, key)
-        sql = 'update {tb} set expire=? where k=?'.format(tb=self.__kvtable)
-        self.__execute(sql, parameters)
-
-    def __check_parameters(self, key, value=None, expire=None):
+    def _validate_parameters(self, key, value=None, expire=None):
         if isinstance(key, str):
             if not key:
                 raise ValueError('"key" cannot be empty')
         else:
             raise TypeError('"key" only supported: str')
         if value is not None:
-            if not isinstance(value, self.__support_types):
-                raise TypeError('"value" only supported: %s' % [
-                    _t.__name__ for _t in self.__support_types])
-            else:
-                value = json(value, 'dumps')
+            if not isinstance(value, self._support_types):
+                raise TypeError(f'"value" only supported: {[t.__name__ for t in self._support_types]}')
+            value = json.dumps(value)
         if expire is not None:
             if isinstance(expire, (int, float)):
                 if expire < 0:
@@ -133,74 +96,140 @@ class KV(metaclass=Singleton):
                 raise TypeError('"expire" only supported: int or float')
         return key, value, expire
 
-    def __execute(self, sql: str, parameters: t.Iterable = None) -> None:
-        conn = self.__conn()
-        cursor = conn.cursor()
-        if parameters:
-            cursor.execute(sql, parameters)
-        else:
+    def get(self, key: str, raise_expire: bool = False, return_expire: bool = False):
+        """
+        获取 key 的 value
+        :param key:
+        :param raise_expire: 是否过期异常
+        :param return_expire: 是否返回过期时间
+        :return:
+        """
+        with self.conn as conn:
+            sql = f'select value, expire from {self.tbname} where key =?'
+            cursor = conn.cursor()
+            cursor.execute(sql, (key,))
+            one = cursor.fetchone()
+            value, expire = one if one else (None, None)
+            if raise_expire:
+                if expire and expire <= time.time():
+                    raise ExpireError(f'"{key}" already expired')
+            if value:
+                value = json.loads(value)
+            if return_expire:
+                return value, expire
+            return value
+
+    def keys(self) -> Generator:
+        """
+        获取所有 key
+        :return:
+        """
+        with self.conn as conn:
+            sql = f'select key from {self.tbname}'
+            cursor = conn.cursor()
             cursor.execute(sql)
-        conn.commit()
-        self.__close(cursor, conn)
+            for row in cursor.fetchall():
+                yield row[0]
 
-    def __close(self, cursor, conn) -> None:
-        cursor.close()
-        conn.close()
+    def items(self) -> Generator:
+        """
+        获取所有 item
+        :return:
+        """
+        with self.conn as conn:
+            sql = f'select key, value, expire from {self.tbname}'
+            cursor = conn.cursor()
+            cursor.execute(sql)
+            for row in cursor.fetchall():
+                yield row
 
-    def __new_db(self) -> None:
-        sql = 'create table if not exists {tb}(' \
-              'k text not null primary key, ' \
-              'v text, ' \
-              'expire real)'.format(tb=self.__kvtable)
-        self.__execute(sql)
+    def set(
+            self,
+            key: str,
+            value: Union[str, list, dict, int, float, bool, type(None)],
+            expire: Union[int, float] = 0.0,
+    ):
+        """
+        设置 kye - value
+        :param key:
+        :param value:
+        :param expire: 默认为 0.0（表不设置过期时间）
+        :return:
+        """
+        with self.conn as conn:
+            key, value, expire = self._validate_parameters(key=key, value=value, expire=expire)
+            sql = f'replace into {self.tbname} (key, value, expire) values(?,?,?)'
+            cursor = conn.cursor()
+            cursor.execute(sql, (key, value, expire))
+            return cursor.rowcount
 
-    def __queryone(self, sql: str, parameters: t.Iterable):
-        conn = self.__conn()
-        cursor = conn.cursor()
-        cursor.execute(sql, parameters)
-        one = cursor.fetchone()
-        value, expire = one if one else (None, 0)
-        self.__close(cursor, conn)
-        return value, expire
+    def expire(self, key: str, expire: Union[int, float] = 0.0):
+        """
+        设置 key 的过期时间
+        :param key:
+        :param expire: 默认为 0.0（表不设置过期时间）
+        :return:
+        """
+        with self.conn as conn:
+            key, _, expire = self._validate_parameters(key=key, expire=expire)
+            sql = f'update {self.tbname} set expire =? where key =?'
+            cursor = conn.cursor()
+            cursor.execute(sql, (expire, key))
+            return cursor.rowcount
 
     def exists(self, key: str) -> bool:
         """
-        检测key是否存在
+        检测 key 是否存在
         :param key:
         :return:
         """
-        conn = self.__conn()
-        cursor = conn.cursor()
-        sql = 'select k from {tb} where k=?'.format(tb=self.__kvtable)
-        parameters = (key,)
-        cursor.execute(sql, parameters)
-        result = cursor.fetchone()
-        self.__close(cursor, conn)
-        if not result:
-            return False
-        return True
+        with self.conn as conn:
+            sql = f'select exists(select 1 from {self.tbname} where key =?)'
+            cursor = conn.cursor()
+            cursor.execute(sql, (key,))
+            result = cursor.fetchone()[0]
+            return bool(result)
 
-    def delete(self, key: str) -> None:
+    def delete(self, key: str):
         """
-        删除key
+        删除 key
         :param key:
         :return:
         """
-        sql = 'delete from {tb} where k=?'.format(tb=self.__kvtable)
-        parameters = (key,)
-        self.__execute(sql, parameters)
+        with self.conn as conn:
+            sql = f'delete from {self.tbname} where key =?'
+            cursor = conn.cursor()
+            cursor.execute(sql, (key,))
+            return cursor.rowcount
 
-    def clear(self) -> None:
+    def clear(self):
         """
-        清除所有key-value
+        清除所有 key - value
         :return:
         """
-        sql = 'delete from {tb}'.format(tb=self.__kvtable)
-        self.__execute(sql)
+        with self.conn as conn:
+            sql = f'delete from {self.tbname}'
+            cursor = conn.cursor()
+            cursor.execute(sql)
+            return cursor.rowcount
 
-    def remove(self) -> None:
+    def clear_expired(self):
         """
-        移除KV实例的kvfile文件
+        清除已过期的 key - value
         :return:
         """
-        os.remove(self.__kvfile)
+        with self.conn as conn:
+            sql = f'delete from {self.tbname} where expire <= ?'
+            cursor = conn.cursor()
+            cursor.execute(sql, (time.time(),))
+            return cursor.rowcount
+
+    def remove(self):
+        """
+        移除实例的数据文件
+        :return:
+        """
+        if os.path.isfile(self.file):
+            if self.conn:
+                self.conn.close()
+            os.remove(self.file)

@@ -1023,7 +1023,18 @@ uas = [
     'Mozilla/5.0 (Windows; U; Windows NT 6.0; en-US) AppleWebKit/532.0 (KHTML, like Gecko) Chrome/4.0.207.0 Safari/532.0',
 ]
 
-random_ua: str = random.choice(uas)
+
+def random_ua() -> str:
+    """
+    随机User-Agent
+
+    e.g.::
+
+        ua = useragent.random_ua()
+
+        +++++[更多详见参数或源码]+++++
+    """
+    return random.choice(uas)
 
 
 def gen_uas(max_len: int = 1000) -> t.Generator:

@@ -140,4 +140,5 @@ cython_debug/
 # Append
 .idea
 .vscode
+.db
 docs/doc2*

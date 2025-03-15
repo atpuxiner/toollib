@@ -248,67 +248,91 @@
 </pre>
 ---------------------------------
 
-<h3><i>KV</i></h3><pre>
-
-    key-value容器
+<h3><i>KValue</i></h3><pre>
+    key - value 容器
+    - key 支持类型：
+        - str
+    - value 支持类型：
+        - str
+        - list
+        - dict
+        - int
+        - float
+        - bool
+        - NoneType
 
     e.g.::
 
-        # 创建一个kv实例
-        kv = kvalue.KV(kvfile='D:/tmp/kv.db')
+        # 创建一个 kvalue 实例
+        kv = KValue()
 
-        # 增改查删操作
+        # 增改查删等操作
         kv.set(key='name', value='xxx')
-        kv.expire(key='name', ex=60)  # 过期时间
         kv.get(key='name')
         kv.exists(key='name')
         kv.delete(key='name')
+        ...
 
         +++++[更多详见参数或源码]+++++
     </pre>
 
-<h3><i>KV.clear</i></h3><pre>
-        清除所有key-value
+<h3><i>KValue.clear</i></h3><pre>
+        清除所有 key - value
         :return:
         </pre>
 
-<h3><i>KV.delete</i></h3><pre>
-        删除key
+<h3><i>KValue.clear_expired</i></h3><pre>
+        清除已过期的 key - value
+        :return:
+        </pre>
+
+<h3><i>KValue.delete</i></h3><pre>
+        删除 key
         :param key:
         :return:
         </pre>
 
-<h3><i>KV.exists</i></h3><pre>
-        检测key是否存在
+<h3><i>KValue.exists</i></h3><pre>
+        检测 key 是否存在
         :param key:
         :return:
         </pre>
 
-<h3><i>KV.expire</i></h3><pre>
-        设置key的过期时间
+<h3><i>KValue.expire</i></h3><pre>
+        设置 key 的过期时间
         :param key:
-        :param ex: 默认为0（表不设置过期时间）
+        :param expire: 默认为 0.0（表不设置过期时间）
         :return:
         </pre>
 
-<h3><i>KV.get</i></h3><pre>
-        获取key的value
+<h3><i>KValue.get</i></h3><pre>
+        获取 key 的 value
         :param key:
-        :param check_expire: 是否检测过期（True: 若过期则会raise）
-        :param get_expire: 是否返回过期时间（True: 返回格式为元组(value, expire)）
+        :param raise_expire: 是否过期异常
+        :param return_expire: 是否返回过期时间
         :return:
         </pre>
 
-<h3><i>KV.remove</i></h3><pre>
-        移除KV实例的kvfile文件
+<h3><i>KValue.items</i></h3><pre>
+        获取所有 item
         :return:
         </pre>
 
-<h3><i>KV.set</i></h3><pre>
-        设置kye-value
+<h3><i>KValue.keys</i></h3><pre>
+        获取所有 key
+        :return:
+        </pre>
+
+<h3><i>KValue.remove</i></h3><pre>
+        移除实例的数据文件
+        :return:
+        </pre>
+
+<h3><i>KValue.set</i></h3><pre>
+        设置 kye - value
         :param key:
         :param value:
-        :param expire: 默认为0（表不设置过期时间）
+        :param expire: 默认为 0.0（表不设置过期时间）
         :return:
         </pre>
 <br>++++++++++++++++++++++这是分隔线++++++++++++++++++++++
@@ -527,6 +551,16 @@
 </pre>
 ---------------------------------
 
+<h3><i>random_ua</i></h3><pre>
+    随机User-Agent
+
+    e.g.::
+
+        ua = useragent.random_ua()
+
+        +++++[更多详见参数或源码]+++++
+    </pre>
+
 <h3><i>gen_uas</i></h3><pre>
     生成User-Agent
 
@@ -537,6 +571,61 @@
         +++++[更多详见参数或源码]+++++
 
     :param max_len: 最大长度（数量）
+    :return:
+    </pre>
+<br>++++++++++++++++++++++这是分隔线++++++++++++++++++++++
+<h2><i>toollib.validator</i></h2><pre>
+@author axiner
+@version v1.0.0
+@created 2022/3/5 0:03
+@abstract 校验器
+@description
+@history
+</pre>
+---------------------------------
+
+<h3><i>Attr</i></h3><pre>
+    属性校验（数据描述符）
+
+    e.g.::
+
+        请查看数据描述符中数据校验.....
+
+        +++++[更多详见参数或源码]+++++
+    </pre>
+
+<h3><i>choicer</i></h3><pre>
+    选择校验（校验通过时返回obj）
+
+    e.g.::
+
+        flag = 1
+        flag = validator.choicer(flag, choices=[1,2,3], lable='标识')
+
+        # res: 若校验不通过则报异常
+
+        +++++[更多详见参数或源码]+++++
+
+    :param obj: 对象
+    :param choices: 可选范围
+    :param lable: 标签
+    :param errmsg: 不在可选范围时报错信息
+    :return:
+    </pre>
+
+<h3><i>pyv</i></h3><pre>
+    python版本校验
+
+    e.g.::
+
+        pyv = validator.pyv(min_v='3.7')
+
+        # res: 若校验不通过则报异常
+
+        +++++[更多详见参数或源码]+++++
+
+    :param min_v: 最小版本号（包含）
+    :param max_v: 最大版本号（不包含）
     :return:
     </pre>
 <br>++++++++++++++++++++++这是分隔线++++++++++++++++++++++
@@ -555,8 +644,8 @@
 
     e.g.::
 
-        # 比如使类A为单例模式
-        class A(metaclass=utils.Singleton):
+        # 使类A变为单例模式
+        class A(metaclass=Singleton):
             pass
 
         +++++[更多详见参数或源码]+++++
@@ -701,40 +790,6 @@
         +++++[更多详见参数或源码]+++++
     </pre>
 
-<h3><i>json</i></h3><pre>
-    json loads or dumps
-
-    e.g.::
-
-        data = {'name': 'x', age: 20}
-        data_json = utils.json(data, is_dumps=True)
-
-        +++++[更多详见参数或源码]+++++
-
-    :param data:
-    :param is_dumps: 是否dumps，否则loads
-    :param default: 默认值（如果入参data为空，优先返回给定的默认值）
-    :param args:
-    :param kwargs:
-    :return:
-    </pre>
-
-<h3><i>readblock</i></h3><pre>
-    分块读取
-
-    e.g.::
-
-        content = utils.readblock('foo.txt')
-
-        +++++[更多详见参数或源码]+++++
-
-    :param filepath: 文件路径
-    :param block: 块
-    :param mode: 模式
-    :param kwargs: open其他参数
-    :return:
-    </pre>
-
 <h3><i>listfile</i></h3><pre>
     文件列表
 
@@ -849,60 +904,39 @@
     :param dns_servers: dns服务
     :return:
     </pre>
-<br>++++++++++++++++++++++这是分隔线++++++++++++++++++++++
-<h2><i>toollib.validator</i></h2><pre>
-@author axiner
-@version v1.0.0
-@created 2022/3/5 0:03
-@abstract 校验器
-@description
-@history
-</pre>
----------------------------------
 
-<h3><i>Attr</i></h3><pre>
-    属性校验（数据描述符）
+<h3><i>get_cls_attrs</i></h3><pre>
+    获取类属性
 
     e.g.::
 
-        请查看数据描述符中数据校验.....
+        # 获取类属性
+        class A:
+
+            def foo(self):
+                cls_attrs = get_cls_attrs(A)
 
         +++++[更多详见参数或源码]+++++
     </pre>
 
-<h3><i>choicer</i></h3><pre>
-    选择校验（校验通过时返回obj）
+<h3><i>parse_variable</i></h3><pre>
+    解析变量
 
     e.g.::
 
-        flag = 1
-        flag = validator.choicer(flag, choices=[1,2,3], lable='标识')
-
-        # res: 若校验不通过则报异常
+        value = utils.parse_variable(k="name", v_type=str, v_from=os.environ)
 
         +++++[更多详见参数或源码]+++++
 
-    :param obj: 对象
-    :param choices: 可选范围
-    :param lable: 标签
-    :param errmsg: 不在可选范围时报错信息
-    :return:
-    </pre>
-
-<h3><i>pyv</i></h3><pre>
-    python版本校验
-
-    e.g.::
-
-        pyv = validator.pyv(min_v='3.7')
-
-        # res: 若校验不通过则报异常
-
-        +++++[更多详见参数或源码]+++++
-
-    :param min_v: 最小版本号（包含）
-    :param max_v: 最大版本号（不包含）
-    :return:
+    :param k: 键
+    :param v_type: 值类型
+    :param v_from: 值来源
+    :param v_convert: 值转换
+    :param default: 默认值
+    :param is_raise: 是否raise
+    :param sep: 分隔符，针对list、tuple、set、dict
+    :param kv_sep: 键值分隔符，针对dict
+    :return: 转换后的值
     </pre>
 
         </div>
