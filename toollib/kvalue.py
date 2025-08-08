@@ -9,6 +9,7 @@
 import json
 import os
 import sqlite3
+import tempfile
 import time
 from typing import Generator, Union
 
@@ -49,7 +50,10 @@ class KValue:
     __slots__ = ('file', 'tbname', 'columns', 'conn')
     _support_types = (str, list, dict, int, float, bool, type(None))
 
-    def __init__(self, file: str = "kvalue.db", tbname: str = 'kvalue'):
+    def __init__(self, file: str = None, tbname: str = 'kvalue'):
+        if not file:
+            with tempfile.NamedTemporaryFile(mode='wb', suffix='.kvalue', delete=False) as t:
+                file = t.name
         self.file = os.path.abspath(file)
         self.tbname = tbname
         self.columns = (('key', 'text'), ('value', 'text'), ('expire', 'real'))
