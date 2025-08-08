@@ -1,3 +1,40 @@
 [build-system]
-requires = ['setuptools', 'wheel' ]
-build-backend = 'setuptools.build_meta'
+requires = ["setuptools>=80.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+# project
+[project]
+name = "toollib"
+description = "This is a tool library."
+authors = [{ name = "axiner", email = "atpuxiner@163.com" }]
+urls = { Homepage = "https://github.com/atpuxiner/toollib" }
+classifiers = [
+    "Programming Language :: Python :: 3.9",
+    "Operating System :: OS Independent",
+]
+requires-python = ">=3.9"
+license-files = ["LICENSE"]
+readme = "README.md"
+dynamic = [
+    "version",
+    "dependencies",
+]
+
+[project.scripts]
+pytcli = "toollib.tcli.__main__:main"
+
+# tool
+[tool.setuptools.dynamic]
+version = { attr = "toollib.__version__" }
+dependencies = { file = "requirements.txt" }
+
+[tool.setuptools.package-data]
+"toollib.common" = ["*.exe"]
+"toollib.tcli.commands.plugins" = ["*.sh"]
+
+[tool.setuptools.packages.find]
+where = ["."]
+exclude = [
+    "docs*",
+    "dist*",
+]
