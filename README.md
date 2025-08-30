@@ -11,5 +11,5 @@
 This package can be installed using pip (>=Python3.9):
 > pip install toollib
 
-## LICENSE
+## License
 This project is released under the MIT License (MIT). See [LICENSE](LICENSE)
