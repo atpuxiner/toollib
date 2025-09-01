@@ -16,6 +16,7 @@ def parse_variable(
         v_type: Callable,
         v_from: VFrom,
         v_convert: VConvert = None,
+        v_invalid: tuple = (None, ""),
         default: Any = None,
         is_raise: bool = False,
         sep: str = ",",
@@ -34,6 +35,7 @@ def parse_variable(
     :param v_type: 值类型
     :param v_from: 值来源
     :param v_convert: 值转换
+    :param v_invalid: 值无效
     :param default: 默认值
     :param is_raise: 是否raise
     :param sep: 分隔符，针对list、tuple、set、dict
@@ -41,7 +43,7 @@ def parse_variable(
     :return: 转换后的值
     """
     v = v_from.get(k)
-    if v is None or v == "":
+    if v in (v_invalid or (None, "")):
         return default
     try:
         if callable(v_convert):

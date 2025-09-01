@@ -1,5 +1,8 @@
 # history
 
+## v1.7.6
+- opt@parse_variable
+
 ## v1.7.5
 - chg@kvalue&docker镜像源等
 
