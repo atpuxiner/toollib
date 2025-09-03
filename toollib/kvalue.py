@@ -123,25 +123,27 @@ class KValue:
                 return value, expire
             return value
 
-    def keys(self) -> Generator:
+    def keys(self, reverse: bool = False) -> Generator:
         """
         获取所有 key
         :return:
         """
+        order = "desc" if reverse else "asc"
         with self.conn as conn:
-            sql = f'select key from {self.tbname}'
+            sql = f'select key from {self.tbname} order by key {order}'
             cursor = conn.cursor()
             cursor.execute(sql)
             for row in cursor.fetchall():
                 yield row[0]
 
-    def items(self) -> Generator:
+    def items(self, reverse: bool = False) -> Generator:
         """
         获取所有 item
         :return:
         """
+        order = "desc" if reverse else "asc"
         with self.conn as conn:
-            sql = f'select key, value, expire from {self.tbname}'
+            sql = f'select key, value, expire from {self.tbname} order by key {order}'
             cursor = conn.cursor()
             cursor.execute(sql)
             for row in cursor.fetchall():
