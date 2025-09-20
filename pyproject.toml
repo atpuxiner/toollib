@@ -30,7 +30,10 @@ dependencies = { file = "requirements.txt" }
 
 [tool.setuptools.package-data]
 "toollib.common" = ["*.exe"]
-"toollib.tcli.commands.plugins" = ["*.sh"]
+"toollib.tcli.commands.plugins" = [
+    "*.sh",
+    "*.yaml",
+]
 
 [tool.setuptools.packages.find]
 where = ["."]
