@@ -11,25 +11,35 @@ try:
 except ImportError:
     raise
 
-__all__ = ['RedisCli']
+__all__ = ['RedisClient']
 
 
-class RedisCli:
+class RedisClient:
     """
     redis客户端
 
     e.g.::
 
         # 创建
-        redis_cli = RedisCli(host='127.0.0.1', max_connections=100)
-        # 使用方式1
-        r = redis_cli.connection()
-        value = r.get("xxx")
-        # 使用方式2（不推荐）
-        value = redis_cli.get("xxx")
-        # 使用方式3
-        with redis_cli.connection() as r:
-            value = r.get("xxx")
+        redis_client = RedisClient(host='127.0.0.1', max_connections=100)
+
+        # 使用方式1：标准用法（推荐）
+        r = redis_client.connection()
+        print(r.get("name"))
+        print(r.get("age"))
+        r.close()
+
+        # 使用方式2：代理调用-每次创建新连接（不推荐）
+        print(redis_client.get("name"))
+        print(redis_client.get("age"))
+
+        # 使用方式3：上下文管理器（推荐）
+        with redis_client.connection() as r:
+            print(r.get("name"))
+
+        # 使用方式4：上下文管理器（简洁写法）
+        with redis_client as r:
+            print(r.get("name"))
 
         +++++[更多详见参数或源码]+++++
     """
@@ -60,24 +70,23 @@ class RedisCli:
             max_connections=max_connections,
             **kwargs,
         )
-        self._conn = Redis(connection_pool=self._redis_pool)
 
-    def connection(self):
+    def connection(self) -> Redis:
         """
         创建连接
         :return:
         """
-        self._conn = Redis(connection_pool=self._redis_pool)
-        return self._conn
+        return Redis(connection_pool=self._redis_pool)
 
     def __getattr__(self, cmd):
         def _exec_cmd(*args, **kwargs):
-            return getattr(self._conn, cmd)(*args, **kwargs)
+            with self.connection() as conn:
+                return getattr(conn, cmd)(*args, **kwargs)
 
         return _exec_cmd
 
     def __enter__(self):
-        return self._conn
+        return self.connection()
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        self._conn.close()
+        pass

@@ -1,5 +1,8 @@
 # history
 
+## v1.7.9
+- opt@优化redis客户端
+
 ## v1.7.8
 - fix@修复tcli文件缺失
 
