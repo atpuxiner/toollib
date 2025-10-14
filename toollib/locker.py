@@ -26,7 +26,7 @@ class Locker:
     e.g.::
 
         a = 0
-        locker = Locker(redis_cli)  # 创建锁实例
+        locker = Locker(redis_client)  # 创建锁实例
         if locker.acquire(acquire_timeout=2)  # 获取锁
             for i in range(10):
                 a += 1
@@ -35,7 +35,7 @@ class Locker:
 
         # 另：with方式
         a = 0
-        locker = Locker(redis_cli, acquire_timeout=2)
+        locker = Locker(redis_client, acquire_timeout=2)
         with locker:
             if locker.is_lock:  # 若获取锁
                 for i in range(10):
@@ -47,21 +47,21 @@ class Locker:
 
     def __init__(
             self,
-            redis_cli,
+            redis_client,
             acquire_timeout: int = 2,
-            timeout: int = 29,
+            timeout: int = 30,
             lock_name: str = 'locker',
             lock_value: str = 'locker!@#',
     ):
         """
         初始化
-        :param redis_cli: redis客户端对象
+        :param redis_client: redis客户端
         :param acquire_timeout: 获取锁的超时时间
         :param timeout: 锁的过期时间
         :param lock_name: 锁名
         :param lock_value: 锁值
         """
-        self.rds = redis_cli
+        self.rds = redis_client
         self.acquire_timeout = acquire_timeout
         self.timeout = timeout
         self.lock_name = lock_name if lock_name else 'locker'

@@ -208,8 +208,8 @@
     e.g.::
 
         from toollib.guid import SnowFlake
-        snow_cli = SnowFlake()
-        uid = snow_cli.gen_uid()
+        snow_client = SnowFlake()
+        uid = snow_client.gen_uid()
 
         +++++[更多详见参数或源码]+++++
     </pre>
@@ -352,7 +352,7 @@
     e.g.::
 
         a = 0
-        locker = Locker(redis_cli)  # 创建锁实例
+        locker = Locker(redis_client)  # 创建锁实例
         if locker.acquire(acquire_timeout=2)  # 获取锁
             for i in range(10):
                 a += 1
@@ -361,7 +361,7 @@
 
         # 另：with方式
         a = 0
-        locker = Locker(redis_cli, acquire_timeout=2)
+        locker = Locker(redis_client, acquire_timeout=2)
         with locker:
             if locker.is_lock:  # 若获取锁
                 for i in range(10):

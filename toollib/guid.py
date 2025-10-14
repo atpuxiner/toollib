@@ -36,8 +36,8 @@ class SnowFlake(metaclass=Singleton):
     e.g.::
 
         from toollib.guid import SnowFlake
-        snow_cli = SnowFlake()
-        uid = snow_cli.gen_uid()
+        snow_client = SnowFlake()
+        uid = snow_client.gen_uid()
 
         +++++[更多详见参数或源码]+++++
     """
