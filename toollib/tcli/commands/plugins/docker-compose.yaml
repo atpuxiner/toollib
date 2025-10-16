@@ -4,7 +4,7 @@ services:
   mysql57:
     image: mysql:5.7
     container_name: mysql57
-    restart: always
+    restart: unless-stopped
     environment:
       MYSQL_ROOT_PASSWORD: Mimmm@129
     volumes:
@@ -15,7 +15,7 @@ services:
   mysql80:
     image: mysql:8.0
     container_name: mysql80
-    restart: always
+    restart: unless-stopped
     environment:
       MYSQL_ROOT_PASSWORD: Mimmm@129
     volumes:
@@ -26,20 +26,50 @@ services:
   postgres:
     image: postgres:latest
     container_name: postgres
-    restart: always
+    restart: unless-stopped
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: Mimmm@129
       POSTGRES_DB: postgres
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=C.UTF-8"
     volumes:
-      - /volumes/postgres:/var/lib/postgresql/data
+      - /volumes/postgres:/var/lib/postgresql
     ports:
       - "5432:5432"
+    command: >
+      postgres -c 'max_connections=200'
+               -c 'shared_buffers=1GB'
+               -c 'temp_buffers=8MB'
+               -c 'work_mem=16MB'
+               -c 'max_prepared_transactions=200'
+
+  pgvector:
+    image: ankane/pgvector:latest
+    container_name: pgvector
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: Mimmm@129
+      POSTGRES_DB: postgres
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=C.UTF-8"
+    volumes:
+      - /volumes/pgvector:/var/lib/postgresql
+    ports:
+      - "5432:5432"
+    command: >
+      postgres -c 'max_connections=200'
+               -c 'shared_buffers=1GB'
+               -c 'temp_buffers=8MB'
+               -c 'work_mem=16MB'
+               -c 'max_prepared_transactions=200'
+    # After started the container:
+    # 1. Execute in PostgreSQL terminal
+    #    - CREATE EXTENSION IF NOT EXISTS vector;
 
   mongo:
     image: mongo:latest
     container_name: mongo
-    restart: always
+    restart: unless-stopped
     environment:
       MONGO_INITDB_ROOT_USERNAME: root
       MONGO_INITDB_ROOT_PASSWORD: Mimmm@129
@@ -51,7 +81,7 @@ services:
   redis:
     image: redis:latest
     container_name: redis
-    restart: always
+    restart: unless-stopped
     volumes:
       - /volumes/redis:/data
     ports:
@@ -61,7 +91,7 @@ services:
   rabbitmq:
     image: rabbitmq:3-management
     container_name: rabbitmq
-    restart: always
+    restart: unless-stopped
     environment:
       RABBITMQ_DEFAULT_USER: admin
       RABBITMQ_DEFAULT_PASS: Mimmm@129
@@ -74,7 +104,7 @@ services:
   neo4j:
     image: neo4j:latest
     container_name: neo4j
-    restart: always
+    restart: unless-stopped
     environment:
       NEO4J_AUTH: neo4j/Mimmm@129
     volumes:
@@ -93,7 +123,7 @@ services:
   opensearch-single:
     image: opensearchproject/opensearch:latest
     container_name: opensearch-single
-    restart: always
+    restart: unless-stopped
     environment:
       cluster.name: opensearch-cluster
       node.name: opensearch-single
@@ -129,7 +159,7 @@ services:
   zincsearch:
     image: public.ecr.aws/zinclabs/zincsearch:latest
     container_name: zincsearch
-    restart: always
+    restart: unless-stopped
     environment:
       ZINC_SERVER_ADDRESS: 0.0.0.0
       ZINC_DATA_PATH: "/data"
@@ -146,7 +176,7 @@ services:
   vsftpd:
     image: fauria/vsftpd:latest
     container_name: vsftpd
-    restart: always
+    restart: unless-stopped
     environment:
       FTP_USER: admin
       FTP_PASS: Mimmm@129
@@ -163,7 +193,7 @@ services:
   minio:
     image: minio/minio:latest
     container_name: minio
-    restart: always
+    restart: unless-stopped
     environment:
       MINIO_ROOT_USER: admin
       MINIO_ROOT_PASSWORD: Mimmm@129
@@ -179,7 +209,7 @@ services:
   nginx:
     image: nginx:latest
     container_name: nginx
-    restart: always
+    restart: unless-stopped
     volumes:
 #      - /volumes/nginx/conf/nginx.conf:/etc/nginx/nginx.conf
 #      - /volumes/nginx/html:/usr/share/nginx/html
@@ -190,7 +220,7 @@ services:
   gitlab:
     image: gitlab/gitlab-ce:latest
     container_name: gitlab
-    restart: always
+    restart: unless-stopped
     hostname: gitlab.example.com
     environment:
       GITLAB_OMNIBUS_CONFIG: |
@@ -208,7 +238,7 @@ services:
   jenkins:
     image: jenkins/jenkins:lts
     container_name: jenkins
-    restart: always
+    restart: unless-stopped
     volumes:
       - /volumes/jenkins/home:/var/jenkins_home
       - /volumes/jenkins/docker.sock:/var/run/docker.sock

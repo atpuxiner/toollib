@@ -1,5 +1,8 @@
 # history
 
+## v1.8.0
+- chg@docker.yaml
+
 ## v1.7.9
 - opt@优化redis客户端
 - chg@规范代码
