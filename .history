@@ -1,5 +1,8 @@
 # history
 
+## v1.8.2
+- add@docker.yaml.milvus
+
 ## v1.8.1
 - opt@优化utils导入
 

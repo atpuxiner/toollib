@@ -173,6 +173,77 @@ services:
     # 1. Adjust permissions of the directory
     #    - sudo chmod a+rwx /volumes/zincsearch
 
+  milvus-standalone:
+    image: milvusdb/milvus:v2.6.4
+    container_name: milvus-standalone
+    restart: unless-stopped
+    environment:
+      MINIO_REGION: us-east-1
+      ETCD_ENDPOINTS: milvus-etcd:2379
+      MINIO_ADDRESS: milvus-minio:9000
+    volumes:
+      - /volumes/milvus/standalone:/var/lib/milvus
+    ports:
+      - "19530:19530"
+      - "9091:9091"
+    command: [ "milvus", "run", "standalone" ]
+    security_opt:
+      - seccomp:unconfined
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:9091/healthz" ]
+      interval: 30s
+      start_period: 90s
+      timeout: 20s
+      retries: 3
+    depends_on:
+      - "milvus-etcd"
+      - "milvus-minio"
+  milvus-etcd:
+    image: quay.io/coreos/etcd:v3.5.18
+    container_name: milvus-etcd
+    restart: unless-stopped
+    environment:
+      - ETCD_AUTO_COMPACTION_MODE=revision
+      - ETCD_AUTO_COMPACTION_RETENTION=1000
+      - ETCD_QUOTA_BACKEND_BYTES=4294967296
+      - ETCD_SNAPSHOT_COUNT=50000
+    volumes:
+      - /volumes/milvus/etcd:/etcd
+    command: etcd -advertise-client-urls=http://milvus-etcd:2379 -listen-client-urls http://0.0.0.0:2379 --data-dir /etcd
+    healthcheck:
+      test: [ "CMD", "etcdctl", "endpoint", "health" ]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+  milvus-minio:
+    image: minio/minio:RELEASE.2024-05-28T17-19-04Z
+    container_name: milvus-minio
+    restart: unless-stopped
+    environment:
+      MINIO_ACCESS_KEY: minioadmin
+      MINIO_SECRET_KEY: minioadmin
+    volumes:
+      - /volumes/milvus/minio:/minio_data
+    ports:
+      - "9001:9001"
+      - "9000:9000"
+    command: minio server /minio_data --console-address ":9001"
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:9000/minio/health/live" ]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+  milvus-attu:
+    image: zilliz/attu:v2.6
+    container_name: milvus-attu
+    restart: unless-stopped
+    environment:
+      MILVUS_URL: localhost:19530
+    ports:
+      - "3000:3000"
+    depends_on:
+      - milvus-standalone
+
   vsftpd:
     image: fauria/vsftpd:latest
     container_name: vsftpd
