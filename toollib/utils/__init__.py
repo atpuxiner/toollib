@@ -30,6 +30,7 @@ __all__ = [
     'localip',
     'get_cls_attrs',
     'parse_variable',
+    'copytree',
 ]
 
 if TYPE_CHECKING:
@@ -53,6 +54,7 @@ if TYPE_CHECKING:
     from toollib.utils._localip import localip
     from toollib.utils._get_cls_attrs import get_cls_attrs
     from toollib.utils._parse_variable import parse_variable
+    from toollib.utils._copytree import copytree
 
 
 def __getattr__(name):

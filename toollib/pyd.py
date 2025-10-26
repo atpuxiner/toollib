@@ -13,7 +13,7 @@ import subprocess
 import sys
 
 from toollib.common import constor
-from toollib.utils import listfile
+from toollib.utils import listfile, copytree
 
 try:
     from Cython.Build import cythonize
@@ -53,15 +53,15 @@ class PydPacker:
             self,
             src: str,
             exclude: str = None,
-            ignore: str = '.git,.idea,__pycache__',
+            ignore: str = '.git|.idea|.vscode|__pycache__',
             suffix: str = 'Pyd',
             is_clean: bool = False,
     ):
         """
         初始化
         :param src: 源（py目录或文件）
-        :param exclude: 排除编译（适用正则）
-        :param ignore: 忽略复制（多个逗号隔开）
+        :param exclude: 排除编译（正则表达式，使用管道等注意加引号）
+        :param ignore: 忽略复制（正则表达式，使用管道等注意加引号）
         :param suffix: 后缀（默认为Pyd）
         :param is_clean: 是否清理（默认不清理）
         """
@@ -98,8 +98,7 @@ class PydPacker:
         if not os.path.isdir(self.dst):
             os.mkdir(self.dst)
         if self.src_is_dir:
-            ignore_cp = shutil.ignore_patterns(*self.ignore.split(',')) if self.ignore else None
-            shutil.copytree(self.src, self.dst, ignore=ignore_cp, dirs_exist_ok=True)
+            copytree(self.src, self.dst, ignore_regex=self.ignore, dirs_exist_ok=True)
         else:
             shutil.copy(self.src, self.dst)
         with open(self.setuppy, 'wb') as fp:

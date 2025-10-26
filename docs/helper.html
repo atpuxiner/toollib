@@ -950,6 +950,20 @@
     :return: 转换后的值
     </pre>
 
+<h3><i>copytree</i></h3><pre>
+    递归复制目录树
+
+    e.g.::
+
+        copytree(src=r"D:/myproj", dst=r"D:/myproj-bak", ignore_regex=r"^logs($|/)")
+
+    :param src: 源目录路径
+    :param dst: 目标目录路径
+    :param ignore_regex: 忽略正则表达式（使用'/'作为路径分隔符）
+    :param dirs_exist_ok: 是否允许目标目录已存在
+    :param copy_function: 文件复制函数（默认 shutil.copy2）
+    </pre>
+
         </div>
     </div>
 </body>
