@@ -436,23 +436,23 @@
     :return:
     </pre>
 <br>++++++++++++++++++++++这是分隔线++++++++++++++++++++++
-<h2><i>toollib.py2pyder</i></h2><pre>
+<h2><i>toollib.pyd</i></h2><pre>
 @author axiner
 @version v1.0.0
 @created 2023/4/7 15:14
-@abstract py转pyd
+@abstract pyd
 @description
 @history
 </pre>
 ---------------------------------
 
-<h3><i>Py2Pyder</i></h3><pre>
-    py转pyd
+<h3><i>PydPacker</i></h3><pre>
+    pyd打包器
 
     e.g.::
 
-        py2pyder = Py2Pyder(src=r'D:\pyprj', exclude=r'main.py|tests/')
-        py2pyder.run()
+        packer = PydPacker(src=r'D:\pyprj', exclude=r'main.py|tests/')
+        packer.run()
 
         - 注：
             - 自动跳过: __init__.py, 空文件，只存在注释的文件，当然还有非py文件
@@ -470,7 +470,7 @@
         +++++[更多详见参数或源码]+++++
     </pre>
 
-<h3><i>Py2Pyder.run</i></h3><pre>
+<h3><i>PydPacker.run</i></h3><pre>
         执行
         :return:
         </pre>

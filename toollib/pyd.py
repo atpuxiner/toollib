@@ -2,7 +2,7 @@
 @author axiner
 @version v1.0.0
 @created 2023/4/7 15:14
-@abstract py转pyd
+@abstract pyd
 @description
 @history
 """
@@ -21,17 +21,17 @@ except ImportError as err:
     sys.stderr.write(f"ERROR: {err}\n")
     sys.exit(1)
 
-__all__ = ['Py2Pyder']
+__all__ = ['PydPacker']
 
 
-class Py2Pyder:
+class PydPacker:
     """
-    py转pyd
+    pyd打包器
 
     e.g.::
 
-        py2pyder = Py2Pyder(src=r'D:\pyprj', exclude=r'main.py|tests/')
-        py2pyder.run()
+        packer = PydPacker(src=r'D:\pyprj', exclude=r'main.py|tests/')
+        packer.run()
 
         - 注：
             - 自动跳过: __init__.py, 空文件，只存在注释的文件，当然还有非py文件
@@ -52,29 +52,29 @@ class Py2Pyder:
     def __init__(
             self,
             src: str,
-            postfix: str = 'Pyd',
             exclude: str = None,
             ignore: str = '.git,.idea,__pycache__',
+            suffix: str = 'Pyd',
             is_clean: bool = False,
     ):
         """
         初始化
         :param src: 源（py目录或文件）
-        :param postfix: 后缀（默认为Pyd）
         :param exclude: 排除编译（适用正则）
         :param ignore: 忽略复制（多个逗号隔开）
+        :param suffix: 后缀（默认为Pyd）
         :param is_clean: 是否清理（默认不清理）
         """
         self.src = os.path.abspath(src)
         if os.path.isdir(self.src):
             self.src_is_dir = True
-            self.dst = self.src + (postfix or 'Pyd')
+            self.dst = self.src + (suffix or 'Pyd')
         elif os.path.isfile(self.src):
             self.src_is_dir = False
             if self.src.endswith('.py'):
                 self.dst = os.path.join(
                     os.path.dirname(self.src),
-                    os.path.basename(self.src)[:-3] + (postfix or 'Pyd'))
+                    os.path.basename(self.src)[:-3] + (suffix or 'Pyd'))
             else:
                 sys.stderr.write(f'ERROR: Only supported py, not {src.split(".")[-1]}\n')
                 sys.exit(1)

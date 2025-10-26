@@ -8,7 +8,7 @@
 """
 import sys
 
-from toollib.py2pyder import Py2Pyder
+from toollib.pyd import PydPacker
 from toollib.tcli.base import BaseCmd
 from toollib.tcli.option import Options, Arg
 
@@ -20,28 +20,28 @@ class Cmd(BaseCmd):
 
     def add_options(self):
         options = Options(
-            name='py2pyd',
-            desc='py转pyd',
-            optional={self.py2pyd: [
+            name='pyd打包',
+            desc='pyd打包',
+            optional={self.pydpack: [
                 Arg('-s', '--src', required=True, type=str, help='源（py目录或文件）'),
-                Arg('-p', '--postfix', type=str, help='后缀（默认为Pyd）'),
                 Arg('-e', '--exclude', type=str, help='排除编译（适用正则，使用管道等注意加引号）'),
                 Arg('-i', '--ignore', default='.git,.idea,__pycache__', type=str, help='忽略复制（多个逗号隔开）'),
+                Arg('--suffix', type=str, help='后缀（默认为Pyd）'),
                 Arg('--clean', action='store_true', help='是否清理（默认不清理）'),
             ]}
         )
         return options
 
-    def py2pyd(self):
+    def pydpack(self):
         src = self.parse_args.src.strip()
         if not src or src == "''":
             sys.stderr.write('ERROR: -s/--src: 不能为空\n')
             sys.exit(1)
-        py2pyder = Py2Pyder(
+        packer = PydPacker(
             src=src,
-            postfix=self.parse_args.postfix,
             exclude=self.parse_args.exclude,
             ignore=self.parse_args.ignore,
+            suffix=self.parse_args.suffix,
             is_clean=self.parse_args.clean,
         )
-        py2pyder.run()
+        packer.run()

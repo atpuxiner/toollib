@@ -17,7 +17,7 @@ Commands:
   set-mirrors       设置镜像源
   set-sshkey        设置ssh免密
   docker            docker操作
-  py2pyd            py转pyd
+  pydpack           pyd打包
   snowflake         雪花服务    
   bash              bash模板
   grpc              grpc模板
@@ -66,14 +66,14 @@ options:
     -f/--filename   文件名称[可选]
 """
 
-py2pyd = """usage:
-  pytcli py2pyd [options]
+pydpack = """usage:
+  pytcli pydpack [options]
 options:
   -h/--help         帮助
   -s/--src          源（py目录或文件）
-  -p/--postfix      后缀（默认为Pyd）[可选]
   -e/--exclude      排除编译（适用正则，使用管道等注意加引号）[可选]
   -i/--ignore       忽略复制（多个逗号隔开）[可选]
+  --suffix          后缀（默认为Pyd）[可选]
   --clean           是否清理（默认不清理）[可选]
 """
 
@@ -108,5 +108,5 @@ pkgup = """usage:
 options:
   -h/--help             帮助
   -r/--requirements     依赖文件（默认requirements.txt）[可选]
-  --rewrite             是否重写（默认不重写）[可选]
+  --overwrite           是否覆盖（默认不覆盖）[可选]
 """
