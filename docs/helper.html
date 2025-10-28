@@ -451,7 +451,7 @@
 
     e.g.::
 
-        packer = PydPacker(src=r'D:\pyprj', exclude=r'main.py|tests/')
+        packer = PydPacker(src=r'D:\pyproj', exclude='main.py')
         packer.run()
 
         - 注：
@@ -461,9 +461,9 @@
                 - 多个则用'|'隔开，如：main.py|tests/
                 - 项目的入口文件一般是不编译的，排除即可
             - 若编译不成功或编译后执行不成功：
-                - 确保python代码的正确性与严谨性
-                - 编译失败的，Pyd目录下对应的源文件不会删除
-                - 编译后的执行环境，需要与编译时的一致
+                - 规范代码，确保代码的正确性与严谨性
+                - 编译失败，Pyd目录下会保留对应的源文件
+                - 执行环境，需要与编译时的环境一致
             - 输出：Pyd目录（默认源+Pyd），该目录与src结构一致
 
         +++++[更多详见参数或源码]+++++
