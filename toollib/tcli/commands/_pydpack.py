@@ -26,7 +26,7 @@ class Cmd(BaseCmd):
                 Arg('-s', '--src', required=True, type=str, help='源（py目录或文件）'),
                 Arg('-e', '--exclude', type=str, help='排除编译（正则表达式，使用管道等注意加引号）'),
                 Arg('-i', '--ignore', default='.git|.idea|.vscode|__pycache__', type=str, help='忽略复制（正则表达式，使用管道等注意加引号）'),
-                Arg('--suffix', type=str, help='后缀（默认为Pyd）'),
+                Arg('--suffix', default='Pyd', type=str, help='后缀（默认为Pyd）'),
                 Arg('--clean', action='store_true', help='是否清理（默认不清理）'),
             ]}
         )
