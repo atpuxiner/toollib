@@ -61,7 +61,7 @@ class PydPacker:
         :param src: 源（py目录或文件）
         :param exclude: 排除编译（正则表达式，使用管道等注意加引号）
         :param ignore: 忽略复制（正则表达式，使用管道等注意加引号）
-        :param suffix: 后缀（默认为Pyd）
+        :param suffix: 后缀（默认Pyd）
         :param is_clean: 是否清理（默认不清理）
         """
         self.src = os.path.abspath(src)
