@@ -64,7 +64,12 @@ class Cmd(BaseCmd):
                             repl = f"{pkg}=={ver}"
                         except metadata.PackageNotFoundError:
                             pass
-                    text = re.sub(rf"^{pkg}[^\n]*", repl, text, flags=re.MULTILINE)
+                    text = re.sub(
+                        pattern=rf"^\s*{re.escape(pkg)}(?:\s*$|\s*(?:==|~=|>=|<=|!=|<|>).*)",
+                        repl=repl,
+                        string=text,
+                        flags=re.MULTILINE,
+                    )
                 if self.parse_args.overwrite:
                     with open(requirements, "w", encoding="utf-8") as f:
                         f.write(text)
