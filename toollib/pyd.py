@@ -11,6 +11,7 @@ import re
 import shutil
 import subprocess
 import sys
+import sysconfig
 
 from toollib.common import constor
 from toollib.utils import listfile, copytree
@@ -41,9 +42,9 @@ class PydPacker:
                 - 项目的入口文件一般是不编译的，排除即可
             - 若编译不成功或编译后执行不成功：
                 - 规范代码，确保代码的正确性与严谨性
-                - 编译失败，Pyd目录下会保留对应的源文件
+                - 编译失败，目录下会保留对应的源文件
                 - 执行环境，需要与编译时的环境一致
-            - 输出：Pyd目录（默认源+Pyd），该目录与src结构一致
+            - 输出：目录（源+扩展后缀），该目录与src结构一致
 
         +++++[更多详见参数或源码]+++++
     """
@@ -53,7 +54,7 @@ class PydPacker:
             src: str,
             exclude: str = None,
             ignore: str = '.git|.idea|.vscode|__pycache__',
-            suffix: str = 'Pyd',
+            keep_ext_suffix: bool = False,
             is_clean: bool = False,
     ):
         """
@@ -61,19 +62,20 @@ class PydPacker:
         :param src: 源（py目录或文件）
         :param exclude: 排除编译（正则表达式，使用管道等注意加引号）
         :param ignore: 忽略复制（正则表达式，使用管道等注意加引号）
-        :param suffix: 后缀（默认Pyd）
+        :param keep_ext_suffix: 是否保留扩展后缀（默认不保留）
         :param is_clean: 是否清理（默认不清理）
         """
+        self.ext_suffix = sysconfig.get_config_var('EXT_SUFFIX')
         self.src = os.path.abspath(src)
         if os.path.isdir(self.src):
             self.src_is_dir = True
-            self.dst = self.src + (suffix or 'Pyd')
+            self.dst = self.src + self.ext_suffix
         elif os.path.isfile(self.src):
             self.src_is_dir = False
             if self.src.endswith('.py'):
                 self.dst = os.path.join(
                     os.path.dirname(self.src),
-                    os.path.basename(self.src)[:-3] + (suffix or 'Pyd'))
+                    os.path.basename(self.src)[:-3] + self.ext_suffix)
             else:
                 sys.stderr.write(f'ERROR: Only supported py, not {src.split(".")[-1]}\n')
                 sys.exit(1)
@@ -82,6 +84,7 @@ class PydPacker:
             sys.exit(1)
         self.exclude = exclude
         self.ignore = ignore
+        self.keep_ext_suffix = keep_ext_suffix
         self.is_clean = is_clean
         self.setuppy = os.path.join(self.dst, '.setuppy')
 
@@ -135,6 +138,11 @@ class PydPacker:
             cpyfile = pyfile[:-3] + '.c'
             if os.path.isfile(cpyfile):
                 os.remove(cpyfile)
+            if not self.keep_ext_suffix:
+                old_file = pyfile[:-3] + self.ext_suffix
+                if os.path.isfile(old_file):
+                    new_file = old_file[:-len(self.ext_suffix)] + os.path.splitext(self.ext_suffix)[-1]
+                    os.replace(old_file, new_file)
         if self.is_clean:
             subprocess.run(['python', self.setuppy, 'clean', 'xxx', 'xxx'])
             shutil.rmtree(os.path.join(self.dst, 'build'), ignore_errors=True)
