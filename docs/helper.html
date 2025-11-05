@@ -398,42 +398,33 @@
 
     e.g.::
 
-        # 直接使用
+        # 初始化
         from toollib import log
-        logger = log.init_logger(__name__)
-        # # 后续直接引用logger对象即可
 
-        # 另：可先初始化，再使用
-        # 1. 入口模块初始化
-        from toollib import log
-        log.init_logger()
-        # 2. 其他模块通过logging获取日志器
-        import logging
-        logger = logging.getLogger(__name__)
+        logger = log.init_logger(__name__)
+        logger.info("hello")
 
         +++++[更多详见参数或源码]+++++
 
-    config: dict
-        - file_access_name: 文件access名称
-        - file_error_name: 文件error名称
-        - file_encoding: 文件编码
-        - file_format: 文件日志格式
-        - file_maxBytes: 文件轮转最大字节
-        - file_when: 文件轮转时间
-        - file_interval: 文件轮转间隔
-        - file_backupCount: 文件轮转备份数
-
     :param name: 名称
     :param debug: 是否调试
-    :param format: 日志格式
+    :param fmt: 日志格式
+    :param fmt_with_request_id: 带request_id的日志格式
     :param datefmt: 时间格式
-    :param config: 配置
+    :param force_clear: 强制清除
+    :param propagate: 向上传播
+    :param request_id_var: 请求id变量
+    :param enable_console: 开启控制台日志
+    :param enable_file: 开启文件日志
     :param log_dir: 日志目录
-    :param is_file: 是否文件日志
-    :param is_console: 是否控制台日志
-    :param is_time_rotating: 是否时间日志轮转
-    :param is_disable_existing_logger: 是否禁用已存在的日志记录器
-    :return:
+    :param access_name: access名称
+    :param error_name: error名称
+    :param time_rotating: 时间轮转
+    :param encoding: 编码
+    :param backup_count: 轮转备份数
+    :param when: 轮转时间
+    :param interval: 轮转间隔
+    :param max_bytes: 轮转最大字节
     </pre>
 <br>++++++++++++++++++++++这是分隔线++++++++++++++++++++++
 <h2><i>toollib.pyd</i></h2><pre>
