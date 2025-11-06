@@ -86,21 +86,24 @@ class Cmd(BaseCmd):
             if not yaml_conf:
                 print(f'{name}: 抱歉暂未收录')
             else:
-                mode = 'w'
-                if os.path.isfile(yaml_path) and os.path.getsize(yaml_path):
-                    with open(yaml_path, 'r') as fp:
-                        text = fp.read()
-                        if text.strip():
-                            mode = 'a'
-                            if re.search(rf"\r?\n\s\s{name}(-\w*)?:\s*\r?\n", text):
-                                print(f'{name}: `{yaml_path}`疑似存在')
-                                continue
-                if mode == 'a':
-                    yaml_conf = '\n' + yaml_conf
+                existing_content = ''
+                file_exists_and_nonempty = False
+                if os.path.isfile(yaml_path):
+                    with open(yaml_path, 'r', encoding='utf-8') as fp:
+                        existing_content = fp.read().rstrip()
+                    if existing_content:
+                        file_exists_and_nonempty = True
+                if file_exists_and_nonempty:
+                    if re.search(rf"\r?\n\s\s{name}(-\w*)?:\s*\r?\n", existing_content):
+                        print(f'{name}: `{yaml_path}`疑似存在')
+                        continue
+                if file_exists_and_nonempty:
+                    yaml_to_write = existing_content + '\n' + yaml_conf
                 else:
-                    yaml_conf = '#version: "3.9"\nservices:\n' + yaml_conf
-                with open(yaml_path, mode) as fp:
-                    fp.write(yaml_conf)
+                    yaml_to_write = 'services:\n' + yaml_conf
+                with open(yaml_path, 'w', encoding='utf-8') as fp:
+                    fp.write(yaml_to_write.rstrip())
+                    fp.write('\n')
                     print(f'{name}: `{yaml_path}`写入成功')
                     c += 1
         if c:
