@@ -387,11 +387,57 @@
 @author axiner
 @version v1.0.0
 @created 2023/5/20 13:19
-@abstract 日志
+@abstract 日志-logging
 @description
 @history
 </pre>
 ---------------------------------
+
+<h3><i>LogFormatter</i></h3><pre>暂无文档</pre>
+
+<h3><i>LogFormatter.format</i></h3><pre>暂无文档</pre>
+
+<h3><i>LogFormatter.formatException</i></h3><pre>
+        Format and return the specified exception information as a string.
+
+        This default implementation just uses
+        traceback.print_exception()
+        </pre>
+
+<h3><i>LogFormatter.formatMessage</i></h3><pre>暂无文档</pre>
+
+<h3><i>LogFormatter.formatStack</i></h3><pre>
+        This method is provided as an extension point for specialized
+        formatting of stack information.
+
+        The input data is a string as returned from a call to
+        :func:`traceback.print_stack`, but with the last trailing newline
+        removed.
+
+        The base implementation just returns the value passed in.
+        </pre>
+
+<h3><i>LogFormatter.formatTime</i></h3><pre>
+        Return the creation time of the specified LogRecord as formatted text.
+
+        This method should be called from format() by a formatter which
+        wants to make use of a formatted time. This method can be overridden
+        in formatters to provide for any specific requirement, but the
+        basic behaviour is as follows: if datefmt (a string) is specified,
+        it is used with time.strftime() to format the creation time of the
+        record. Otherwise, an ISO8601-like (or RFC 3339-like) format is used.
+        The resulting string is returned. This function uses a user-configurable
+        function to convert the creation time to a tuple. By default,
+        time.localtime() is used; to change this for a particular formatter
+        instance, set the 'converter' attribute to a function with the same
+        signature as time.localtime() or time.gmtime(). To change it for all
+        formatters, for example if you want all logging times to be shown in GMT,
+        set the 'converter' attribute in the Formatter class.
+        </pre>
+
+<h3><i>LogFormatter.usesTime</i></h3><pre>
+        Check if the format uses the creation time of the record.
+        </pre>
 
 <h3><i>init_logger</i></h3><pre>
     初始化日志器
@@ -404,27 +450,188 @@
         logger = log.init_logger(__name__)
         logger.info("hello")
 
+        # 其他模块调用建议
+        import logging
+
+        logger = logging.getLogger(__name__)
+        logger.info("hello")
+
         +++++[更多详见参数或源码]+++++
 
     :param name: 名称
-    :param debug: 是否调试
+    :param level: 日志等级
     :param fmt: 日志格式
-    :param fmt_with_request_id: 带request_id的日志格式
     :param datefmt: 时间格式
-    :param force_clear: 强制清除
-    :param propagate: 向上传播
+    :param msecfmt: 时间毫秒格式
     :param request_id_var: 请求id变量
+    :param fmt_with_request_id: 带request_id的日志格式
+    :param serialize: 序列化
+    :param formatter: 格式化实例
+    :param clear_handlers: 清除handlers
     :param enable_console: 开启控制台日志
     :param enable_file: 开启文件日志
-    :param log_dir: 日志目录
+    :param basedir: 日志基目录
     :param access_name: access名称
     :param error_name: error名称
-    :param time_rotating: 时间轮转
+    :param name_with_pid: 名称带pid
     :param encoding: 编码
+    :param rotation: 轮转方式
     :param backup_count: 轮转备份数
     :param when: 轮转时间
     :param interval: 轮转间隔
     :param max_bytes: 轮转最大字节
+    :param propagate: 向上传播
+    :param enqueue: 启用队列
+    :param queue_maxsize: 队列最大容量
+    </pre>
+<br>++++++++++++++++++++++这是分隔线++++++++++++++++++++++
+<h2><i>toollib.logu</i></h2><pre>
+@author axiner
+@version v1.0.0
+@created 2023/5/20 13:19
+@abstract 日志-loguru
+@description
+@history
+</pre>
+---------------------------------
+
+<h3><i>LogFormatter</i></h3><pre>暂无文档</pre>
+
+<h3><i>LogInterception</i></h3><pre>暂无文档</pre>
+
+<h3><i>LogInterception.acquire</i></h3><pre>
+        Acquire the I/O thread lock.
+        </pre>
+
+<h3><i>LogInterception.addFilter</i></h3><pre>
+        Add the specified filter to this handler.
+        </pre>
+
+<h3><i>LogInterception.close</i></h3><pre>
+        Tidy up any resources used by the handler.
+
+        This version removes the handler from an internal map of handlers,
+        _handlers, which is used for handler lookup by name. Subclasses
+        should ensure that this gets called from overridden close()
+        methods.
+        </pre>
+
+<h3><i>LogInterception.createLock</i></h3><pre>
+        Acquire a thread lock for serializing access to the underlying I/O.
+        </pre>
+
+<h3><i>LogInterception.emit</i></h3><pre>暂无文档</pre>
+
+<h3><i>LogInterception.filter</i></h3><pre>
+        Determine if a record is loggable by consulting all the filters.
+
+        The default is to allow the record to be logged; any filter can veto
+        this and the record is then dropped. Returns a zero value if a record
+        is to be dropped, else non-zero.
+
+        .. versionchanged:: 3.2
+
+           Allow filters to be just callables.
+        </pre>
+
+<h3><i>LogInterception.flush</i></h3><pre>
+        Ensure all logging output has been flushed.
+
+        This version does nothing and is intended to be implemented by
+        subclasses.
+        </pre>
+
+<h3><i>LogInterception.format</i></h3><pre>
+        Format the specified record.
+
+        If a formatter is set, use it. Otherwise, use the default formatter
+        for the module.
+        </pre>
+
+<h3><i>LogInterception.get_name</i></h3><pre>暂无文档</pre>
+
+<h3><i>LogInterception.handle</i></h3><pre>
+        Conditionally emit the specified logging record.
+
+        Emission depends on filters which may have been added to the handler.
+        Wrap the actual emission of the record with acquisition/release of
+        the I/O thread lock. Returns whether the filter passed the record for
+        emission.
+        </pre>
+
+<h3><i>LogInterception.handleError</i></h3><pre>
+        Handle errors which occur during an emit() call.
+
+        This method should be called from handlers when an exception is
+        encountered during an emit() call. If raiseExceptions is false,
+        exceptions get silently ignored. This is what is mostly wanted
+        for a logging system - most users will not care about errors in
+        the logging system, they are more interested in application errors.
+        You could, however, replace this with a custom handler if you wish.
+        The record which was being processed is passed in to this method.
+        </pre>
+
+<h3><i>LogInterception.release</i></h3><pre>
+        Release the I/O thread lock.
+        </pre>
+
+<h3><i>LogInterception.removeFilter</i></h3><pre>
+        Remove the specified filter from this handler.
+        </pre>
+
+<h3><i>LogInterception.setFormatter</i></h3><pre>
+        Set the formatter for this handler.
+        </pre>
+
+<h3><i>LogInterception.setLevel</i></h3><pre>
+        Set the logging level of this handler.  level must be an int or a str.
+        </pre>
+
+<h3><i>LogInterception.set_name</i></h3><pre>暂无文档</pre>
+
+<h3><i>init_logger</i></h3><pre>
+    初始化日志器
+
+    e.g.::
+
+        # 初始化
+        from toollib import logu
+
+        logger = logu.init_logger(__name__)
+        logger.info("hello")
+
+        # 其他模块调用建议
+        from loguru import logger
+
+        logger.info("hello")
+
+        +++++[更多详见参数或源码]+++++
+
+    :param name: 名称（无用）
+    :param level: 日志等级
+    :param fmt: 日志格式
+    :param datefmt: 时间格式
+    :param msecfmt: 时间毫秒格式
+    :param request_id_var: 请求id变量
+    :param fmt_with_request_id: 带request_id的日志格式
+    :param serialize: 序列化
+    :param formatter: 格式化实例
+    :param clear_handlers: 清除handlers
+    :param enable_console: 开启控制台日志
+    :param enable_file: 开启文件日志
+    :param basedir: 日志基目录
+    :param access_name: access名称
+    :param error_name: error名称
+    :param name_with_pid: 名称带pid
+    :param encoding: 编码
+    :param rotation: 轮转方式
+    :param retention: 保留策略
+    :param compression: 压缩方式
+    :param enqueue: 启用队列
+    :param backtrace: 回溯
+    :param diagnose: 诊断
+    :param catch: 捕获
+    :param interception: 拦截器
     </pre>
 <br>++++++++++++++++++++++这是分隔线++++++++++++++++++++++
 <h2><i>toollib.pyd</i></h2><pre>

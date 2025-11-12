@@ -9,10 +9,7 @@
 import time
 import typing as t
 
-try:
-    from redis.exceptions import WatchError
-except ImportError:
-    raise
+from redis.exceptions import WatchError
 
 __all__ = [
     'Locker',

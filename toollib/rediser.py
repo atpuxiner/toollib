@@ -6,10 +6,7 @@
 @description
 @history
 """
-try:
-    from redis import Redis, ConnectionPool
-except ImportError:
-    raise
+from redis import Redis, ConnectionPool
 
 __all__ = ['RedisClient']
 
