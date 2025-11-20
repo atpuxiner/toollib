@@ -6,14 +6,18 @@
 @description
 @history
 """
-import json
 import os
 import sqlite3
 import tempfile
 import time
-from typing import Generator, Union
+from typing import Generator, Sequence, Any
 
 from toollib.common.error import ExpireError
+
+try:
+    import orjson as json
+except ImportError:
+    import json
 
 __all__ = ['KValue']
 
@@ -37,7 +41,7 @@ class KValue:
         # 创建一个 kvalue 实例
         kv = KValue()
 
-        # 增改查删等操作
+        # 增删改查等操作
         kv.set(key='name', value='xxx')
         kv.get(key='name')
         kv.exists(key='name')
@@ -73,10 +77,7 @@ class KValue:
         if not self.conn:
             self.conn = sqlite3.connect(self.file)
         with self.conn as conn:
-            sql = f'create table if not exists {self.tbname}(' \
-                  'key text not null primary key, ' \
-                  'value text, ' \
-                  'expire real)'
+            sql = f'create table if not exists {self.tbname} (key text not null primary key, value text, expire real)'
             cursor = conn.cursor()
             cursor.execute(sql)
 
@@ -100,16 +101,31 @@ class KValue:
                 raise TypeError('"expire" only supported: int or float')
         return key, value, expire
 
+    def set(self, key: str, value: str | list | dict | int | float | bool | None, expire: int | float = 0.0):
+        """
+        设置 kye - value
+        :param key: 键
+        :param value: 值
+        :param expire: 默认为 0.0（表不设置过期时间）
+        :return:
+        """
+        with self.conn as conn:
+            key, value, expire = self._validate_parameters(key=key, value=value, expire=expire)
+            sql = f'replace into {self.tbname} (key, value, expire) values (?,?,?)'
+            cursor = conn.cursor()
+            cursor.execute(sql, (key, value, expire))
+            return cursor.rowcount
+
     def get(self, key: str, raise_expire: bool = False, return_expire: bool = False):
         """
         获取 key 的 value
-        :param key:
+        :param key: 键
         :param raise_expire: 是否过期异常
         :param return_expire: 是否返回过期时间
         :return:
         """
         with self.conn as conn:
-            sql = f'select value, expire from {self.tbname} where key =?'
+            sql = f'select value, expire from {self.tbname} where key = ? limit 1'
             cursor = conn.cursor()
             cursor.execute(sql, (key,))
             one = cursor.fetchone()
@@ -133,7 +149,7 @@ class KValue:
             sql = f'select key from {self.tbname} order by key {order}'
             cursor = conn.cursor()
             cursor.execute(sql)
-            for row in cursor.fetchall():
+            for row in cursor:
                 yield row[0]
 
     def items(self, reverse: bool = False) -> Generator:
@@ -146,30 +162,21 @@ class KValue:
             sql = f'select key, value, expire from {self.tbname} order by key {order}'
             cursor = conn.cursor()
             cursor.execute(sql)
-            for row in cursor.fetchall():
+            for row in cursor:
                 yield row
 
-    def set(
-            self,
-            key: str,
-            value: Union[str, list, dict, int, float, bool, type(None)],
-            expire: Union[int, float] = 0.0,
-    ):
+    def count(self) -> int:
         """
-        设置 kye - value
-        :param key:
-        :param value:
-        :param expire: 默认为 0.0（表不设置过期时间）
+        数量
         :return:
         """
         with self.conn as conn:
-            key, value, expire = self._validate_parameters(key=key, value=value, expire=expire)
-            sql = f'replace into {self.tbname} (key, value, expire) values(?,?,?)'
+            sql = f'select count(key) from {self.tbname}'
             cursor = conn.cursor()
-            cursor.execute(sql, (key, value, expire))
-            return cursor.rowcount
+            cursor.execute(sql)
+            return cursor.fetchone()[0]
 
-    def expire(self, key: str, expire: Union[int, float] = 0.0):
+    def expire(self, key: str, expire: int | float = 0.0):
         """
         设置 key 的过期时间
         :param key:
@@ -178,7 +185,7 @@ class KValue:
         """
         with self.conn as conn:
             key, _, expire = self._validate_parameters(key=key, expire=expire)
-            sql = f'update {self.tbname} set expire =? where key =?'
+            sql = f'update {self.tbname} set expire = ? where key = ?'
             cursor = conn.cursor()
             cursor.execute(sql, (expire, key))
             return cursor.rowcount
@@ -190,7 +197,7 @@ class KValue:
         :return:
         """
         with self.conn as conn:
-            sql = f'select exists(select 1 from {self.tbname} where key =?)'
+            sql = f'select exists (select 1 from {self.tbname} where key = ?)'
             cursor = conn.cursor()
             cursor.execute(sql, (key,))
             result = cursor.fetchone()[0]
@@ -203,7 +210,7 @@ class KValue:
         :return:
         """
         with self.conn as conn:
-            sql = f'delete from {self.tbname} where key =?'
+            sql = f'delete from {self.tbname} where key = ?'
             cursor = conn.cursor()
             cursor.execute(sql, (key,))
             return cursor.rowcount
@@ -229,6 +236,55 @@ class KValue:
             cursor = conn.cursor()
             cursor.execute(sql, (time.time(),))
             return cursor.rowcount
+
+    def execute(self, sql: str, parameters: Sequence[Any] | dict = None):
+        """
+        执行
+        :param sql: 语句
+        :param parameters: 参数
+        :return:
+        """
+        with self.conn as conn:
+            cursor = conn.cursor()
+            cursor.execute(sql, parameters or ())
+            return cursor.rowcount
+
+    def executemany(self, sql: str, parameters: Sequence[Any] | dict = None):
+        """
+        执行
+        :param sql: 语句
+        :param parameters: 参数
+        :return:
+        """
+        with self.conn as conn:
+            cursor = conn.cursor()
+            cursor.executemany(sql, parameters or [])
+            return cursor.rowcount
+
+    def fetchone(self, sql: str, parameters: Sequence[Any] | dict = None):
+        """
+        查询
+        :param sql: 语句
+        :param parameters: 参数
+        :return:
+        """
+        with self.conn as conn:
+            cursor = conn.cursor()
+            cursor.execute(sql, parameters or ())
+            return cursor.fetchone()
+
+    def fetchall(self, sql: str, parameters: Sequence[Any] | dict = None) -> Generator:
+        """
+        查询
+        :param sql: 语句
+        :param parameters: 参数
+        :return:
+        """
+        with self.conn as conn:
+            cursor = conn.cursor()
+            cursor.execute(sql, parameters or ())
+            for row in cursor:
+                yield row
 
     def remove(self):
         """

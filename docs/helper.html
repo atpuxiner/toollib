@@ -266,7 +266,7 @@
         # 创建一个 kvalue 实例
         kv = KValue()
 
-        # 增改查删等操作
+        # 增删改查等操作
         kv.set(key='name', value='xxx')
         kv.get(key='name')
         kv.exists(key='name')
@@ -286,9 +286,28 @@
         :return:
         </pre>
 
+<h3><i>KValue.count</i></h3><pre>
+        数量
+        :return:
+        </pre>
+
 <h3><i>KValue.delete</i></h3><pre>
         删除 key
         :param key:
+        :return:
+        </pre>
+
+<h3><i>KValue.execute</i></h3><pre>
+        执行
+        :param sql: 语句
+        :param parameters: 参数
+        :return:
+        </pre>
+
+<h3><i>KValue.executemany</i></h3><pre>
+        执行
+        :param sql: 语句
+        :param parameters: 参数
         :return:
         </pre>
 
@@ -305,9 +324,23 @@
         :return:
         </pre>
 
+<h3><i>KValue.fetchall</i></h3><pre>
+        查询
+        :param sql: 语句
+        :param parameters: 参数
+        :return:
+        </pre>
+
+<h3><i>KValue.fetchone</i></h3><pre>
+        查询
+        :param sql: 语句
+        :param parameters: 参数
+        :return:
+        </pre>
+
 <h3><i>KValue.get</i></h3><pre>
         获取 key 的 value
-        :param key:
+        :param key: 键
         :param raise_expire: 是否过期异常
         :param return_expire: 是否返回过期时间
         :return:
@@ -330,8 +363,8 @@
 
 <h3><i>KValue.set</i></h3><pre>
         设置 kye - value
-        :param key:
-        :param value:
+        :param key: 键
+        :param value: 值
         :param expire: 默认为 0.0（表不设置过期时间）
         :return:
         </pre>
