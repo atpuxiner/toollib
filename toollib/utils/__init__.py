@@ -31,6 +31,11 @@ __all__ = [
     'get_cls_attrs',
     'parse_variable',
     'copytree',
+    'detect_encoding',
+    'read_csv',
+    'read_xlsx',
+    'split_csv',
+    'split_xlsx',
 ]
 
 if TYPE_CHECKING:
@@ -55,6 +60,11 @@ if TYPE_CHECKING:
     from toollib.utils._get_cls_attrs import get_cls_attrs
     from toollib.utils._parse_variable import parse_variable
     from toollib.utils._copytree import copytree
+    from toollib.utils._detect_encoding import detect_encoding
+    from toollib.utils._read_csv import read_csv
+    from toollib.utils._read_xlsx import read_xlsx
+    from toollib.utils._split_csv import split_csv
+    from toollib.utils._split_xlsx import split_xlsx
 
 
 def __getattr__(name):

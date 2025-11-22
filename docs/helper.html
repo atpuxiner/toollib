@@ -1194,6 +1194,101 @@
     :param copy_function: 文件复制函数（默认 shutil.copy2）
     </pre>
 
+<h3><i>detect_encoding</i></h3><pre>
+    检测编码
+
+    e.g.::
+
+        encoding = utils.detect_encoding('中中中文'.encode('gbk'))
+
+        +++++[更多详见参数或源码]+++++
+
+    :param data_or_path: 数据或路径
+    :param size: 大小
+    :param retry_size: 重试大小
+    :param confidence: 置信度
+    :param default: 默认值
+    :return:
+    </pre>
+
+<h3><i>read_csv</i></h3><pre>
+    读取 csv 文件
+
+    e.g.::
+
+        for idx, row in utils.read_csv(r'E:	mp.csv'):
+            print(idx, row)
+
+        +++++[更多详见参数或源码]+++++
+
+    :param filepath: 文件路径
+    :param column_names: 列名称
+    :param min_rows: 最小行
+    :param max_rows: 最大行
+    :param encoding: 编码
+    :return:
+    </pre>
+
+<h3><i>read_xlsx</i></h3><pre>
+    读取 xlsx 文件
+
+    e.g.::
+
+        for idx, row in read_xlsx(r'E:	mp.xlsx'):
+            print(idx, row)
+
+    :param filepath: 文件路径
+    :param column_names: 列名称
+    :param min_rows: 最小行
+    :param max_rows: 最大行
+    :param sheet_name: 工作表
+    :return:
+    </pre>
+
+<h3><i>split_csv</i></h3><pre>
+    分割 csv 文件
+
+    e.g.::
+
+        for p in utils.split_csv(r'E:	mp.csv'):
+            print(p)
+
+        +++++[更多详见参数或源码]+++++
+
+    :param filepath: 文件路径
+    :param max_rows: 最大行数
+    :param max_files: 最大文件数
+    :param output_dir: 输出目录
+    :param part_sep: part分隔符
+    :param part_prefix: part前缀
+    :param part_zfill: part补零数
+    :param part_pos: part编号位置
+    :param encoding: 编码
+    :yields:
+    </pre>
+
+<h3><i>split_xlsx</i></h3><pre>
+    分割 xlsx 文件
+
+    e.g.::
+
+        for p in utils.split_xlsx(r'E:	mp.xlsx'):
+            print(p)
+
+        +++++[更多详见参数或源码]+++++
+
+    :param filepath: 文件路径
+    :param max_rows: 最大行数
+    :param max_files: 最大文件数
+    :param output_dir: 输出目录
+    :param part_sep: part分隔符
+    :param part_prefix: part前缀
+    :param part_zfill: part补零数
+    :param part_pos: part编号位置
+    :param sheet_name: 工作表
+    :yields:
+    </pre>
+
         </div>
     </div>
 </body>

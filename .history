@@ -3,6 +3,7 @@
 ## v1.9.0
 - chg@优化日志模块等
 - chg@优化kvalue
+- add@增加相关工具函数
 
 ## v1.8.9
 - chg@pytcli.docker
