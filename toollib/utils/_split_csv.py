@@ -77,6 +77,8 @@ def split_csv(
                     writer.writerow(row)
                     written_rows += 1
             if written_rows == 0:
+                if file_index > 0:
+                    out_path.unlink(missing_ok=True)
                 break
             yield str(out_path)
             file_index += 1
