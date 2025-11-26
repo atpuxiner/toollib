@@ -33,8 +33,10 @@ def chromedriver(driver_dir: t.Union[str, Path] = '.', platform: str = None, bro
     e.g.::
 
         import time
+
         from selenium import webdriver
         from selenium.webdriver.chrome.service import Service
+        from selenium.webdriver.common.by import By
         from toollib import autodriver
 
         # 自动下载驱动，默认下载本地浏览器对应的版本（各参数可自行指定）
@@ -42,10 +44,10 @@ def chromedriver(driver_dir: t.Union[str, Path] = '.', platform: str = None, bro
         # 以下为selenium模拟操作
         driver = webdriver.Chrome(service=Service(driver_path))
         driver.get('https://www.baidu.com')
-        driver.find_element(value='kw').send_keys('python toollib')
-        driver.find_element(value='su').click()
+        driver.find_element(By.ID, 'chat-textarea').send_keys('python toollib')
+        driver.find_element(By.ID, 'chat-submit-button').click()
         time.sleep(29)
-        driver.close()
+        driver.quit()
 
         +++++[更多详见参数或源码]+++++
 
@@ -108,7 +110,7 @@ class ChromeDriver:
             else:
                 raise DriverError('Download driver failed')
         except Exception as err:
-            if hasattr(err, 'code') and err.code == 404:
+            if getattr(err, 'code', None) == 404:
                 sys.stdout.write('This version may not exist\n')
                 sys.exit()
             else:
@@ -135,7 +137,7 @@ class ChromeDriver:
         request = urlrequest.Request(
             url,
             headers={
-                'User-Agent': random_ua,
+                'User-Agent': random_ua(),
             })
         return urlrequest.urlopen(request).read().decode()
 

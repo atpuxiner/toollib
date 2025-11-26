@@ -62,8 +62,10 @@
     e.g.::
 
         import time
+
         from selenium import webdriver
         from selenium.webdriver.chrome.service import Service
+        from selenium.webdriver.common.by import By
         from toollib import autodriver
 
         # 自动下载驱动，默认下载本地浏览器对应的版本（各参数可自行指定）
@@ -71,10 +73,10 @@
         # 以下为selenium模拟操作
         driver = webdriver.Chrome(service=Service(driver_path))
         driver.get('https://www.baidu.com')
-        driver.find_element(value='kw').send_keys('python toollib')
-        driver.find_element(value='su').click()
+        driver.find_element(By.ID, 'chat-textarea').send_keys('python toollib')
+        driver.find_element(By.ID, 'chat-submit-button').click()
         time.sleep(29)
-        driver.close()
+        driver.quit()
 
         +++++[更多详见参数或源码]+++++
 
@@ -785,7 +787,7 @@
 @description
     有以下属性：
         1）uas列表1000条：useragent.uas
-        2）从1000条uas中随机选1条：useragent.random_ua
+        2）从1000条uas中随机选1条：useragent.random_ua()
         3）生成uas: useragent.gen_uas()
 @history
 </pre>

@@ -6,7 +6,7 @@
 @description
     有以下属性：
         1）uas列表1000条：useragent.uas
-        2）从1000条uas中随机选1条：useragent.random_ua
+        2）从1000条uas中随机选1条：useragent.random_ua()
         3）生成uas: useragent.gen_uas()
 @history
 """
