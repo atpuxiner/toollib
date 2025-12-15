@@ -11,9 +11,7 @@ import typing as t
 
 from redis.exceptions import WatchError
 
-__all__ = [
-    'Locker',
-]
+__all__ = ['Locker']
 
 
 class Locker:
@@ -23,8 +21,8 @@ class Locker:
     e.g.::
 
         a = 0
-        locker = Locker(redis_client)  # 创建锁实例
-        if locker.acquire(acquire_timeout=2)  # 获取锁
+        locker = Locker(redis_cli)  # 创建锁实例
+        if locker.acquire(acquire_timeout=2):  # 获取锁
             for i in range(10):
                 a += 1
                 print(f'a: {a}')
@@ -32,7 +30,7 @@ class Locker:
 
         # 另：with方式
         a = 0
-        locker = Locker(redis_client, acquire_timeout=2)
+        locker = Locker(redis_cli, acquire_timeout=2)
         with locker:
             if locker.is_lock:  # 若获取锁
                 for i in range(10):
@@ -44,7 +42,7 @@ class Locker:
 
     def __init__(
             self,
-            redis_client,
+            redis_cli,
             acquire_timeout: int = 2,
             timeout: int = 30,
             lock_name: str = 'locker',
@@ -52,13 +50,13 @@ class Locker:
     ):
         """
         初始化
-        :param redis_client: redis客户端
+        :param redis_cli: redis客户端
         :param acquire_timeout: 获取锁的超时时间
         :param timeout: 锁的过期时间
         :param lock_name: 锁名
         :param lock_value: 锁值
         """
-        self.rds = redis_client
+        self.redis_cli = redis_cli
         self.acquire_timeout = acquire_timeout
         self.timeout = timeout
         self.lock_name = lock_name if lock_name else 'locker'
@@ -82,11 +80,11 @@ class Locker:
     def _acquire_lock(self):
         end_time = time.time() + self.acquire_timeout
         while time.time() < end_time:
-            if self.rds.set(self.lock_name, self.lock_value, ex=self.timeout, nx=True):
+            if self.redis_cli.set(self.lock_name, self.lock_value, ex=self.timeout, nx=True):
                 self.is_lock = True
                 break
-            elif self.rds.ttl(self.lock_name) == -1:
-                self.rds.expire(self.lock_name, self.timeout)
+            elif self.redis_cli.ttl(self.lock_name) == -1:
+                self.redis_cli.expire(self.lock_name, self.timeout)
             time.sleep(0.002)
 
     __enter__ = acquire
@@ -98,7 +96,7 @@ class Locker:
         """
         if not self.is_lock:
             return
-        with self.rds.pipeline() as pipe:
+        with self.redis_cli.pipeline() as pipe:
             while 1:
                 try:
                     pipe.watch(self.lock_name)

@@ -210,8 +210,8 @@
     e.g.::
 
         from toollib.guid import SnowFlake
-        snow_client = SnowFlake()
-        uid = snow_client.gen_uid()
+        snow_cli = SnowFlake()
+        uid = snow_cli.gen_uid()
 
         +++++[更多详见参数或源码]+++++
     </pre>
@@ -228,6 +228,7 @@
     e.g.::
 
         from toollib.guid import RedisUid
+
         ruid_cli = RedisUid(redis_cli, prefix='ABC')
         uid = ruid_cli.gen_uid()
 
@@ -387,8 +388,8 @@
     e.g.::
 
         a = 0
-        locker = Locker(redis_client)  # 创建锁实例
-        if locker.acquire(acquire_timeout=2)  # 获取锁
+        locker = Locker(redis_cli)  # 创建锁实例
+        if locker.acquire(acquire_timeout=2):  # 获取锁
             for i in range(10):
                 a += 1
                 print(f'a: {a}')
@@ -396,7 +397,7 @@
 
         # 另：with方式
         a = 0
-        locker = Locker(redis_client, acquire_timeout=2)
+        locker = Locker(redis_cli, acquire_timeout=2)
         with locker:
             if locker.is_lock:  # 若获取锁
                 for i in range(10):
@@ -707,46 +708,46 @@
         :return:
         </pre>
 <br>++++++++++++++++++++++这是分隔线++++++++++++++++++++++
-<h2><i>toollib.rediser</i></h2><pre>
+<h2><i>toollib.rediscli</i></h2><pre>
 @author axiner
 @version v1.0.0
 @created 2022/10/28 14:23
-@abstract redis
+@abstract redis客户端
 @description
 @history
 </pre>
 ---------------------------------
 
-<h3><i>RedisClient</i></h3><pre>
+<h3><i>RedisCli</i></h3><pre>
     redis客户端
 
     e.g.::
 
         # 创建
-        redis_client = RedisClient(host='127.0.0.1', max_connections=100)
+        redis_cli = RedisCli(host='127.0.0.1', max_connections=100)
 
         # 使用方式1：标准用法（推荐）
-        r = redis_client.connection()
+        r = redis_cli.connection()
         print(r.get("name"))
         print(r.get("age"))
         r.close()
 
         # 使用方式2：代理调用-每次创建新连接（不推荐）
-        print(redis_client.get("name"))
-        print(redis_client.get("age"))
+        print(redis_cli.get("name"))
+        print(redis_cli.get("age"))
 
         # 使用方式3：上下文管理器（推荐）
-        with redis_client.connection() as r:
+        with redis_cli.connection() as r:
             print(r.get("name"))
 
         # 使用方式4：上下文管理器（简洁写法）
-        with redis_client as r:
+        with redis_cli as r:
             print(r.get("name"))
 
         +++++[更多详见参数或源码]+++++
     </pre>
 
-<h3><i>RedisClient.connection</i></h3><pre>
+<h3><i>RedisCli.connection</i></h3><pre>
         创建连接
         :return:
         </pre>

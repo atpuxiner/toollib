@@ -36,8 +36,8 @@ class SnowFlake(metaclass=Singleton):
     e.g.::
 
         from toollib.guid import SnowFlake
-        snow_client = SnowFlake()
-        uid = snow_client.gen_uid()
+        snow_cli = SnowFlake()
+        uid = snow_cli.gen_uid()
 
         +++++[更多详见参数或源码]+++++
     """
@@ -135,6 +135,7 @@ class RedisUid:
     e.g.::
 
         from toollib.guid import RedisUid
+
         ruid_cli = RedisUid(redis_cli, prefix='ABC')
         uid = ruid_cli.gen_uid()
 
@@ -154,7 +155,7 @@ class RedisUid:
     ):
         """
         初始化
-        :param redis_cli: redis客户端对象
+        :param redis_cli: redis客户端
         :param prefix: 前缀，为空则没有前缀拼接
         :param seq_name: 序列名称，作为redis存储键(为空则默认取prefix，但两者不能同时为空)
         :param seq_beg: 序列开始，默认为0
