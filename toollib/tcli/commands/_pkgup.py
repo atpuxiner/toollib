@@ -67,13 +67,13 @@ class Cmd(BaseCmd):
                             sys.stdout.write(f"TIP: Please update manually `{pkg}`\n")
                             t = f"{pkg}  # Please update manually"
                         else:
-                            pkg_ext = t[t.index(";"):] if ";" in t else ""
+                            pkg_extra = t[t.index(";"):] if ";" in t else ""
                             try:
                                 if "[" in pkg and "]" in pkg:
                                     ver = metadata.version(pkg[:pkg.index("[")])
                                 else:
                                     ver = metadata.version(pkg)
-                                t = f"{pkg}{self.parse_args.sep}{ver}{pkg_ext}"
+                                t = f"{pkg}{self.parse_args.sep}{ver}{pkg_extra}"
                             except metadata.PackageNotFoundError:
                                 pass
                     if t := t.strip():
