@@ -1177,11 +1177,17 @@
     :param v_convert: 值转换
     :param v_invalid: 值无效
     :param default: 默认值
-    :param is_raise: 是否raise
     :param sep: 分隔符，针对list、tuple、set、dict
     :param kv_sep: 键值分隔符，针对dict
+    :param is_raise: 是否raise
     :return: 转换后的值
     </pre>
+
+<h3><i>VFrom</i></h3><pre>暂无文档</pre>
+
+<h3><i>VFrom.get</i></h3><pre>暂无文档</pre>
+
+<h3><i>VConvert</i></h3><pre>暂无文档</pre>
 
 <h3><i>copytree</i></h3><pre>
     复制目录树
@@ -1291,6 +1297,37 @@
     :param sheet_name: 工作表
     :yields:
     </pre>
+
+<h3><i>YamlConfig</i></h3><pre>
+    yaml 配置
+
+    e.g.::
+
+        class Config(YamlConfig):
+            xxx1: int = 1
+            xxx2: str = "abc"
+
+
+        config = Config(yaml_path="/tmp/yaml_path")
+        config.setup()  # 设置
+        print(config.xxx1)
+
+        +++++[更多详见参数或源码]+++++
+    </pre>
+
+<h3><i>YamlConfig.load_yaml</i></h3><pre>暂无文档</pre>
+
+<h3><i>YamlConfig.setup</i></h3><pre>
+        设置
+        :param prefer_env: 优先env
+        :param clear_cache: 清除缓存
+        :param v_converts: 值转换
+        :param v_invalid: 值无效
+        :param sep: 分隔符，针对list、tuple、set、dict
+        :param kv_sep: 键值分隔符，针对dict
+        :param is_raise: 是否raise
+        :return:
+        </pre>
 
         </div>
     </div>

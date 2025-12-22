@@ -13,7 +13,6 @@ class Singleton(type):
 
         +++++[更多详见参数或源码]+++++
     """
-
     _instances = {}
     _locks = {}
 
