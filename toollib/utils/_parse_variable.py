@@ -53,7 +53,14 @@ def parse_variable(
         v_type_name = v_type.__name__
         if v_type_name == "bool":
             return {"true": True, "false": False}.get(v.lower(), bool(v))
-        elif v_type_name in ("int", "float"):
+        elif v_type_name == "int":
+            if '.' in v:
+                f = float(v)
+                if not f.is_integer():
+                    raise ValueError(f"Cannot convert non-integer float string to int: {v}")
+                return int(f)
+            return int(v)
+        elif v_type_name == "float":
             return v_type(v)
         elif v_type_name in ("list", "tuple", "set"):
             return v_type([vv for v in v.split(sep) if (vv := v.strip())])
@@ -67,7 +74,8 @@ def parse_variable(
             ValueError,
             TypeError,
             Exception,
-    ):
+    ) as e:
         if is_raise:
             raise
+        print(f"Warning: {e}")
     return default
