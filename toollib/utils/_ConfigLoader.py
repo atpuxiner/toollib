@@ -2,37 +2,63 @@ import os
 from pathlib import Path
 
 import yaml
+from dotenv import load_dotenv
 
 from toollib.utils import get_cls_attrs, parse_variable, VConvert
 
 
-class YamlConfig:
+class ConfigLoader:
     """
-    yaml 配置
+    配置加载器
 
     e.g.::
 
-        class Config(YamlConfig):
+        class Config(ConfigLoader):
             xxx1: int = 1
             xxx2: str = "abc"
 
 
-        config = Config(yaml_path="/tmp/yaml_path")
-        config.setup()  # 设置
+        config = Config(dotenv_path="./.env", yaml_path="./xxx.yaml")
+        config.load()  # 加载
         print(config.xxx1)
 
         +++++[更多详见参数或源码]+++++
     """
 
-    def __init__(self, yaml_path: str | Path | None = None, yaml_encoding: str = "utf-8", require_yaml: bool = True):
-        self._yaml_path = Path(yaml_path) if yaml_path is not None else None
+    def __init__(
+            self,
+            dotenv_path: str | Path | None = None,
+            dotenv_encoding: str = "utf-8",
+            dotenv_override_sysenv: bool = False,
+            dotenv_interpolate: bool = True,
+            yaml_path: str | Path | None = None,
+            yaml_encoding: str = "utf-8",
+    ):
+        """
+        初始化
+        :param dotenv_path: .env路径
+        :param dotenv_encoding: .env编码
+        :param dotenv_override_sysenv: .env覆盖系统env
+        :param dotenv_interpolate: .env变量插值
+        :param yaml_path: yaml路径
+        :param yaml_encoding: yaml编码
+        """
+        if dotenv_path is not None:
+            if not Path(dotenv_path).is_file():
+                raise FileNotFoundError(f"'{dotenv_path}' does not exist or is not a regular file.")
+            load_dotenv(
+                dotenv_path=dotenv_path,
+                encoding=dotenv_encoding,
+                override=dotenv_override_sysenv,
+                interpolate=dotenv_interpolate,
+            )
+        self._yaml_path = yaml_path
+        if self._yaml_path is not None and not Path(self._yaml_path).is_file():
+            raise FileNotFoundError(f"'{self._yaml_path}' does not exist or is not a regular file.")
         self._yaml_encoding = yaml_encoding
         self._yaml_cache = None
-        if require_yaml:
-            if not self._yaml_path or not self._yaml_path.is_file():
-                raise FileNotFoundError("'yaml_path' is required and must point to an existing YAML file")
 
-    def setup(
+    def load(
             self,
             prefer_env: bool = True,
             clear_cache: bool = True,
@@ -43,7 +69,7 @@ class YamlConfig:
             is_raise: bool = False,
     ):
         """
-        设置
+        加载
         :param prefer_env: 优先env
         :param clear_cache: 清除缓存
         :param v_converts: 值转换

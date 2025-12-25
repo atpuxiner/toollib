@@ -1298,27 +1298,25 @@
     :yields:
     </pre>
 
-<h3><i>YamlConfig</i></h3><pre>
-    yaml 配置
+<h3><i>ConfigLoader</i></h3><pre>
+    配置加载器
 
     e.g.::
 
-        class Config(YamlConfig):
+        class Config(ConfigLoader):
             xxx1: int = 1
             xxx2: str = "abc"
 
 
-        config = Config(yaml_path="/tmp/yaml_path")
-        config.setup()  # 设置
+        config = Config(dotenv_path="./.env", yaml_path="./xxx.yaml")
+        config.load()  # 加载
         print(config.xxx1)
 
         +++++[更多详见参数或源码]+++++
     </pre>
 
-<h3><i>YamlConfig.load_yaml</i></h3><pre>暂无文档</pre>
-
-<h3><i>YamlConfig.setup</i></h3><pre>
-        设置
+<h3><i>ConfigLoader.load</i></h3><pre>
+        加载
         :param prefer_env: 优先env
         :param clear_cache: 清除缓存
         :param v_converts: 值转换
@@ -1328,6 +1326,8 @@
         :param is_raise: 是否raise
         :return:
         </pre>
+
+<h3><i>ConfigLoader.load_yaml</i></h3><pre>暂无文档</pre>
 
         </div>
     </div>

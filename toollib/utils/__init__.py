@@ -38,7 +38,7 @@ __all__ = [
     'read_xlsx',
     'split_csv',
     'split_xlsx',
-    'YamlConfig',
+    'ConfigLoader',
 ]
 
 if TYPE_CHECKING:
@@ -68,7 +68,7 @@ if TYPE_CHECKING:
     from toollib.utils._read_xlsx import read_xlsx
     from toollib.utils._split_csv import split_csv
     from toollib.utils._split_xlsx import split_xlsx
-    from toollib.utils._YamlConfig import YamlConfig
+    from toollib.utils._ConfigLoader import ConfigLoader
 
 
 def __getattr__(name):

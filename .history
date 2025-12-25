@@ -1,5 +1,8 @@
 # history
 
+## v1.9.9
+- chg@调整配置加载器
+
 ## v1.9.8
 - chg@增加YamlConfig等
 

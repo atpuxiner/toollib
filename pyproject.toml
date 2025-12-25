@@ -9,10 +9,10 @@ description = "This is a tool library."
 authors = [{ name = "axiner", email = "atpuxiner@163.com" }]
 urls = { Homepage = "https://github.com/atpuxiner/toollib" }
 classifiers = [
-    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
     "Operating System :: OS Independent",
 ]
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 license-files = ["LICENSE"]
 readme = "README.md"
 dynamic = [
