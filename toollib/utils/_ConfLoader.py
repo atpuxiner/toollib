@@ -7,13 +7,13 @@ from dotenv import load_dotenv
 from toollib.utils import get_cls_attrs, parse_variable, VConvert
 
 
-class ConfigLoader:
+class ConfLoader:
     """
     配置加载器
 
     e.g.::
 
-        class Config(ConfigLoader):
+        class Config(ConfLoader):
             xxx1: int = 1
             xxx2: str = "abc"
 
@@ -33,6 +33,7 @@ class ConfigLoader:
             dotenv_interpolate: bool = True,
             yaml_path: str | Path | None = None,
             yaml_encoding: str = "utf-8",
+            path_prefer_env: bool = True,
     ):
         """
         初始化
@@ -42,19 +43,25 @@ class ConfigLoader:
         :param dotenv_interpolate: .env变量插值
         :param yaml_path: yaml路径
         :param yaml_encoding: yaml编码
+        :param path_prefer_env: 路径优先env
         """
-        if dotenv_path is not None:
-            if not Path(dotenv_path).is_file():
-                raise FileNotFoundError(f"'{dotenv_path}' does not exist or is not a regular file.")
+        _dotenv_path = (os.environ.get("dotenv_path") if path_prefer_env else None) or dotenv_path
+        if _dotenv_path is not None:
+            if not Path(_dotenv_path).is_file():
+                raise FileNotFoundError(
+                    f"The specified .env file does not exist or is not a regular file: '{_dotenv_path}'"
+                )
             load_dotenv(
-                dotenv_path=dotenv_path,
+                dotenv_path=_dotenv_path,
                 encoding=dotenv_encoding,
                 override=dotenv_override_sysenv,
                 interpolate=dotenv_interpolate,
             )
-        self._yaml_path = yaml_path
+        self._yaml_path = (os.environ.get("yaml_path") if path_prefer_env else None) or yaml_path
         if self._yaml_path is not None and not Path(self._yaml_path).is_file():
-            raise FileNotFoundError(f"'{self._yaml_path}' does not exist or is not a regular file.")
+            raise FileNotFoundError(
+                f"The specified yaml file does not exist or is not a regular file: '{self._yaml_path}'"
+            )
         self._yaml_encoding = yaml_encoding
         self._yaml_cache = None
 
