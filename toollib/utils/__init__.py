@@ -70,7 +70,11 @@ if TYPE_CHECKING:
     from toollib.utils._split_csv import split_csv
     from toollib.utils._split_xlsx import split_xlsx
     from toollib.utils._ConfModel import ConfModel
-    from toollib.utils._types import VFrom, VConvert, FrozenVar
+    from toollib.utils._types import (
+        VFrom,
+        VConvert,
+        FrozenVar,
+    )
 
 
 def __getattr__(name):

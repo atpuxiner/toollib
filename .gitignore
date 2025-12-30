@@ -141,4 +141,4 @@ cython_debug/
 .idea
 .vscode
 .db
-docs/doc2*
+.kv

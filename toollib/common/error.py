@@ -8,25 +8,17 @@
 """
 
 
-class Error(Exception):
-    """Error基类"""
-
-    def __init__(self, msg='Raise error', code=1):
-        self.msg = msg
-        self.code = code
-        self.error = {'code': self.code, 'msg': self.msg}
-
-    def __str__(self):
-        return self.msg
-
-
-class ExpireError(Error):
+class ExpireError(Exception):
     """过期异常"""
 
 
-class SystemClockError(Error):
+class SystemClockError(Exception):
     """系统时钟异常"""
 
 
-class DriverError(Error):
+class DriverError(Exception):
     """驱动异常"""
+
+
+class ConfFileError(OSError):
+    """配置文件异常"""

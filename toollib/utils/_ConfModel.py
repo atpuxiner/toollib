@@ -5,7 +5,8 @@ from typing import get_origin
 import yaml
 from dotenv import load_dotenv
 
-from toollib.utils import get_cls_attrs, parse_variable, VConvert, FrozenVar
+from toollib.common.error import ConfFileError
+from toollib.utils import VConvert, FrozenVar, get_cls_attrs, parse_variable
 
 
 class ConfModel:
@@ -60,7 +61,7 @@ class ConfModel:
         _dotenv_path = (os.environ.get("dotenv_path") if file_prefer_env else None) or dotenv_path
         if _dotenv_path is not None:
             if not Path(_dotenv_path).is_file():
-                raise FileNotFoundError(
+                raise ConfFileError(
                     f"The specified .env file does not exist or is not a regular file: '{_dotenv_path}'"
                 )
             _dotenv_encoding = (os.environ.get("dotenv_encoding") if file_prefer_env else None) or dotenv_encoding
@@ -76,7 +77,7 @@ class ConfModel:
             )
         self._yaml_path = (os.environ.get("yaml_path") if file_prefer_env else None) or yaml_path
         if self._yaml_path is not None and not Path(self._yaml_path).is_file():
-            raise FileNotFoundError(
+            raise ConfFileError(
                 f"The specified yaml file does not exist or is not a regular file: '{self._yaml_path}'"
             )
         self._yaml_encoding = (os.environ.get("yaml_encoding") if file_prefer_env else None) or yaml_encoding
