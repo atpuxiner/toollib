@@ -30,15 +30,16 @@ __all__ = [
     'localip',
     'get_cls_attrs',
     'parse_variable',
-    'VFrom',
-    'VConvert',
     'copytree',
     'detect_encoding',
     'read_csv',
     'read_xlsx',
     'split_csv',
     'split_xlsx',
-    'ConfLoader',
+    'ConfModel',
+    'VFrom',
+    'VConvert',
+    'FrozenVar',
 ]
 
 if TYPE_CHECKING:
@@ -61,20 +62,25 @@ if TYPE_CHECKING:
     from toollib.utils._pkg_lver import pkg_lver
     from toollib.utils._localip import localip
     from toollib.utils._get_cls_attrs import get_cls_attrs
-    from toollib.utils._parse_variable import parse_variable, VFrom, VConvert
+    from toollib.utils._parse_variable import parse_variable
     from toollib.utils._copytree import copytree
     from toollib.utils._detect_encoding import detect_encoding
     from toollib.utils._read_csv import read_csv
     from toollib.utils._read_xlsx import read_xlsx
     from toollib.utils._split_csv import split_csv
     from toollib.utils._split_xlsx import split_xlsx
-    from toollib.utils._ConfLoader import ConfLoader
+    from toollib.utils._ConfModel import ConfModel
+    from toollib.utils._types import VFrom, VConvert, FrozenVar
 
 
 def __getattr__(name):
     if name in __all__:
-        if name in ["VFrom", "VConvert"]:
-            module = importlib.import_module(f"toollib.utils._parse_variable")
+        if name in [
+            "VFrom",
+            "VConvert",
+            "FrozenVar",
+        ]:
+            module = importlib.import_module(f"toollib.utils._types")
         else:
             module = importlib.import_module(f"toollib.utils._{name}")
         return getattr(module, name)

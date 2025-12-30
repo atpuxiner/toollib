@@ -1,14 +1,6 @@
-from typing import Callable, Any, Protocol
+from typing import Callable, Any
 
-
-class VFrom(Protocol):
-    def get(self, key: Any, default: Any = None) -> Any:
-        ...
-
-
-class VConvert(Protocol):
-    def __call__(self, value: Any) -> Any:
-        ...
+from toollib.utils import VFrom, VConvert
 
 
 def parse_variable(

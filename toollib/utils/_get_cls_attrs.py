@@ -1,31 +1,23 @@
 from typing import get_type_hints
 
 
-def get_cls_attrs(cls, is_keep_parent: bool = False) -> dict:
+def get_cls_attrs(cls) -> dict:
     """
     获取类属性
 
     e.g.::
 
         # 获取类属性
-        class A:
+        class B(A):
 
             def foo(self):
-                cls_attrs = get_cls_attrs(A)
+                cls_attrs = get_cls_attrs(self.__class__)  # 获取包含父类的属性
+                cls_attrs2 = get_cls_attrs(self)  # 获取不包含父类的属性
 
         +++++[更多详见参数或源码]+++++
     """
-    if is_keep_parent:
-        type_hints = get_type_hints(cls.__bases__[0]) if cls.__bases__ else {}
-    else:
-        type_hints = get_type_hints(cls)
-        if cls.__bases__:
-            parent_type_hints = {}
-            for base in cls.__bases__:
-                parent_type_hints.update(get_type_hints(base))
-            type_hints = {k: v for k, v in type_hints.items() if k not in parent_type_hints}
     attrs = {}
-    for attr_name, attr_type in type_hints.items():
+    for attr_name, attr_type in get_type_hints(cls).items():
         attr_value = getattr(cls, attr_name, None)
         attrs[attr_name] = (attr_type, attr_value)
     return attrs

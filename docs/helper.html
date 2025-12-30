@@ -1154,10 +1154,11 @@
     e.g.::
 
         # 获取类属性
-        class A:
+        class B(A):
 
             def foo(self):
-                cls_attrs = get_cls_attrs(A)
+                cls_attrs = get_cls_attrs(self.__class__)  # 获取包含父类的属性
+                cls_attrs2 = get_cls_attrs(self)  # 获取不包含父类的属性
 
         +++++[更多详见参数或源码]+++++
     </pre>
@@ -1182,12 +1183,6 @@
     :param is_raise: 是否raise
     :return: 转换后的值
     </pre>
-
-<h3><i>VFrom</i></h3><pre>暂无文档</pre>
-
-<h3><i>VFrom.get</i></h3><pre>暂无文档</pre>
-
-<h3><i>VConvert</i></h3><pre>暂无文档</pre>
 
 <h3><i>copytree</i></h3><pre>
     复制目录树
@@ -1298,36 +1293,42 @@
     :yields:
     </pre>
 
-<h3><i>ConfLoader</i></h3><pre>
-    配置加载器
+<h3><i>ConfModel</i></h3><pre>
+    配置模型
 
     e.g.::
 
-        class Config(ConfLoader):
+        class Config(ConfModel):
             xxx1: int = 1
-            xxx2: str = "abc"
+            xxx2: FrozenVar[str] = "abc"  # FrozenVar 表示冻结变量（跳过处理，此处值为 abc）
 
 
         config = Config(dotenv_path="./.env", yaml_path="./xxx.yaml")
-        config.load()  # 加载
         print(config.xxx1)
 
         +++++[更多详见参数或源码]+++++
     </pre>
 
-<h3><i>ConfLoader.load</i></h3><pre>
+<h3><i>ConfModel.load</i></h3><pre>
         加载
-        :param prefer_env: 优先env
-        :param clear_cache: 清除缓存
+        :param attr_prefer_env: 属性加载优先env
         :param v_converts: 值转换
         :param v_invalid: 值无效
         :param sep: 分隔符，针对list、tuple、set、dict
         :param kv_sep: 键值分隔符，针对dict
         :param is_raise: 是否raise
+        :param yaml_reload: yaml重新加载
+        :param clean_cache: 清除缓存
         :return:
         </pre>
 
-<h3><i>ConfLoader.load_yaml</i></h3><pre>暂无文档</pre>
+<h3><i>VFrom</i></h3><pre>暂无文档</pre>
+
+<h3><i>VFrom.get</i></h3><pre>暂无文档</pre>
+
+<h3><i>VConvert</i></h3><pre>暂无文档</pre>
+
+<h3><i>FrozenVar</i></h3><pre>暂无文档</pre>
 
         </div>
     </div>
