@@ -1,5 +1,7 @@
 from typing import get_type_hints
 
+from toollib.utils import Undefined
+
 
 def get_cls_attrs(cls) -> dict:
     """
@@ -18,6 +20,9 @@ def get_cls_attrs(cls) -> dict:
     """
     attrs = {}
     for attr_name, attr_type in get_type_hints(cls).items():
-        attr_value = getattr(cls, attr_name, None)
+        if hasattr(cls, attr_name):
+            attr_value = getattr(cls, attr_name)
+        else:
+            attr_value = Undefined
         attrs[attr_name] = (attr_type, attr_value)
     return attrs

@@ -5,8 +5,8 @@ from typing import get_origin
 import yaml
 from dotenv import load_dotenv
 
-from toollib.common.error import ConfFileError
-from toollib.utils import VConvert, FrozenVar, get_cls_attrs, parse_variable
+from toollib.common.error import ConfModelError
+from toollib.utils import VConvert, FrozenVar, get_cls_attrs, parse_variable, Undefined
 
 
 class ConfModel:
@@ -16,12 +16,13 @@ class ConfModel:
     e.g.::
 
         class Config(ConfModel):
-            xxx1: int = 1
-            xxx2: FrozenVar[str] = "abc"  # FrozenVar 表示冻结变量（跳过处理，此处值为 abc）
+            attr1: int  # 必填（需在[环境变量/配置文件]中设置）
+            attr2: FrozenVar[str] = "abc"  # 冻结（忽略[环境变量/配置文件]直接为初始值）
+            attr3: str = "abc"  # 选填（若[环境变量/配置文件]未设置则为初始值）
 
 
         config = Config(dotenv_path="./.env", yaml_path="./xxx.yaml")
-        print(config.xxx1)
+        print(config.attr1)
 
         +++++[更多详见参数或源码]+++++
     """
@@ -37,10 +38,9 @@ class ConfModel:
             file_prefer_env: bool = True,
             attr_prefer_env: bool = True,
             v_converts: dict[str, VConvert] = None,
-            v_invalid: tuple = (None, ""),
             sep: str = ",",
             kv_sep: str = ":",
-            is_raise: bool = False,
+            raise_on_error: bool = False,
     ):
         """
         初始化
@@ -53,15 +53,14 @@ class ConfModel:
         :param file_prefer_env: 文件加载优化env（文件路径、编码等）
         :param attr_prefer_env: 属性加载优先env
         :param v_converts: 值转换
-        :param v_invalid: 值无效
         :param sep: 分隔符，针对list、tuple、set、dict
         :param kv_sep: 键值分隔符，针对dict
-        :param is_raise: 是否raise
+        :param raise_on_error: 遇错抛异常
         """
         _dotenv_path = (os.environ.get("dotenv_path") if file_prefer_env else None) or dotenv_path
         if _dotenv_path is not None:
             if not Path(_dotenv_path).is_file():
-                raise ConfFileError(
+                raise ConfModelError(
                     f"The specified .env file does not exist or is not a regular file: '{_dotenv_path}'"
                 )
             _dotenv_encoding = (os.environ.get("dotenv_encoding") if file_prefer_env else None) or dotenv_encoding
@@ -77,7 +76,7 @@ class ConfModel:
             )
         self._yaml_path = (os.environ.get("yaml_path") if file_prefer_env else None) or yaml_path
         if self._yaml_path is not None and not Path(self._yaml_path).is_file():
-            raise ConfFileError(
+            raise ConfModelError(
                 f"The specified yaml file does not exist or is not a regular file: '{self._yaml_path}'"
             )
         self._yaml_encoding = (os.environ.get("yaml_encoding") if file_prefer_env else None) or yaml_encoding
@@ -85,20 +84,18 @@ class ConfModel:
         self.load(
             attr_prefer_env=attr_prefer_env,
             v_converts=v_converts,
-            v_invalid=v_invalid,
             sep=sep,
             kv_sep=kv_sep,
-            is_raise=is_raise,
+            raise_on_error=raise_on_error,
         )
 
     def load(
             self,
             attr_prefer_env: bool = True,
             v_converts: dict[str, VConvert] = None,
-            v_invalid: tuple = (None, ""),
             sep: str = ",",
             kv_sep: str = ":",
-            is_raise: bool = False,
+            raise_on_error: bool = False,
             yaml_reload: bool = True,
             clean_cache: bool = True,
     ):
@@ -106,10 +103,9 @@ class ConfModel:
         加载
         :param attr_prefer_env: 属性加载优先env
         :param v_converts: 值转换
-        :param v_invalid: 值无效
         :param sep: 分隔符，针对list、tuple、set、dict
         :param kv_sep: 键值分隔符，针对dict
-        :param is_raise: 是否raise
+        :param raise_on_error: 遇错抛异常
         :param yaml_reload: yaml重新加载
         :param clean_cache: 清除缓存
         :return:
@@ -118,6 +114,8 @@ class ConfModel:
         for k, item in get_cls_attrs(self.__class__).items():
             v_type, v = item
             if get_origin(v_type) is FrozenVar:
+                if v is Undefined:
+                    raise ConfModelError(f"Undefined required frozen variable: '{k}'")
                 continue
             if callable(v_type):
                 if attr_prefer_env and k in os.environ:
@@ -130,11 +128,12 @@ class ConfModel:
                     v_from=v_from,
                     default=v,
                     v_convert=v_converts.get(k),
-                    v_invalid=v_invalid,
                     sep=sep,
                     kv_sep=kv_sep,
-                    is_raise=is_raise
+                    raise_on_error=raise_on_error
                 )
+            if v is Undefined:
+                raise ConfModelError(f"Missing required configuration: '{k}'")
             setattr(self, k, v)
         if clean_cache:
             self._yaml_cache = None

@@ -20,5 +20,5 @@ class DriverError(Exception):
     """驱动异常"""
 
 
-class ConfFileError(OSError):
+class ConfModelError(OSError):
     """配置文件异常"""

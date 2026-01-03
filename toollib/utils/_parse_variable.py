@@ -8,11 +8,10 @@ def parse_variable(
         v_type: Callable,
         v_from: VFrom,
         v_convert: VConvert = None,
-        v_invalid: tuple = (None, ""),
         default: Any = None,
         sep: str = ",",
         kv_sep: str = ":",
-        is_raise: bool = False,
+        raise_on_error: bool = False,
 ):
     """
     解析变量
@@ -27,16 +26,15 @@ def parse_variable(
     :param v_type: 值类型
     :param v_from: 值来源
     :param v_convert: 值转换
-    :param v_invalid: 值无效
     :param default: 默认值
     :param sep: 分隔符，针对list、tuple、set、dict
     :param kv_sep: 键值分隔符，针对dict
-    :param is_raise: 是否raise
+    :param raise_on_error: 遇错抛异常
     :return: 转换后的值
     """
-    v = v_from.get(k)
-    if v in (v_invalid or (None, "")):
+    if k not in v_from:
         return default
+    v = v_from.get(k)
     try:
         if callable(v_convert):
             return v_convert(v)
@@ -67,7 +65,7 @@ def parse_variable(
             TypeError,
             Exception,
     ) as e:
-        if is_raise:
+        if raise_on_error:
             raise
         print(f"Warning: {e}")
     return default

@@ -40,6 +40,7 @@ __all__ = [
     'VFrom',
     'VConvert',
     'FrozenVar',
+    'Undefined',
 ]
 
 if TYPE_CHECKING:
@@ -74,6 +75,7 @@ if TYPE_CHECKING:
         VFrom,
         VConvert,
         FrozenVar,
+        Undefined,
     )
 
 
@@ -83,6 +85,7 @@ def __getattr__(name):
             "VFrom",
             "VConvert",
             "FrozenVar",
+            "Undefined",
         ]:
             module = importlib.import_module(f"toollib.utils._types")
         else:
