@@ -1,11 +1,12 @@
-from typing import Callable, Any
+import warnings
+from typing import Type, Any, get_origin
 
 from toollib.utils import VFrom, VConvert
 
 
 def parse_variable(
         k: str,
-        v_type: Callable,
+        v_type: Type[Any],
         v_from: VFrom,
         v_convert: VConvert = None,
         default: Any = None,
@@ -32,33 +33,51 @@ def parse_variable(
     :param raise_on_error: 遇错抛异常
     :return: 转换后的值
     """
-    if k not in v_from:
-        return default
-    v = v_from.get(k)
     try:
+        if k not in v_from:
+            return default
+
+        v = v_from.get(k)
+        if v is None:
+            return default
         if callable(v_convert):
             return v_convert(v)
-        if type(v) == v_type:
+
+        v_type = get_origin(v_type) or v_type
+        if not isinstance(v_type, type):
+            raise ValueError(f"Unsupported type annotation for {k!r}: {v_type!r}")
+        if isinstance(v, v_type):
             return v
-        v_type_name = v_type.__name__
-        if v_type_name == "bool":
-            return {"true": True, "false": False}.get(v.lower(), bool(v))
-        elif v_type_name == "int":
-            if '.' in v:
-                f = float(v)
-                if not f.is_integer():
-                    raise ValueError(f"Cannot convert non-integer float string to int: {v}")
-                return int(f)
-            return int(v)
-        elif v_type_name == "float":
-            return v_type(v)
-        elif v_type_name in ("list", "tuple", "set"):
-            return v_type([vv for v in v.split(sep) if (vv := v.strip())])
-        elif v_type_name == "dict":
-            return {kk.strip(): vv.strip() if kv_sep in item else None for item in v.split(sep)
-                    for kk, vv in ((item, None) if kv_sep not in item else item.split(kv_sep, 1),)}
-        else:
-            return v_type(v)
+
+        if isinstance(v, str):
+            v = v.strip()
+            if v_type is bool:
+                res = {"true": True, "false": False}.get(v.lower())
+                if res is None:
+                    raise ValueError(
+                        f"Cannot convert string to bool for {k!r}: {v!r}, "
+                        f"supported values (case-insensitive): 'true', 'false'"
+                    )
+                return res
+            elif v_type is int:
+                if '.' in v:
+                    f = float(v)
+                    if not f.is_integer():
+                        raise ValueError(f"Cannot convert non-integer float string to int for {k!r}: {v!r}")
+                    return int(f)
+                return int(v)
+            elif v_type is float:
+                return v_type(v)
+            elif v_type in (list, tuple, set):
+                return v_type([vv for v in v.split(sep) if (vv := v.strip())])
+            elif v_type is dict:
+                return {
+                    (parts := item.strip().split(kv_sep, 1))[0].strip():
+                        parts[1].strip() if len(parts) > 1 else None
+                    for item in v.split(sep)
+                    if item.strip()
+                }
+        return v_type(v)
     except (
             AttributeError,
             ValueError,
@@ -67,5 +86,9 @@ def parse_variable(
     ) as e:
         if raise_on_error:
             raise
-        print(f"Warning: {e}")
+        warnings.warn(
+            message=f"Failed to parse {k!r}: {e}",
+            category=RuntimeWarning,
+            stacklevel=2,
+        )
     return default
