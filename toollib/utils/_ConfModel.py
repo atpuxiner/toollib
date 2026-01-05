@@ -1,5 +1,5 @@
 import os
-import warnings
+import sys
 from pathlib import Path
 from typing import get_origin
 
@@ -38,10 +38,11 @@ class ConfModel:
             yaml_encoding: str = "utf-8",
             file_prefer_env: bool = True,
             attr_prefer_env: bool = True,
-            env_empty_as_none: bool = True,
+            skip_empty_env: bool = True,
             v_converts: dict[str, VConvert] = None,
             sep: str = ",",
             kv_sep: str = ":",
+            ignore_unsupported_type: bool = True,
             raise_on_error: bool = False,
     ):
         """
@@ -54,10 +55,11 @@ class ConfModel:
         :param yaml_encoding: yaml编码
         :param file_prefer_env: 文件加载优化env（文件路径、编码等）
         :param attr_prefer_env: 属性加载优先env
-        :param env_empty_as_none: env的空字符串转为None
+        :param skip_empty_env: 跳过空字符串env
         :param v_converts: 值转换
         :param sep: 分隔符，针对list、tuple、set、dict
         :param kv_sep: 键值分隔符，针对dict
+        :param ignore_unsupported_type: 忽略不支持的类型（直接设置）
         :param raise_on_error: 遇错抛异常
         """
         _dotenv_path = (os.environ.get("dotenv_path") if file_prefer_env else None) or dotenv_path
@@ -86,20 +88,22 @@ class ConfModel:
         self._yaml_cache = None
         self.load(
             attr_prefer_env=attr_prefer_env,
-            env_empty_as_none=env_empty_as_none,
+            skip_empty_env=skip_empty_env,
             v_converts=v_converts,
             sep=sep,
             kv_sep=kv_sep,
+            ignore_unsupported_type=ignore_unsupported_type,
             raise_on_error=raise_on_error,
         )
 
     def load(
             self,
             attr_prefer_env: bool = True,
-            env_empty_as_none: bool = True,
+            skip_empty_env: bool = True,
             v_converts: dict[str, VConvert] = None,
             sep: str = ",",
             kv_sep: str = ":",
+            ignore_unsupported_type: bool = True,
             raise_on_error: bool = False,
             yaml_reload: bool = True,
             clean_cache: bool = True,
@@ -107,45 +111,45 @@ class ConfModel:
         """
         加载
         :param attr_prefer_env: 属性加载优先env
-        :param env_empty_as_none: env的空字符串转为None
+        :param skip_empty_env: 跳过空字符串env
         :param v_converts: 值转换
         :param sep: 分隔符，针对list、tuple、set、dict
         :param kv_sep: 键值分隔符，针对dict
+        :param ignore_unsupported_type: 忽略不支持的类型（直接设置）
         :param raise_on_error: 遇错抛异常
         :param yaml_reload: yaml重新加载
         :param clean_cache: 清除缓存
         :return:
         """
         v_converts = v_converts or {}
-        _os_environ = {k: (v if v != "" else None) for k, v in os.environ.items()} if env_empty_as_none else os.environ
+        _os_environ = {
+            alias: os.environ[k]
+            for k in get_cls_attrs(self.__class__)
+            if k in os.environ
+            if not (skip_empty_env and os.environ[k] == "")
+            for alias in ([k, k.lower(), k.upper()] if sys.platform.startswith("win") else [k])
+        }
         for k, item in get_cls_attrs(self.__class__).items():
             v_type, v = item
-            v_type_origin = get_origin(v_type) or v_type
-            if v_type_origin is FrozenVar:
+            if get_origin(v_type) is FrozenVar:
                 if v is Undefined:
                     raise ConfModelError(f"Undefined required frozen variable: {k!r}")
                 continue
-            if isinstance(v_type_origin, type):
-                if attr_prefer_env and k in _os_environ:
-                    v_from = _os_environ
-                else:
-                    v_from = self._load_yaml(yaml_reload)
-                v = parse_variable(
-                    k=k,
-                    v_type=v_type,
-                    v_from=v_from,
-                    default=v,
-                    v_convert=v_converts.get(k),
-                    sep=sep,
-                    kv_sep=kv_sep,
-                    raise_on_error=raise_on_error
-                )
+            if attr_prefer_env and k in _os_environ:
+                v_from = _os_environ
             else:
-                warnings.warn(
-                    message=f"Unsupported type annotation for attribute {k!r}: {v_type_origin!r}",
-                    category=RuntimeWarning,
-                    stacklevel=2,
-                )
+                v_from = self._load_yaml(yaml_reload)
+            v = parse_variable(
+                k=k,
+                v_type=v_type,
+                v_from=v_from,
+                default=v,
+                v_convert=v_converts.get(k),
+                sep=sep,
+                kv_sep=kv_sep,
+                ignore_unsupported_type=ignore_unsupported_type,
+                raise_on_error=raise_on_error,
+            )
             if v is Undefined:
                 raise ConfModelError(f"Missing required configuration: {k!r}")
             setattr(self, k, v)

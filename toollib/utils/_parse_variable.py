@@ -12,6 +12,7 @@ def parse_variable(
         default: Any = None,
         sep: str = ",",
         kv_sep: str = ":",
+        ignore_unsupported_type: bool = True,
         raise_on_error: bool = False,
 ):
     """
@@ -30,6 +31,7 @@ def parse_variable(
     :param default: 默认值
     :param sep: 分隔符，针对list、tuple、set、dict
     :param kv_sep: 键值分隔符，针对dict
+    :param ignore_unsupported_type: 忽略不支持的类型（直接返回）
     :param raise_on_error: 遇错抛异常
     :return: 转换后的值
     """
@@ -45,7 +47,15 @@ def parse_variable(
 
         v_type = get_origin(v_type) or v_type
         if not isinstance(v_type, type):
-            raise ValueError(f"Unsupported type annotation for {k!r}: {v_type!r}")
+            errmsg = f"Unsupported type annotation for {k!r}: {v_type!r}"
+            if ignore_unsupported_type:
+                warnings.warn(
+                    message=errmsg,
+                    category=RuntimeWarning,
+                    stacklevel=2,
+                )
+                return v
+            raise ValueError(errmsg)
         if isinstance(v, v_type):
             return v
 
