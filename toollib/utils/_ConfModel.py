@@ -21,7 +21,9 @@ class ConfModel:
             attr2: FrozenVar[str] = "abc"  # 冻结（忽略[环境变量/配置文件]直接为初始值）
             attr3: str = "abc"  # 选填（若[环境变量/配置文件]未设置则为初始值）
 
-
+        # 注：
+        #   - 参数 `attr_prefer_env` 属性加载优先env，如果环境变量中存在则不从 v_from 中获取
+        #   - 参数 `v_from` 值来源（默认从yaml文件加载），支持任意 dict（可从数据库等获取）
         config = Config(dotenv_path="./.env", yaml_path="./xxx.yaml")
         print(config.attr1)
 
@@ -39,6 +41,7 @@ class ConfModel:
             file_prefer_env: bool = True,
             attr_prefer_env: bool = True,
             skip_empty_env: bool = True,
+            v_from: dict = None,
             v_converts: dict[str, VConvert] = None,
             sep: str = ",",
             kv_sep: str = ":",
@@ -56,6 +59,7 @@ class ConfModel:
         :param file_prefer_env: 文件加载优化env（文件路径、编码等）
         :param attr_prefer_env: 属性加载优先env
         :param skip_empty_env: 跳过空字符串env
+        :param v_from: 值来源（默认从yaml文件加载）
         :param v_converts: 值转换
         :param sep: 分隔符，针对list、tuple、set、dict
         :param kv_sep: 键值分隔符，针对dict
@@ -85,10 +89,10 @@ class ConfModel:
                 f"The specified yaml file does not exist or is not a regular file: {self._yaml_path!r}"
             )
         self._yaml_encoding = (os.environ.get("yaml_encoding") if file_prefer_env else None) or yaml_encoding
-        self._yaml_cache = None
         self.load(
             attr_prefer_env=attr_prefer_env,
             skip_empty_env=skip_empty_env,
+            v_from=v_from,
             v_converts=v_converts,
             sep=sep,
             kv_sep=kv_sep,
@@ -100,28 +104,27 @@ class ConfModel:
             self,
             attr_prefer_env: bool = True,
             skip_empty_env: bool = True,
+            v_from: dict = None,
             v_converts: dict[str, VConvert] = None,
             sep: str = ",",
             kv_sep: str = ":",
             ignore_unsupported_type: bool = True,
             raise_on_error: bool = False,
-            yaml_reload: bool = True,
-            clean_cache: bool = True,
     ):
         """
         加载
         :param attr_prefer_env: 属性加载优先env
         :param skip_empty_env: 跳过空字符串env
+        :param v_from: 值来源（默认从yaml文件加载）
         :param v_converts: 值转换
         :param sep: 分隔符，针对list、tuple、set、dict
         :param kv_sep: 键值分隔符，针对dict
         :param ignore_unsupported_type: 忽略不支持的类型（直接设置）
         :param raise_on_error: 遇错抛异常
-        :param yaml_reload: yaml重新加载
-        :param clean_cache: 清除缓存
         :return:
         """
         v_converts = v_converts or {}
+        _v_from = v_from if v_from is not None else self.load_yaml()
         _os_environ = {
             alias: os.environ[k]
             for k in get_cls_attrs(self.__class__)
@@ -138,7 +141,7 @@ class ConfModel:
             if attr_prefer_env and k in _os_environ:
                 v_from = _os_environ
             else:
-                v_from = self._load_yaml(yaml_reload)
+                v_from = _v_from
             v = parse_variable(
                 k=k,
                 v_type=v_type,
@@ -153,15 +156,10 @@ class ConfModel:
             if v is Undefined:
                 raise ConfModelError(f"Missing required configuration: {k!r}")
             setattr(self, k, v)
-        if clean_cache:
-            self._yaml_cache = None
         return self
 
-    def _load_yaml(self, reload: bool = False) -> dict:
+    def load_yaml(self) -> dict:
         if not self._yaml_path:
             return {}
-        if self._yaml_cache is not None and not reload:
-            return self._yaml_cache
         with open(self._yaml_path, mode="r", encoding=self._yaml_encoding) as f:
-            self._yaml_cache = yaml.load(f, Loader=yaml.FullLoader) or {}
-            return self._yaml_cache
+            return yaml.load(f, Loader=yaml.FullLoader) or {}
