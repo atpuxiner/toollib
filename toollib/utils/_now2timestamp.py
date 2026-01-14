@@ -20,8 +20,7 @@ def now2timestamp(
     :param tzname: 时区名称
     :return:
     """
-    zinfo = ZoneInfo(tzname)
-    timestamp = datetime.utcnow().timestamp() + zinfo.utcoffset(datetime.now().astimezone(zinfo)).total_seconds()
+    timestamp = datetime.now(ZoneInfo(tzname)).timestamp()
     if unit == "fs":
         return timestamp
     return int(timestamp * {"s": 1, "ms": 1000, "us": 1000000, "ns": 1000000000}.get(unit, 1000))
