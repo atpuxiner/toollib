@@ -125,7 +125,7 @@ def init_logger(
         clear_handlers: bool = True,
         enable_console: bool = True,
         enable_file: bool = True,
-        basedir: str = None,
+        outdir: str | Path = None,
         access_name: str = "access.log",
         error_name: str = "error.log",
         name_with_pid: bool = False,
@@ -170,7 +170,7 @@ def init_logger(
     :param clear_handlers: 清除handlers
     :param enable_console: 开启控制台日志
     :param enable_file: 开启文件日志
-    :param basedir: 日志基目录
+    :param outdir: 输出目录
     :param access_name: access名称
     :param error_name: error名称
     :param name_with_pid: 名称带pid
@@ -213,15 +213,15 @@ def init_logger(
         )
 
     if enable_file:
-        basedir = basedir or os.path.join(os.getcwd(), "logs")
-        basedir = Path(basedir)
-        basedir.mkdir(parents=True, exist_ok=True)
+        outdir = outdir or os.path.join(os.getcwd(), "logs")
+        outdir = Path(outdir)
+        outdir.mkdir(parents=True, exist_ok=True)
         if name_with_pid:
             pid = os.getpid()
             access_name = f"{pid}-{access_name}"
             error_name = f"{pid}-{error_name}"
-        log_access_file = basedir.joinpath(access_name)
-        log_error_file = basedir.joinpath(error_name)
+        log_access_file = outdir.joinpath(access_name)
+        log_error_file = outdir.joinpath(error_name)
         logger.add(
             log_access_file,
             encoding=encoding,
