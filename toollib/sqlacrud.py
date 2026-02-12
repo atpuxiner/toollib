@@ -25,6 +25,7 @@ e.g.::
 
     +++++[更多详见参数或源码]+++++
 """
+from collections.abc import Mapping
 from dataclasses import dataclass, field
 from typing import Literal, Any
 
@@ -35,6 +36,7 @@ from sqlalchemy import (
     update as sa_update,
     delete as sa_delete,
     inspect,
+    ColumnElement,
 )
 from sqlalchemy.dialects.mysql import insert as mysql_insert
 from sqlalchemy.dialects.postgresql import insert as pg_insert
@@ -158,6 +160,48 @@ def _dialect(session: AsyncSession) -> str:
     return session.bind.dialect.name if session.bind else "unknown"
 
 
+def _build_where_clauses(
+        model, where: dict[str, Any]
+        | ColumnElement[Any]
+        | list[ColumnElement[Any]]
+        | tuple[ColumnElement[Any], ...]
+        | None = None
+) -> list[ColumnElement[Any]]:
+    """构建 where 条件列表
+
+    支持多种 where 格式：
+    - None: 返回空列表
+    - dict: {"name": "Tom", "age": 18} -> [User.name == "Tom", User.age == 18]
+    - ColumnElement: User.age > 18 -> [User.age > 18]
+    - list/tuple: [User.age > 18, User.status == 1] -> [User.age > 18, User.status == 1]
+    """
+    if where is None:
+        return []
+
+    # 情况1：字典 → 转成等值条件
+    if isinstance(where, Mapping):
+        conditions = []
+        for key, value in where.items():
+            if not hasattr(model, key):
+                raise ValueError(f"Invalid column '{key}' for model {model.__name__}")
+            column = getattr(model, key)
+            conditions.append(column == value)
+        return conditions
+
+    # 情况2：单个 ColumnElement
+    if isinstance(where, ColumnElement):
+        return [where]
+
+    # 情况3：列表或元组（多个 ColumnElement）
+    if isinstance(where, (list, tuple)):
+        for i, expr in enumerate(where):
+            if not isinstance(expr, ColumnElement):
+                raise TypeError(f"where[{i}] is not a SQLAlchemy ColumnElement: {expr!r}")
+        return list(where)
+
+    raise TypeError(f"Unsupported where type: {type(where)}")
+
+
 def _columns(model) -> list[str]:
     """获取模型所有列名"""
     return [column.name for column in inspect(model).mapper.columns]
@@ -229,14 +273,23 @@ async def fetch_one(
         model,
         *,
         columns: tuple[str, ...] | list[str] | None = None,
-        where: dict[str, Any] | None = None,
+        where: dict[str, Any]
+        | ColumnElement[Any]
+        | list[ColumnElement[Any]]
+        | tuple[ColumnElement[Any], ...]
+        | None = None,
         order_by: str | tuple[str, ...] | list[str] | None = None,
 ) -> dict[str, Any] | None:
     """查询单条记录
 
     Args:
         columns: 指定返回列，None 返回所有列
-        where: 过滤条件
+        where: 过滤条件，支持：
+            - None: 无过滤条件
+            - dict: {"name": "Tom", "age": 18}
+            - ColumnElement: User.age > 18
+            - list[ColumnElement]: [User.age > 18, User.status == 1]
+            - tuple[ColumnElement, ...]: (User.age > 18, User.status == 1)
         order_by: 排序字段，支持多字段。字符串前面加 "-" 表示降序，
                  如 "-created_at" 或 ("name", "-created_at") 或 ["name", "-created_at"]
 
@@ -251,6 +304,12 @@ async def fetch_one(
         # 多字段排序
         user = await fetch_one(session, User, order_by=("name", "-created_at"))
 
+        # 使用表达式
+        user = await fetch_one(session, User, where=User.age > 18)
+
+        # 使用多个条件
+        user = await fetch_one(session, User, where=[User.age > 18, User.status == 1])
+
         +++++[更多详见参数或源码]+++++
     """
     selected_columns = tuple(
@@ -261,7 +320,7 @@ async def fetch_one(
     stmt = select(*selected_columns).select_from(model)
 
     if where:
-        stmt = stmt.filter_by(**where)
+        stmt = stmt.where(*_build_where_clauses(model, where))
     if order_by:
         stmt = stmt.order_by(*_parse_order_by(model, order_by))
 
@@ -274,7 +333,11 @@ async def fetch_all(
         model,
         *,
         columns: tuple[str, ...] | list[str] | None = None,
-        where: dict[str, Any] | None = None,
+        where: dict[str, Any]
+        | ColumnElement[Any]
+        | list[ColumnElement[Any]]
+        | tuple[ColumnElement[Any], ...]
+        | None = None,
         order_by: str | tuple[str, ...] | list[str] | None = None,
         offset: int | None = None,
         limit: int | None = None,
@@ -283,7 +346,12 @@ async def fetch_all(
 
     Args:
         columns: 指定返回列
-        where: 过滤条件
+        where: 过滤条件，支持：
+            - None: 无过滤条件
+            - dict: {"name": "Tom", "age": 18}
+            - ColumnElement: User.age > 18
+            - list[ColumnElement]: [User.age > 18, User.status == 1]
+            - tuple[ColumnElement, ...]: (User.age > 18, User.status == 1)
         order_by: 排序字段，支持多字段。字符串前面加 "-" 表示降序，
                  如 "-created_at" 或 ("name", "-created_at") 或 ["name", "-created_at"]
         offset: 分页偏移
@@ -297,6 +365,12 @@ async def fetch_all(
         # 多字段排序
         users = await fetch_all(session, User, order_by=("name", "-created_at"), offset=0, limit=20)
 
+        # 使用表达式
+        users = await fetch_all(session, User, where=User.status == 1)
+
+        # 使用多个条件
+        users = await fetch_all(session, User, where=[User.age > 18, User.status == 1])
+
         +++++[更多详见参数或源码]+++++
     """
     selected_columns = tuple(
@@ -307,12 +381,12 @@ async def fetch_all(
     stmt = select(*selected_columns).select_from(model)
 
     if where:
-        stmt = stmt.filter_by(**where)
+        stmt = stmt.where(*_build_where_clauses(model, where))
     if order_by:
         stmt = stmt.order_by(*_parse_order_by(model, order_by))
-    if offset:
+    if offset is not None:
         stmt = stmt.offset(offset)
-    if limit:
+    if limit is not None:
         stmt = stmt.limit(limit)
 
     result = await session.execute(stmt)
@@ -323,7 +397,11 @@ async def count(
         session: AsyncSession,
         model,
         *,
-        where: dict[str, Any] | None = None,
+        where: dict[str, Any]
+        | ColumnElement[Any]
+        | list[ColumnElement[Any]]
+        | tuple[ColumnElement[Any], ...]
+        | None = None,
 ) -> int:
     """统计记录数
 
@@ -332,7 +410,12 @@ async def count(
     Args:
         session: 数据库会话
         model: SQLAlchemy 模型类
-        where: 过滤条件，None 则统计全部记录
+        where: 过滤条件，支持：
+            - dict: {"name": "Tom", "age": 18}
+            - ColumnElement: User.age > 18
+            - list[ColumnElement]: [User.age > 18, User.status == 1]
+            - tuple[ColumnElement, ...]: (User.age > 18, User.status == 1)
+            - None: 统计全部记录
 
     Returns:
         记录数量
@@ -345,11 +428,17 @@ async def count(
         # 统计正常用户
         active_count = await count(session, User, where={"status": 1})
 
+        # 使用表达式
+        adult_count = await count(session, User, where=User.age >= 18)
+
+        # 使用多个条件
+        count = await count(session, User, where=[User.age >= 18, User.status == 1])
+
         +++++[更多详见参数或源码]+++++
     """
     stmt = select(func.count()).select_from(model)
     if where:
-        stmt = stmt.filter_by(**where)
+        stmt = stmt.where(*_build_where_clauses(model, where))
     result = await session.execute(stmt)
     return result.scalar() or 0
 
@@ -431,17 +520,29 @@ async def delete(
         session: AsyncSession,
         model,
         *,
-        where: dict[str, Any],
+        where: dict[str, Any]
+        | ColumnElement[Any]
+        | list[ColumnElement[Any]]
+        | tuple[ColumnElement[Any], ...]
+        | None = None,
+        allow_all: bool = False,
         flush: bool = False,
 ) -> Deleted:
     """删除记录
 
-    根据条件删除记录。where 参数必须提供以防止全表删除。
+    根据条件删除记录。默认情况下需要提供 where 条件，防止误删全表。
+    如需删除全部记录，请设置 allow_all=True。
 
     Args:
         session: 数据库会话
         model: SQLAlchemy 模型类
-        where: 过滤条件（必须），如 {"id": 1}，防止意外全表删除
+        where: 过滤条件，支持：
+            - None: 删除全部记录（需 allow_all=True）
+            - dict: {"id": 1}
+            - ColumnElement: User.id == 1
+            - list[ColumnElement]: [User.age < 18, User.status == 0]
+            - tuple[ColumnElement, ...]: (User.age < 18, User.status == 0)
+        allow_all: 是否允许无条件删除（全表删除），默认 False
         flush: 是否立即刷入数据库，默认 False 由调用方控制事务提交
 
     Returns:
@@ -468,12 +569,34 @@ async def delete(
         )
         print(f"已清理 {deleted.rowcount} 条失效记录")
 
+        # 使用表达式
+        deleted = await delete(
+            session,
+            User,
+            where=User.age < 18
+        )
+
+        # 使用多个条件
+        deleted = await delete(
+            session,
+            User,
+            where=[User.age < 18, User.status == 0]
+        )
+
+        # 全表删除（需显式声明）
+        deleted = await delete(session, User, allow_all=True)
+        print(f"已清空 {deleted.rowcount} 条记录")
+
         +++++[更多详见参数或源码]+++++
     """
-    if not where:
-        raise ValueError("'where' is required to prevent full-table delete")
+    clauses = _build_where_clauses(model, where)
+    if not clauses and not allow_all:
+        raise ValueError("'where' is required, or set allow_all=True for full-table delete")
 
-    result = await session.execute(sa_delete(model).filter_by(**where))
+    stmt = sa_delete(model)
+    if clauses:
+        stmt = stmt.where(*clauses)
+    result = await session.execute(stmt)
     if flush:
         await session.flush()
 
@@ -486,29 +609,41 @@ async def update(
         model,
         *,
         values: dict[str, Any],
-        where: dict[str, Any],
+        where: dict[str, Any]
+        | ColumnElement[Any]
+        | list[ColumnElement[Any]]
+        | tuple[ColumnElement[Any], ...]
+        | None = None,
+        allow_all: bool = False,
         exclude_none: bool = True,
         returning: bool = False,
         flush: bool = False,
 ) -> Updated:
     """更新记录
 
-    根据条件更新符合条件的记录。where 参数必须提供以防止全表更新。
+    根据条件更新符合条件的记录。默认情况下需要提供 where 条件，防止误更新全表。
+    如需更新全部记录，请设置 allow_all=True。
 
     Args:
         session: 数据库会话
         model: SQLAlchemy 模型类
         values: 要更新的数据字典
-        where: 过滤条件（必须），如 {"id": 1}，防止意外全表更新
+        where: 过滤条件，支持：
+            - None: 更新全部记录（需 allow_all=True）
+            - dict: {"id": 1}
+            - ColumnElement: User.id == 1
+            - list[ColumnElement]: [User.age < 18, User.status == 0]
+            - tuple[ColumnElement, ...]: (User.age < 18, User.status == 0)
+        allow_all: 是否允许无条件更新（全表更新），默认 False
         exclude_none: 是否自动排除值为 None 的字段，True 时跳过 None 值
-        returning: 是否返回更新后的数据字典，需要额外查询。
+        returning: 是否返回更新后的数据字典（不支持全表更新）。需要额外查询。
         flush: 是否立即刷入数据库，默认 False 由调用方控制事务提交
 
     Returns:
         Updated: 更新操作结果
             - ok: True 表示更新成功（rowcount > 0），False 表示未找到匹配记录
             - rowcount: 受影响的行数
-            - data: 更新后的数据字典（returning=True 时）
+            - data: 更新后的数据字典（returning=True 时，不支持全表更新）
 
     e.g.::
 
@@ -532,10 +667,39 @@ async def update(
         )
         print(updated.data)  # 更新后的完整记录
 
+        # 使用表达式
+        updated = await update(
+            session,
+            User,
+            values={"status": 0},
+            where=User.last_login < datetime(2025, 1, 1)
+        )
+
+        # 使用多个条件
+        updated = await update(
+            session,
+            User,
+            values={"status": 0},
+            where=[User.age < 18, User.status == 1]
+        )
+
+        # 全表更新（需显式声明）
+        updated = await update(
+            session,
+            User,
+            values={"status": 0},
+            allow_all=True
+        )
+
         +++++[更多详见参数或源码]+++++
     """
-    if not where:
-        raise ValueError("'where' is required to prevent full-table update")
+    clauses = _build_where_clauses(model, where)
+    if not clauses and not allow_all:
+        raise ValueError("'where' is required, or set allow_all=True for full-table update")
+
+    # 全表更新不支持 returning
+    if not clauses and returning:
+        raise ValueError("'returning' is not supported for full-table update")
 
     data = (
         {k: v for k, v in values.items() if v is not None} if exclude_none else values
@@ -543,14 +707,17 @@ async def update(
     if not data:
         return Updated(ok=False, rowcount=0)
 
-    result = await session.execute(sa_update(model).filter_by(**where).values(**data))
+    stmt = sa_update(model).values(**data)
+    if clauses:
+        stmt = stmt.where(*clauses)
+    result = await session.execute(stmt)
     if flush:
         await session.flush()
 
     rowcount = result.rowcount or 0
     updated_data = (
         await fetch_one(session, model, where=where)
-        if (returning and rowcount > 0)
+        if (returning and rowcount > 0 and clauses)
         else None
     )
 
@@ -701,9 +868,10 @@ async def _upsert_fallback(
         cols = update_columns or tuple(col for col in values if col not in keys)
         update_data = {col: values[col] for col in cols if col in values}
         if update_data:
-            await session.execute(
-                sa_update(model).filter_by(**where).values(**update_data)
-            )
+            stmt = sa_update(model).where(
+                *_build_where_clauses(model, where)
+            ).values(**update_data)
+            await session.execute(stmt)
             if flush:
                 await session.flush()
             existing = await fetch_one(session, model, where=where)
@@ -978,7 +1146,11 @@ class CRUDMixin:
             session: AsyncSession,
             *,
             columns: tuple[str, ...] | list[str] | None = None,
-            where: dict[str, Any] | None = None,
+            where: dict[str, Any]
+            | ColumnElement[Any]
+            | list[ColumnElement[Any]]
+            | tuple[ColumnElement[Any], ...]
+            | None = None,
             order_by: str | tuple[str, ...] | list[str] | None = None,
     ) -> dict[str, Any] | None:
         """查询单条记录
@@ -986,7 +1158,12 @@ class CRUDMixin:
         Args:
             session: 数据库会话
             columns: 指定返回列，None 返回所有列
-            where: 过滤条件
+            where: 过滤条件，支持：
+                - None: 无过滤条件
+                - dict: {"name": "Tom", "age": 18}
+                - ColumnElement: User.age > 18
+                - list[ColumnElement]: [User.age > 18, User.status == 1]
+                - tuple[ColumnElement, ...]: (User.age > 18, User.status == 1)
             order_by: 排序字段，支持 "-field" 降序
 
         Returns:
@@ -1002,7 +1179,11 @@ class CRUDMixin:
             session: AsyncSession,
             *,
             columns: tuple[str, ...] | list[str] | None = None,
-            where: dict[str, Any] | None = None,
+            where: dict[str, Any]
+            | ColumnElement[Any]
+            | list[ColumnElement[Any]]
+            | tuple[ColumnElement[Any], ...]
+            | None = None,
             order_by: str | tuple[str, ...] | list[str] | None = None,
             offset: int | None = None,
             limit: int | None = None,
@@ -1012,7 +1193,12 @@ class CRUDMixin:
         Args:
             session: 数据库会话
             columns: 指定返回列
-            where: 过滤条件
+            where: 过滤条件，支持：
+                - None: 无过滤条件
+                - dict: {"name": "Tom", "age": 18}
+                - ColumnElement: User.age > 18
+                - list[ColumnElement]: [User.age > 18, User.status == 1]
+                - tuple[ColumnElement, ...]: (User.age > 18, User.status == 1)
             order_by: 排序字段
             offset: 分页偏移
             limit: 分页限制
@@ -1035,13 +1221,22 @@ class CRUDMixin:
             cls,
             session: AsyncSession,
             *,
-            where: dict[str, Any] | None = None,
+            where: dict[str, Any]
+            | ColumnElement[Any]
+            | list[ColumnElement[Any]]
+            | tuple[ColumnElement[Any], ...]
+            | None = None,
     ) -> int:
         """统计记录数
 
         Args:
             session: 数据库会话
-            where: 过滤条件
+            where: 过滤条件，支持：
+                - None: 统计全部记录
+                - dict: {"name": "Tom", "age": 18}
+                - ColumnElement: User.age > 18
+                - list[ColumnElement]: [User.age > 18, User.status == 1]
+                - tuple[ColumnElement, ...]: (User.age > 18, User.status == 1)
 
         Returns:
             记录数量
@@ -1084,20 +1279,31 @@ class CRUDMixin:
             cls,
             session: AsyncSession,
             *,
-            where: dict[str, Any],
+            where: dict[str, Any]
+            | ColumnElement[Any]
+            | list[ColumnElement[Any]]
+            | tuple[ColumnElement[Any], ...]
+            | None = None,
+            allow_all: bool = False,
             flush: bool = False,
     ) -> Deleted:
         """删除记录
 
         Args:
             session: 数据库会话
-            where: 过滤条件（必须）
+            where: 过滤条件，支持：
+                - None: 删除全部记录（需 allow_all=True）
+                - dict: {"id": 1}
+                - ColumnElement: User.id == 1
+                - list[ColumnElement]: [User.age < 18, User.status == 0]
+                - tuple[ColumnElement, ...]: (User.age < 18, User.status == 0)
+            allow_all: 是否允许无条件删除（全表删除），默认 False
             flush: 是否立即刷入数据库
 
         Returns:
             Deleted: 删除操作结果
         """
-        return await delete(session, cls, where=where, flush=flush)
+        return await delete(session, cls, where=where, allow_all=allow_all, flush=flush)
 
     @classmethod
     async def update(
@@ -1105,7 +1311,12 @@ class CRUDMixin:
             session: AsyncSession,
             *,
             values: dict[str, Any],
-            where: dict[str, Any],
+            where: dict[str, Any]
+            | ColumnElement[Any]
+            | list[ColumnElement[Any]]
+            | tuple[ColumnElement[Any], ...]
+            | None = None,
+            allow_all: bool = False,
             exclude_none: bool = True,
             returning: bool = False,
             flush: bool = False,
@@ -1115,9 +1326,15 @@ class CRUDMixin:
         Args:
             session: 数据库会话
             values: 要更新的数据字典
-            where: 过滤条件（必须）
+            where: 过滤条件，支持：
+                - None: 更新全部记录（需 allow_all=True）
+                - dict: {"id": 1}
+                - ColumnElement: User.id == 1
+                - list[ColumnElement]: [User.age < 18, User.status == 0]
+                - tuple[ColumnElement, ...]: (User.age < 18, User.status == 0)
+            allow_all: 是否允许无条件更新（全表更新），默认 False
             exclude_none: 是否排除 None 值
-            returning: 是否返回更新后的数据
+            returning: 是否返回更新后的数据（不支持全表更新）
             flush: 是否立即刷入数据库
 
         Returns:
@@ -1128,6 +1345,7 @@ class CRUDMixin:
             cls,
             values=values,
             where=where,
+            allow_all=allow_all,
             exclude_none=exclude_none,
             returning=returning,
             flush=flush,
