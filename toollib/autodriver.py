@@ -118,13 +118,13 @@ class ChromeDriver:
 
     @staticmethod
     def __download_driver(url, filename, is_test_version, browser_latest_version, timeout=60):
-        print(f'Downloading driver, please wait. This may take several minutes depending upon your network connection')
+        print('Downloading driver, please wait. This may take several minutes depending upon your network connection')
         try:
             with urlrequest.urlopen(url, timeout=timeout) as response, open(filename, 'wb') as outfile:
                 shutil.copyfileobj(response, outfile)
         except URLError as err:
             print(str(err))
-            msg = f"因不可抗因素下载失败（请尝试开启VPN或手动下载）"
+            msg = "因不可抗因素下载失败（请尝试开启VPN或手动下载）"
             if is_test_version:
                 msg = msg[:-1] + f"或降低浏览器版本为{browser_latest_version}）"
             msg += f"：{url}"

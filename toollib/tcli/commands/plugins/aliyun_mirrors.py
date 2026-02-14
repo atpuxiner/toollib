@@ -2,7 +2,7 @@
 @author axiner
 @version v1.0.0
 @created 2023/5/2 15:00
-@abstract
+@abstract 阿里云镜像配置
 @description
     更新记录：
         - 20230502

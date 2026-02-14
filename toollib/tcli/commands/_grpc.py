@@ -23,9 +23,6 @@ except ImportError as err:
 
 class Cmd(BaseCmd):
 
-    def __init__(self):
-        super().__init__()
-
     def add_options(self):
         options = Options(
             name='grpc',

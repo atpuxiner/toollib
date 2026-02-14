@@ -16,9 +16,6 @@ from toollib.tcli.option import Options
 
 class Cmd(BaseCmd):
 
-    def __init__(self):
-        super().__init__()
-
     def add_options(self):
         options = Options(
             name='set-conda',

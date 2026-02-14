@@ -2,7 +2,7 @@
 @author axiner
 @version v1.0.0
 @created 2023/9/21 10:10
-@abstract
+@abstract grpc模板
 @description
 @history
 """

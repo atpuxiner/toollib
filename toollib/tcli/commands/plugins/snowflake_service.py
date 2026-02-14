@@ -2,7 +2,7 @@
 @author axiner
 @version v1.0.0
 @created 2023/6/28 10:29
-@abstract
+@abstract 雪花算法服务
 @description
 @history
 """

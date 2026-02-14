@@ -2,7 +2,7 @@
 @author axiner
 @version v1.0.0
 @created 2023/5/23 14:52
-@abstract
+@abstract bash脚本模板
 @description
 @history
 """
