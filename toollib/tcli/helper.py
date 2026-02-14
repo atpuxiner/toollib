@@ -16,6 +16,7 @@ Commands:
   set-conda         设置conda源
   set-mirrors       设置镜像源
   set-sshkey        设置ssh免密
+  set-vscode        设置vscode配置
   docker            docker操作
   pydpack           pyd打包
   snowflake         雪花服务    
@@ -51,6 +52,12 @@ options:
   -h/--help     帮助
   -i/--infos    主机信息（"ip1,user1,pass1,port1 ip2,user2,pass2,port2 ..."|也可指定文件:一行一个） 
   --sysname     系统名称（以防自动获取不精确）[可选]
+"""
+
+set_vscode = """usage:
+  pytcli set-vscode
+options:
+  -h/--help     帮助
 """
 
 docker = """usage:
