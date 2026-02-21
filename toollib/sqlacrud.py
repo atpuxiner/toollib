@@ -25,9 +25,9 @@ e.g.::
 
     +++++[更多详见参数或源码]+++++
 """
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
-from typing import Literal, Any
+from typing import Literal, Any, Callable
 
 from sqlalchemy import (
     select,
@@ -38,6 +38,7 @@ from sqlalchemy import (
     inspect,
     ColumnElement,
 )
+from sqlalchemy.engine import Result
 from sqlalchemy.dialects.mysql import insert as mysql_insert
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.dialects.sqlite import insert as sqlite_insert
@@ -50,6 +51,8 @@ __all__ = [
     "Upserted",
     "BatchCreated",
     "BulkInserted",
+    "format_row",
+    "format_rows",
     "fetch_one",
     "fetch_all",
     "count",
@@ -59,8 +62,7 @@ __all__ = [
     "upsert",
     "batch_create",
     "bulk_insert",
-    "fetch_sql_one",
-    "fetch_sql_all",
+    "raw",
     "CRUDMixin",
 ]
 
@@ -76,7 +78,7 @@ class Created:
 
     ok: bool  # 是否成功
     rowcount: int = 0  # 影响行数
-    data: dict[str, Any] | None = None  # 创建的数据
+    data: dict[str, Any] | None = None  # 相关数据：创建成功时为新建数据，冲突时为已存在的数据
 
     def __bool__(self) -> bool:
         return self.ok
@@ -207,9 +209,7 @@ def _columns(model) -> list[str]:
     return [column.name for column in inspect(model).mapper.columns]
 
 
-def _to_dict(
-        model, fields: tuple[str, ...] | list[str] | None = None
-) -> dict[str, Any]:
+def _to_dict(model, fields: Sequence[str] | None = None) -> dict[str, Any]:
     """模型实例转字典"""
     if not model:
         return {}
@@ -218,7 +218,7 @@ def _to_dict(
     return {field: getattr(model, field) for field in fields if hasattr(model, field)}
 
 
-def _parse_order_by(model, order_by: str | tuple[str, ...] | list[str]) -> list:
+def _parse_order_by(model, order_by: str | Sequence[str]) -> list[ColumnElement[Any]]:
     """解析排序字段
 
     支持格式:
@@ -239,26 +239,58 @@ def _parse_order_by(model, order_by: str | tuple[str, ...] | list[str]) -> list:
             column_name = order_field
             desc = False
 
-        if hasattr(model, column_name):
-            column = getattr(model, column_name)
-            result.append(column.desc() if desc else column.asc())
+        if not hasattr(model, column_name):
+            raise ValueError(f"Invalid order_by column '{column_name}' for model {model.__name__}")
+        column = getattr(model, column_name)
+        result.append(column.desc() if desc else column.asc())
 
     return result
 
 
-def _format_row(row, fields: tuple[str, ...] | list[str]) -> dict[str, Any]:
-    """格式化单行结果"""
+def format_row(
+        row,
+        fields: Sequence[str],
+        converters: dict[str, Callable] | None = None,
+) -> dict[str, Any]:
+    """格式化单行结果
+
+    Args:
+        row: 数据库结果行
+        fields: 字段列表
+        converters: 字段转换器
+
+    Returns:
+        字典格式的单行数据
+    """
     if not row:
         return {}
-    return row._asdict() if hasattr(row, "_asdict") else dict(zip(fields, row))
+    data = row._asdict() if hasattr(row, "_asdict") else dict(zip(fields, row))
+    if converters:
+        for key, converter in converters.items():
+            if key in data:
+                data[key] = converter(data[key])
+    return data
 
 
-def _format_rows(rows, fields: tuple[str, ...] | list[str]) -> list[dict[str, Any]]:
-    """格式化多行结果"""
+def format_rows(
+        rows,
+        fields: Sequence[str],
+        converters: dict[str, Callable] | None = None,
+) -> list[dict[str, Any]]:
+    """格式化多行结果
+
+    Args:
+        rows: 数据库结果行列表
+        fields: 字段列表
+        converters: 字段转换器
+
+    Returns:
+        字典列表格式的多行数据
+    """
     if not rows:
         return []
     return [
-        row._asdict() if hasattr(row, "_asdict") else dict(zip(fields, row))
+        format_row(row, fields, converters)
         for row in rows
     ]
 
@@ -272,17 +304,20 @@ async def fetch_one(
         session: AsyncSession,
         model,
         *,
-        columns: tuple[str, ...] | list[str] | None = None,
+        columns: Sequence[str] | None = None,
         where: dict[str, Any]
         | ColumnElement[Any]
         | list[ColumnElement[Any]]
         | tuple[ColumnElement[Any], ...]
         | None = None,
-        order_by: str | tuple[str, ...] | list[str] | None = None,
+        order_by: str | Sequence[str] | None = None,
+        converters: dict[str, Callable] | None = None,
 ) -> dict[str, Any] | None:
     """查询单条记录
 
     Args:
+        session: 数据库会话
+        model: SQLAlchemy 模型类
         columns: 指定返回列，None 返回所有列
         where: 过滤条件，支持：
             - None: 无过滤条件
@@ -290,33 +325,35 @@ async def fetch_one(
             - ColumnElement: User.age > 18
             - list[ColumnElement]: [User.age > 18, User.status == 1]
             - tuple[ColumnElement, ...]: (User.age > 18, User.status == 1)
-        order_by: 排序字段，支持多字段。字符串前面加 "-" 表示降序，
-                 如 "-created_at" 或 ("name", "-created_at") 或 ["name", "-created_at"]
+        order_by: 排序字段，支持多字段。字符串前面加 "-" 表示降序
+        converters: 字段转换器，{"field": func}
 
     Returns:
-        单条记录字典或 None
+        单条记录字典
 
     e.g.::
 
         # 单字段排序
         user = await fetch_one(session, User, order_by="-created_at")
 
-        # 多字段排序
-        user = await fetch_one(session, User, order_by=("name", "-created_at"))
-
-        # 使用表达式
-        user = await fetch_one(session, User, where=User.age > 18)
-
-        # 使用多个条件
-        user = await fetch_one(session, User, where=[User.age > 18, User.status == 1])
+        # 字段转换
+        user = await fetch_one(
+            session, User,
+            where={"id": 1},
+            converters={"created_at": lambda x: x.isoformat(), "status": bool}
+        )
 
         +++++[更多详见参数或源码]+++++
     """
-    selected_columns = tuple(
-        getattr(model, col)
-        for col in (columns or _columns(model))
-        if hasattr(model, col)
-    )
+    model_columns = _columns(model)
+    if columns:
+        invalid_cols = [col for col in columns if col not in model_columns]
+        if invalid_cols:
+            raise ValueError(f"Invalid columns {invalid_cols} for model {model.__name__}")
+        selected_columns = tuple(getattr(model, col) for col in columns)
+    else:
+        selected_columns = tuple(getattr(model, col) for col in model_columns)
+
     stmt = select(*selected_columns).select_from(model)
 
     if where:
@@ -325,26 +362,29 @@ async def fetch_one(
         stmt = stmt.order_by(*_parse_order_by(model, order_by))
 
     result = await session.execute(stmt.limit(1))
-    return _format_row(result.fetchone(), columns or _columns(model))
+    return format_row(result.fetchone(), columns or model_columns, converters)
 
 
 async def fetch_all(
         session: AsyncSession,
         model,
         *,
-        columns: tuple[str, ...] | list[str] | None = None,
+        columns: Sequence[str] | None = None,
         where: dict[str, Any]
         | ColumnElement[Any]
         | list[ColumnElement[Any]]
         | tuple[ColumnElement[Any], ...]
         | None = None,
-        order_by: str | tuple[str, ...] | list[str] | None = None,
+        order_by: str | Sequence[str] | None = None,
         offset: int | None = None,
         limit: int | None = None,
+        converters: dict[str, Callable] | None = None,
 ) -> list[dict[str, Any]]:
     """查询多条记录
 
     Args:
+        session: 数据库会话
+        model: SQLAlchemy 模型类
         columns: 指定返回列
         where: 过滤条件，支持：
             - None: 无过滤条件
@@ -352,32 +392,37 @@ async def fetch_all(
             - ColumnElement: User.age > 18
             - list[ColumnElement]: [User.age > 18, User.status == 1]
             - tuple[ColumnElement, ...]: (User.age > 18, User.status == 1)
-        order_by: 排序字段，支持多字段。字符串前面加 "-" 表示降序，
-                 如 "-created_at" 或 ("name", "-created_at") 或 ["name", "-created_at"]
+        order_by: 排序字段，支持 "-field" 降序
         offset: 分页偏移
         limit: 分页限制
+        converters: 字段转换器，{"field": func}
+
+    Returns:
+        记录字典列表
 
     e.g.::
 
-        # 单字段降序
+        # 基础查询
         users = await fetch_all(session, User, order_by="-created_at", limit=10)
 
-        # 多字段排序
-        users = await fetch_all(session, User, order_by=("name", "-created_at"), offset=0, limit=20)
-
-        # 使用表达式
-        users = await fetch_all(session, User, where=User.status == 1)
-
-        # 使用多个条件
-        users = await fetch_all(session, User, where=[User.age > 18, User.status == 1])
+        # 字段转换
+        users = await fetch_all(
+            session, User,
+            where={"status": 1},
+            converters={"created_at": lambda x: x.isoformat()}
+        )
 
         +++++[更多详见参数或源码]+++++
     """
-    selected_columns = tuple(
-        getattr(model, col)
-        for col in (columns or _columns(model))
-        if hasattr(model, col)
-    )
+    model_columns = _columns(model)
+    if columns:
+        invalid_cols = [col for col in columns if col not in model_columns]
+        if invalid_cols:
+            raise ValueError(f"Invalid columns {invalid_cols} for model {model.__name__}")
+        selected_columns = tuple(getattr(model, col) for col in columns)
+    else:
+        selected_columns = tuple(getattr(model, col) for col in model_columns)
+
     stmt = select(*selected_columns).select_from(model)
 
     if where:
@@ -390,7 +435,7 @@ async def fetch_all(
         stmt = stmt.limit(limit)
 
     result = await session.execute(stmt)
-    return _format_rows(result.fetchall(), columns or _columns(model))
+    return format_rows(result.fetchall(), columns or model_columns, converters)
 
 
 async def count(
@@ -729,8 +774,8 @@ async def upsert(
         model,
         *,
         values: dict[str, Any],
-        keys: tuple[str, ...] | list[str],
-        update: tuple[str, ...] | list[str] | None = None,
+        keys: Sequence[str],
+        updates: Sequence[str] | None = None,
         flush: bool = False,
 ) -> Upserted:
     """存在则更新，不存在则创建（Upsert）
@@ -746,7 +791,7 @@ async def upsert(
         model: SQLAlchemy 模型类
         values: 完整数据字典
         keys: 唯一键字段列表，用于判断记录是否存在，如 ("id",), ("email",)
-        update: 指定更新时的字段列表，None 表示更新除 keys 外的所有字段
+        updates: 指定更新时的字段列表，None 表示更新除 keys 外的所有字段
         flush: 是否立即刷入数据库，默认 False 由调用方控制事务提交
 
     Returns:
@@ -774,7 +819,7 @@ async def upsert(
             User,
             values={"id": 1, "name": "Updated", "email": "new@test.com"},
             keys=("id",),
-            update=("name",)  # 只更新 name，email 不变
+            updates=("name",)  # 只更新 name，email 不变
         )
 
         +++++[更多详见参数或源码]+++++
@@ -786,17 +831,17 @@ async def upsert(
 
     if dialect in ("postgresql", "mysql", "sqlite"):
         return await _upsert_native(
-            session, model, values, keys, update, dialect, flush
+            session, model, values, keys, updates, dialect, flush
         )
-    return await _upsert_fallback(session, model, values, keys, update, flush)
+    return await _upsert_fallback(session, model, values, keys, updates, flush)
 
 
 async def _upsert_native(
         session: AsyncSession,
         model,
         values: dict[str, Any],
-        keys: tuple[str, ...] | list[str],
-        update_columns: tuple[str, ...] | list[str] | None,
+        keys: Sequence[str],
+        updates: Sequence[str] | None,
         dialect: str,
         flush: bool = False,
 ) -> Upserted:
@@ -804,8 +849,8 @@ async def _upsert_native(
 
     根据数据库方言使用对应的 upsert 语法。
     """
-    update_cols = update_columns or tuple(col for col in values if col not in keys)
-    update_dict = {col: values[col] for col in update_cols if col in values}
+    update_cols = updates if updates is not None else tuple(col for col in values if col not in keys)
+    update_data = {col: values[col] for col in update_cols if col in values}
 
     # 选择 insert 构造器
     insert_map = {
@@ -817,12 +862,11 @@ async def _upsert_native(
 
     stmt = insert_func(model).values(**values)
 
-    if update_dict:
+    if update_data:
         if dialect == "mysql":
-            stmt = stmt.on_duplicate_key_update(**update_dict)
+            stmt = stmt.on_duplicate_key_update(**update_data)
         else:
-            stmt = stmt.on_conflict_do_update(
-                index_elements=keys, set_=update_dict)
+            stmt = stmt.on_conflict_do_update(index_elements=keys, set_=update_data)
     else:
         if dialect == "mysql":
             stmt = stmt.prefix_with("IGNORE")
@@ -841,9 +885,26 @@ async def _upsert_native(
     # 判断操作类型
     rowcount = getattr(result, "rowcount", 1)
     if dialect == "mysql":
-        action = "insert" if rowcount == 1 else "update"
+        # MySQL ON DUPLICATE KEY UPDATE 返回值：
+        # - 0: 新插入行
+        # - 1: 行已存在但数据未变化
+        # - 2: 行已存在且已更新
+        if rowcount == 0:
+            action = "insert"
+        elif rowcount == 2:
+            action = "update"
+        else:
+            action = "noop"
     else:
-        action = "update" if update_dict else "noop"
+        # PostgreSQL/SQLite ON CONFLICT 返回值：
+        # - 1: 新插入行
+        # - 0: 冲突但未更新（ON CONFLICT DO NOTHING）
+        if rowcount == 0:
+            action = "noop"
+        elif update_data:
+            action = "update"
+        else:
+            action = "insert"
 
     return Upserted(data=obj, action=action)
 
@@ -852,8 +913,8 @@ async def _upsert_fallback(
         session: AsyncSession,
         model,
         values: dict[str, Any],
-        keys: tuple[str, ...] | list[str],
-        update_columns: tuple[str, ...] | list[str] | None,
+        keys: Sequence[str],
+        updates: Sequence[str] | None,
         flush: bool = False,
 ) -> Upserted:
     """Upsert 的通用 fallback 实现（先查后改）
@@ -865,8 +926,8 @@ async def _upsert_fallback(
     existing = await fetch_one(session, model, where=where)
 
     if existing:
-        cols = update_columns or tuple(col for col in values if col not in keys)
-        update_data = {col: values[col] for col in cols if col in values}
+        update_cols = updates if updates is not None else tuple(col for col in values if col not in keys)
+        update_data = {col: values[col] for col in update_cols if col in values}
         if update_data:
             stmt = sa_update(model).where(
                 *_build_where_clauses(model, where)
@@ -874,9 +935,9 @@ async def _upsert_fallback(
             await session.execute(stmt)
             if flush:
                 await session.flush()
-            existing = await fetch_one(session, model, where=where)
-        action = "update" if update_data else "noop"
-        return Upserted(data=model(**existing), action=action)
+            updated_data = await fetch_one(session, model, where=where)
+            return Upserted(data=model(**updated_data), action="update")
+        return Upserted(data=model(**existing), action="noop")
 
     obj = model(**values)
     session.add(obj)
@@ -1021,76 +1082,63 @@ async def bulk_insert(
 
 
 # -----------------------------------------------------------------------------
-# 原生 SQL 查询
+# 原生 SQL 执行
 # -----------------------------------------------------------------------------
 
 
-async def fetch_sql_one(
+async def raw(
         session: AsyncSession,
         sql: str,
         params: dict[str, Any] | None = None,
-) -> dict[str, Any]:
-    """执行原生 SQL 查询单条记录
-
-    当 ORM 查询无法满足需求时，可以直接执行 SQL 语句。
-
-    Args:
-        session: 数据库会话
-        sql: 原生 SQL 语句字符串，支持参数占位符，如 :name
-        params: SQL 参数字典，对应 SQL 中的命名参数
-
-    Returns:
-        单条记录字典，未找到返回空字典 {}
-
-    e.g.::
-
-        sql = "SELECT * FROM users WHERE email = :email LIMIT 1"
-        user = await fetch_sql_one(
-            session,
-            sql,
-            params={"email": "user@test.com"}
-        )
-        print(user.get("name"))
-
-        +++++[更多详见参数或源码]+++++
-    """
-    result = await session.execute(text(sql), params)
-    row = result.fetchone()
-    return row._asdict() if row else {}
-
-
-async def fetch_sql_all(
-        session: AsyncSession,
-        sql: str,
-        params: dict[str, Any] | None = None,
-) -> list[dict[str, Any]]:
-    """执行原生 SQL 查询多条记录
-
-    当 ORM 查询无法满足需求时，可以直接执行 SQL 语句。
+        *,
+        autocommit: bool = False,
+        flush: bool = False,
+) -> Result:
+    """执行原生 SQL 语句
 
     Args:
         session: 数据库会话
-        sql: 原生 SQL 语句字符串，支持参数占位符，如 :name
-        params: SQL 参数字典，对应 SQL 中的命名参数
+        sql: SQL 语句，支持命名参数占位符 :name
+        params: 参数字典
+        autocommit: 自动提交事务（非查询语句）
+        flush: 刷入数据库但不提交
 
     Returns:
-        记录字典列表，未找到返回空列表 []
+        SQLAlchemy Result 对象，常用方法：
+            - fetchall() / fetchone() 获取结果
+            - rowcount 影响行数
+            - returns_rows 是否返回数据
+            - async for row in result 流式遍历
 
     e.g.::
 
-        sql = "SELECT id, name FROM users WHERE status = :status ORDER BY created_at"
-        users = await fetch_sql_all(
-            session,
-            sql,
-            params={"status": 1}
-        )
-        for user in users:
-            print(user["name"])
+        # SELECT
+        result = await raw(session, "SELECT * FROM users WHERE id = :id", {"id": 1})
+        users = [r._asdict() for r in result.fetchall()]
 
-        +++++[更多详见参数或源码]+++++
+        # 流式查询
+        result = await raw(session, "SELECT * FROM large_table")
+        async for row in result:
+            process(row._asdict())
+
+        # INSERT/UPDATE/DELETE
+        result = await raw(session, "DELETE FROM users WHERE id = :id", {"id": 1}, autocommit=True)
+        print(f"删除 {result.rowcount} 条")
     """
+    if not sql or not sql.strip():
+        raise ValueError("SQL statement cannot be empty")
+
+    if params is not None and not isinstance(params, dict):
+        raise TypeError(f"params must be dict or None, got {type(params).__name__}")
+
     result = await session.execute(text(sql), params)
-    return [row._asdict() for row in result.fetchall()]
+
+    if autocommit:
+        await session.commit()
+    elif flush:
+        await session.flush()
+
+    return result
 
 
 # -----------------------------------------------------------------------------
@@ -1140,18 +1188,55 @@ class CRUDMixin:
         +++++[更多详见参数或源码]+++++
     """
 
+    @staticmethod
+    def format_row(
+            row,
+            fields: Sequence[str],
+            converters: dict[str, Callable] | None = None,
+    ) -> dict[str, Any]:
+        """格式化单行结果
+
+        Args:
+            row: 数据库结果行
+            fields: 字段列表
+            converters: 字段转换器
+
+        Returns:
+            字典格式的单行数据
+        """
+        return format_row(row, fields, converters)
+
+    @staticmethod
+    def format_rows(
+            rows,
+            fields: Sequence[str],
+            converters: dict[str, Callable] | None = None,
+    ) -> list[dict[str, Any]]:
+        """格式化多行结果
+
+        Args:
+            rows: 数据库结果行列表
+            fields: 字段列表
+            converters: 字段转换器
+
+        Returns:
+            字典列表格式的多行数据
+        """
+        return format_rows(rows, fields, converters)
+
     @classmethod
     async def fetch_one(
             cls,
             session: AsyncSession,
             *,
-            columns: tuple[str, ...] | list[str] | None = None,
+            columns: Sequence[str] | None = None,
             where: dict[str, Any]
             | ColumnElement[Any]
             | list[ColumnElement[Any]]
             | tuple[ColumnElement[Any], ...]
             | None = None,
-            order_by: str | tuple[str, ...] | list[str] | None = None,
+            order_by: str | Sequence[str] | None = None,
+            converters: dict[str, Callable] | None = None,
     ) -> dict[str, Any] | None:
         """查询单条记录
 
@@ -1164,13 +1249,14 @@ class CRUDMixin:
                 - ColumnElement: User.age > 18
                 - list[ColumnElement]: [User.age > 18, User.status == 1]
                 - tuple[ColumnElement, ...]: (User.age > 18, User.status == 1)
-            order_by: 排序字段，支持 "-field" 降序
+            order_by: 排序字段，支持多字段。字符串前面加 "-" 表示降序
+            converters: 字段转换器，{"field": func}
 
         Returns:
-            单条记录字典或 None
+            单条记录字典
         """
         return await fetch_one(
-            session, cls, columns=columns, where=where, order_by=order_by
+            session, cls, columns=columns, where=where, order_by=order_by, converters=converters
         )
 
     @classmethod
@@ -1178,15 +1264,16 @@ class CRUDMixin:
             cls,
             session: AsyncSession,
             *,
-            columns: tuple[str, ...] | list[str] | None = None,
+            columns: Sequence[str] | None = None,
             where: dict[str, Any]
             | ColumnElement[Any]
             | list[ColumnElement[Any]]
             | tuple[ColumnElement[Any], ...]
             | None = None,
-            order_by: str | tuple[str, ...] | list[str] | None = None,
+            order_by: str | Sequence[str] | None = None,
             offset: int | None = None,
             limit: int | None = None,
+            converters: dict[str, Callable] | None = None,
     ) -> list[dict[str, Any]]:
         """查询多条记录
 
@@ -1199,9 +1286,10 @@ class CRUDMixin:
                 - ColumnElement: User.age > 18
                 - list[ColumnElement]: [User.age > 18, User.status == 1]
                 - tuple[ColumnElement, ...]: (User.age > 18, User.status == 1)
-            order_by: 排序字段
+            order_by: 排序字段，支持 "-field" 降序
             offset: 分页偏移
             limit: 分页限制
+            converters: 字段转换器，{"field": func}
 
         Returns:
             记录字典列表
@@ -1214,6 +1302,7 @@ class CRUDMixin:
             order_by=order_by,
             offset=offset,
             limit=limit,
+            converters=converters,
         )
 
     @classmethod
@@ -1229,14 +1318,16 @@ class CRUDMixin:
     ) -> int:
         """统计记录数
 
+        返回符合条件的记录总数，用于分页等场景。
+
         Args:
             session: 数据库会话
             where: 过滤条件，支持：
-                - None: 统计全部记录
                 - dict: {"name": "Tom", "age": 18}
                 - ColumnElement: User.age > 18
                 - list[ColumnElement]: [User.age > 18, User.status == 1]
                 - tuple[ColumnElement, ...]: (User.age > 18, User.status == 1)
+                - None: 统计全部记录
 
         Returns:
             记录数量
@@ -1255,15 +1346,22 @@ class CRUDMixin:
     ) -> Created:
         """创建单条记录
 
+        根据提供的值创建新记录，如果 on_conflict 指定的条件已存在，
+        则返回冲突记录而不创建新记录。
+
         Args:
             session: 数据库会话
             values: 要创建的数据字典
-            on_conflict: 唯一性冲突检查
-            returning: 是否返回创建后的数据
-            flush: 是否立即刷入数据库
+            on_conflict: 唯一性冲突检查，如果存在则返回 False。
+                        如 {"email": "user@test.com"} 会检查邮箱是否已存在。
+            returning: 是否返回创建后的数据字典，False 时只返回 success 状态。
+            flush: 是否立即刷入数据库，默认 False 由调用方控制事务提交
 
         Returns:
             Created: 创建操作结果
+                - ok: True 表示创建成功，False 表示记录已存在
+                - rowcount: 影响行数，成功为1，冲突为0
+                - data: 创建后的数据字典（returning=True 时）
         """
         return await create(
             session,
@@ -1289,6 +1387,9 @@ class CRUDMixin:
     ) -> Deleted:
         """删除记录
 
+        根据条件删除记录。默认情况下需要提供 where 条件，防止误删全表。
+        如需删除全部记录，请设置 allow_all=True。
+
         Args:
             session: 数据库会话
             where: 过滤条件，支持：
@@ -1298,10 +1399,12 @@ class CRUDMixin:
                 - list[ColumnElement]: [User.age < 18, User.status == 0]
                 - tuple[ColumnElement, ...]: (User.age < 18, User.status == 0)
             allow_all: 是否允许无条件删除（全表删除），默认 False
-            flush: 是否立即刷入数据库
+            flush: 是否立即刷入数据库，默认 False 由调用方控制事务提交
 
         Returns:
             Deleted: 删除操作结果
+                - ok: True 表示删除成功（rowcount > 0），False 表示未找到匹配记录
+                - rowcount: 删除的行数
         """
         return await delete(session, cls, where=where, allow_all=allow_all, flush=flush)
 
@@ -1323,6 +1426,9 @@ class CRUDMixin:
     ) -> Updated:
         """更新记录
 
+        根据条件更新符合条件的记录。默认情况下需要提供 where 条件，防止误更新全表。
+        如需更新全部记录，请设置 allow_all=True。
+
         Args:
             session: 数据库会话
             values: 要更新的数据字典
@@ -1333,12 +1439,15 @@ class CRUDMixin:
                 - list[ColumnElement]: [User.age < 18, User.status == 0]
                 - tuple[ColumnElement, ...]: (User.age < 18, User.status == 0)
             allow_all: 是否允许无条件更新（全表更新），默认 False
-            exclude_none: 是否排除 None 值
-            returning: 是否返回更新后的数据（不支持全表更新）
-            flush: 是否立即刷入数据库
+            exclude_none: 是否自动排除值为 None 的字段，True 时跳过 None 值
+            returning: 是否返回更新后的数据字典（不支持全表更新）。需要额外查询。
+            flush: 是否立即刷入数据库，默认 False 由调用方控制事务提交
 
         Returns:
             Updated: 更新操作结果
+                - ok: True 表示更新成功（rowcount > 0），False 表示未找到匹配记录
+                - rowcount: 受影响的行数
+                - data: 更新后的数据字典（returning=True 时，不支持全表更新）
         """
         return await update(
             session,
@@ -1357,24 +1466,32 @@ class CRUDMixin:
             session: AsyncSession,
             *,
             values: dict[str, Any],
-            keys: tuple[str, ...] | list[str],
-            update: tuple[str, ...] | list[str] | None = None,
+            keys: Sequence[str],
+            updates: Sequence[str] | None = None,
             flush: bool = False,
     ) -> Upserted:
         """存在则更新，不存在则创建（Upsert）
 
+        根据唯一键判断记录是否存在，不存在则创建，存在则更新。
+        自动根据数据库方言选择最优实现：
+        - PostgreSQL/SQLite: INSERT ... ON CONFLICT DO UPDATE
+        - MySQL: INSERT ... ON DUPLICATE KEY UPDATE
+        - 其他: 先查后改（fallback）
+
         Args:
             session: 数据库会话
             values: 完整数据字典
-            keys: 唯一键字段列表
-            update: 指定更新的字段列表
-            flush: 是否立即刷入数据库
+            keys: 唯一键字段列表，用于判断记录是否存在，如 ("id",), ("email",)
+            updates: 指定更新时的字段列表，None 表示更新除 keys 外的所有字段
+            flush: 是否立即刷入数据库，默认 False 由调用方控制事务提交
 
         Returns:
             Upserted: Upsert 操作结果
+                - data: 数据对象（SQLAlchemy 模型实例）
+                - action: 操作类型 - "insert"(新建) / "update"(更新) / "noop"(无变化)
         """
         return await upsert(
-            session, cls, values=values, keys=keys, update=update, flush=flush
+            session, cls, values=values, keys=keys, updates=updates, flush=flush
         )
 
     @classmethod
@@ -1388,14 +1505,19 @@ class CRUDMixin:
     ) -> BatchCreated:
         """批量创建多条记录
 
+        一次性创建多条记录，性能优于循环调用 create()。
+
         Args:
             session: 数据库会话
-            values: 数据字典列表
-            returning: 是否返回创建后的数据
-            flush: 是否立即刷入数据库
+            values: 数据字典列表，每个字典创建一条记录
+            returning: 是否返回创建后的数据字典列表，False 时只返回 count。
+            flush: 是否立即刷入数据库，默认 False 由调用方控制事务提交
 
         Returns:
             BatchCreated: 批量创建结果
+                - ok: 总是 True
+                - rowcount: 实际创建的记录数
+                - data: 创建后的数据列表（returning=True 时）
         """
         return await batch_create(
             session, cls, values=values, returning=returning, flush=flush
@@ -1412,53 +1534,53 @@ class CRUDMixin:
     ) -> BulkInserted:
         """高性能批量插入记录
 
+        使用 SQLAlchemy 的 bulk_insert_mappings 实现，跳过 ORM 的事件监听和关系处理，
+        性能显著优于 batch_create()，适合大数据量导入场景。
+
+        注意：此方法不会触发 ORM 事件（如 @event.listens_for）、不会处理关系关联、
+        不会自动处理关联对象的级联操作。如需完整 ORM 功能，请使用 batch_create()。
+
         Args:
             session: 数据库会话
-            values: 数据字典列表
-            return_defaults: 是否获取数据库生成的默认值
-            flush: 是否立即刷入数据库
+            values: 数据字典列表，每个字典插入一条记录
+            return_defaults: 是否获取数据库生成的默认值（如自增主键）。
+                            True 时会在返回结果中包含这些值，但会有轻微性能损耗。
+            flush: 是否立即刷入数据库，默认 False 由调用方控制事务提交
 
         Returns:
             BulkInserted: 批量插入结果
+                - ok: 总是 True（除非发生异常）
+                - rowcount: 实际插入的记录数
+                - data: 插入的数据列表（return_defaults=True 时包含生成的默认值）
         """
         return await bulk_insert(
             session, cls, values=values, return_defaults=return_defaults, flush=flush
         )
 
     @classmethod
-    async def fetch_sql_one(
+    async def raw(
             cls,
             session: AsyncSession,
             sql: str,
             params: dict[str, Any] | None = None,
-    ) -> dict[str, Any]:
-        """执行原生 SQL 查询单条记录
+            *,
+            autocommit: bool = False,
+            flush: bool = False,
+    ) -> Result:
+        """执行原生 SQL 语句
 
         Args:
             session: 数据库会话
-            sql: 原生 SQL 语句
-            params: SQL 参数
+            sql: SQL 语句，支持命名参数占位符 :name
+            params: 参数字典
+            autocommit: 自动提交事务（非查询语句）
+            flush: 刷入数据库但不提交
 
         Returns:
-            单条记录字典
+            SQLAlchemy Result 对象，常用方法：
+                - fetchall() / fetchone() 获取结果
+                - rowcount 影响行数
+                - returns_rows 是否返回数据
+                - async for row in result 流式遍历
         """
-        return await fetch_sql_one(session, sql, params)
-
-    @classmethod
-    async def fetch_sql_all(
-            cls,
-            session: AsyncSession,
-            sql: str,
-            params: dict[str, Any] | None = None,
-    ) -> list[dict[str, Any]]:
-        """执行原生 SQL 查询多条记录
-
-        Args:
-            session: 数据库会话
-            sql: 原生 SQL 语句
-            params: SQL 参数
-
-        Returns:
-            记录字典列表
-        """
-        return await fetch_sql_all(session, sql, params)
+        return await raw(session, sql, params, autocommit=autocommit, flush=flush)

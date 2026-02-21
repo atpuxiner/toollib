@@ -9,7 +9,7 @@ class VFrom(Protocol):
         ...
 
 
-class VConvert(Protocol):
+class VConverter(Protocol):
     def __call__(self, value: Any) -> Any:
         ...
 

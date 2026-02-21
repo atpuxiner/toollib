@@ -38,7 +38,7 @@ __all__ = [
     'split_xlsx',
     'ConfModel',
     'VFrom',
-    'VConvert',
+    'VConverter',
     'FrozenVar',
     'Undefined',
 ]
@@ -73,7 +73,7 @@ if TYPE_CHECKING:
     from toollib.utils._ConfModel import ConfModel
     from toollib.utils._types import (
         VFrom,
-        VConvert,
+        VConverter,
         FrozenVar,
         Undefined,
     )
@@ -83,7 +83,7 @@ def __getattr__(name):
     if name in __all__:
         if name in [
             "VFrom",
-            "VConvert",
+            "VConverter",
             "FrozenVar",
             "Undefined",
         ]:

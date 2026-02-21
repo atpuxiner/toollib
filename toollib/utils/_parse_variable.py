@@ -1,14 +1,14 @@
 import warnings
 from typing import Type, Any, get_origin
 
-from toollib.utils import VFrom, VConvert
+from toollib.utils import VFrom, VConverter
 
 
 def parse_variable(
         k: str,
         v_type: Type[Any],
         v_from: VFrom,
-        v_convert: VConvert = None,
+        v_converter: VConverter = None,
         default: Any = None,
         sep: str = ",",
         kv_sep: str = ":",
@@ -27,7 +27,7 @@ def parse_variable(
     :param k: 键
     :param v_type: 值类型
     :param v_from: 值来源
-    :param v_convert: 值转换
+    :param v_converter: 值转换
     :param default: 默认值
     :param sep: 分隔符，针对list、tuple、set、dict
     :param kv_sep: 键值分隔符，针对dict
@@ -42,8 +42,8 @@ def parse_variable(
         v = v_from.get(k)
         if v is None:
             return default
-        if callable(v_convert):
-            return v_convert(v)
+        if callable(v_converter):
+            return v_converter(v)
 
         v_type = get_origin(v_type) or v_type
         if not isinstance(v_type, type):

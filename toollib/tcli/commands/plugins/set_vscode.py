@@ -181,211 +181,202 @@ venv/
         except Exception as e:
             print(f"  错误: 无法写入 Prettier 忽略文件 - {str(e)}")
 
-    def get_vscode_settings_template(self) -> dict[str, Any]:
+    def get_vscode_settings_template(self) -> str:
         """获取VS Code设置模板"""
-        return {
-            # ==================== Conda 默认环境（自行修改） ====================
-            "terminal.integrated.profiles.windows": {
-                "PowerShell": {
-                    "source": "PowerShell",
-                    "args": ["-NoExit", "-Command", "conda activate base"]
-                }
-            },
+        return '''{
+  // ==================== Conda 默认环境（自行修改） ====================
+  "terminal.integrated.profiles.windows": {
+    "PowerShell": {
+      "source": "PowerShell",
+      "args": ["-NoExit", "-Command", "conda activate base"]
+    }
+  },
 
-            # ==================== 基本配置 ====================
-            "editor.codeActionsOnSave": {
-                "source.organizeImports": "explicit"
-            },
-            "editor.formatOnSave": True,
-            "editor.rulers": [120],
-            "editor.fontSize": 14,
-            "editor.lineHeight": 1.5,
-            "editor.tabSize": 2,
-            "editor.insertSpaces": True,
-            "editor.wordWrap": "off",
-            "editor.minimap.enabled": False,
-            "editor.stickyScroll.enabled": True,
-            "editor.bracketPairColorization.enabled": True,
-            "editor.guides.bracketPairs": True,
+  // ==================== 基本配置 ====================
+  "editor.codeActionsOnSave": {
+    "source.organizeImports": "explicit"
+  },
+  "editor.formatOnSave": true,
+  "editor.rulers": [120],
+  "editor.fontSize": 14,
+  "editor.lineHeight": 1.5,
+  "editor.tabSize": 2,
+  "editor.detectIndentation": false,
+  "editor.insertSpaces": true,
+  "editor.wordWrap": "off",
+  "editor.minimap.enabled": false,
+  "editor.stickyScroll.enabled": true,
+  "editor.bracketPairColorization.enabled": true,
+  "editor.guides.bracketPairs": true,
+  "workbench.colorCustomizations": {
+    "editorGroup.border": "#888888",
+    "sideBar.border": "#666666",
+    "panel.border": "#666666",
+    "activityBar.border": "#555555",
+    "statusBar.border": "#555555",
+    "titleBar.border": "#555555",
+    "tab.activeBorder": "#00aaff",
+    "tab.activeBorderTop": "#00aaff"
+  },
+  "files.exclude": {
+    "**/.git": true,
+    "**/.idea": true,
+    "**/__pycache__": true,
+    "**/.venv": true,
+    "**/venv": true,
+    "**/node_modules": true,
+    "**/.DS_Store": true,
+    "**/Thumbs.db": true
+  },
+  "files.enableTrash": true,
+  "explorer.decorations.badges": true,
+  "explorer.confirmDelete": true,
+  "explorer.confirmDragAndDrop": true,
+  "explorer.decorations.colors": true,
 
-            "workbench.colorCustomizations": {
-                "editorGroup.border": "#888888",
-                "sideBar.border": "#666666",
-                "panel.border": "#666666",
-                "activityBar.border": "#555555",
-                "statusBar.border": "#555555",
-                "titleBar.border": "#555555",
-                "tab.activeBorder": "#00aaff",
-                "tab.activeBorderTop": "#00aaff"
-            },
+  // ==================== 终端配置 ====================
+  "terminal.integrated.defaultProfile.windows": "PowerShell",
+  "terminal.integrated.enablePersistentSessions": true,
+  "terminal.integrated.fontSize": 13,
+  "terminal.integrated.lineHeight": 1.2,
+  "python.terminal.activateEnvironment": false,
+  "python.terminal.executeInFileDir": true,
+  "python.terminal.focusAfterLaunch": true,
 
-            "files.exclude": {
-                "**/.git": True,
-                "**/.idea": True,
-                "**/__pycache__": True,
-                "**/.venv": True,
-                "**/venv": True,
-                "**/node_modules": True,
-                "**/.DS_Store": True,
-                "**/Thumbs.db": True
-            },
-            "files.enableTrash": True,
-            "explorer.decorations.badges": True,
-            "explorer.confirmDelete": True,
-            "explorer.confirmDragAndDrop": True,
-            "explorer.decorations.colors": True,
+  // ==================== Code Runner 配置 ====================
+  "code-runner.runInTerminal": true,
+  "code-runner.executorMap": {
+    "python": "python -u"
+  },
+  "code-runner.preserveFocus": true,
+  "code-runner.clearPreviousOutput": false,
+  "code-runner.ignoreSelection": false,
+  "code-runner.showRunIconInEditorTitleMenu": false,
+  "code-runner.showRunCommandInEditorContextMenu": false,
 
-            # ==================== 终端配置 ====================
-            "terminal.integrated.defaultProfile.windows": "PowerShell",
-            "terminal.integrated.enablePersistentSessions": True,
-            "terminal.integrated.fontSize": 13,
-            "terminal.integrated.lineHeight": 1.2,
-            "python.terminal.activateEnvironment": False,
-            "python.terminal.executeInFileDir": True,
-            "python.terminal.focusAfterLaunch": True,
+  // ==================== Python 格式化与检查 ====================
+  "autopep8.path": ["autopep8"],
+  "autopep8.args": ["--max-line-length=120"],
+  "[python]": {
+    "editor.tabSize": 4,
+    "editor.defaultFormatter": "ms-python.autopep8",
+    "editor.quickSuggestions": {
+      "other": true,
+      "comments": false,
+      "strings": true
+    },
+    "editor.acceptSuggestionOnEnter": "on"
+  },
+  "[javascript]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[typescript]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[json]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[jsonc]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[html]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[css]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[scss]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[markdown]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[yaml]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "isort.args": ["--profile=pycharm", "--line-length=120"],
 
-            # ==================== Code Runner 配置 ====================
-            "code-runner.runInTerminal": True,
-            "code-runner.executorMap": {
-                "python": "python -u"
-            },
-            "code-runner.preserveFocus": True,
-            "code-runner.clearPreviousOutput": False,
-            "code-runner.ignoreSelection": False,
-            "code-runner.showRunIconInEditorTitleMenu": False,
-            "code-runner.showRunCommandInEditorContextMenu": False,
+  // ==================== Python 类型检查与分析 (Pyright) ====================
+  "python.analysis.typeCheckingMode": "standard",
+  "python.analysis.autoImportCompletions": true,
+  "python.analysis.autoSearchPaths": true,
+  "python.analysis.diagnosticMode": "openFilesOnly",
+  "python.analysis.diagnosticSeverityOverrides": {
+    // --- Error (会阻止代码运行或导致严重问题) ---
+    "reportPropertyTypeMismatch": "error",
+    "reportFunctionMemberAccess": "error",
+    "reportInvalidTypeForm": "error",
+    "reportOptionalSubscript": "error",
+    "reportOptionalMemberAccess": "error",
+    "reportOptionalCall": "error",
+    "reportOptionalIterable": "error",
+    "reportOptionalContextManager": "error",
+    "reportOptionalOperand": "error",
+    "reportIncompatibleMethodOverride": "error",
+    "reportIncompatibleVariableOverride": "error",
+    "reportOverlappingOverload": "error",
+    "reportUndefinedVariable": "error",
+    "reportUnboundVariable": "error",
+    "reportMatchNotExhaustive": "error",
+    // --- Warning (代码质量问题, 建议修复) ---
+    "reportPossiblyUnboundVariable": "warning",
+    "reportMissingImports": "warning",
+    "reportReturnType": "warning",
+    "reportMissingModuleSource": "warning",
+    "reportImportCycles": "warning",
+    "reportUnusedImport": "warning",
+    "reportUnusedClass": "warning",
+    "reportUnusedFunction": "warning",
+    "reportUnusedVariable": "warning",
+    "reportDuplicateImport": "warning",
+    "reportUntypedClassDecorator": "warning",
+    "reportUntypedBaseClass": "warning",
+    "reportUntypedNamedTuple": "warning",
+    "reportPrivateUsage": "warning",
+    "reportConstantRedefinition": "warning",
+    "reportDeprecated": "warning",
+    "reportInvalidTypeVarUse": "warning",
+    "reportUnnecessaryCast": "warning",
+    "reportAssertAlwaysTrue": "warning",
+    "reportSelfClsParameterName": "warning",
+    "reportUnsupportedDunderAll": "warning",
+    "reportUnusedExpression": "warning",
+    "reportShadowedImports": "warning",
+    // --- Information (提示信息) ---
+    "reportUnnecessaryTypeIgnoreComment": "information",
+    // --- None (禁用检查) ---
+    "reportCallInDefaultInitializer": "none",
+    "reportCallIssue": "none",
+    "reportAttributeAccessIssue": "none",
+    "reportAssignmentType": "none",
+    "reportArgumentType": "none",
+    "reportUnknownParameterType": "none",
+    "reportUnknownArgumentType": "none",
+    "reportUnknownLambdaType": "none",
+    "reportUnknownVariableType": "none",
+    "reportUnknownMemberType": "none",
+    "reportMissingTypeStubs": "none",
+    "reportUntypedFunctionDecorator": "none",
+    "reportUninitializedInstanceVariable": "none",
+    "reportMissingTypeArgument": "none",
+    "reportMissingSuperCall": "none",
+    "reportUnnecessaryComparison": "none",
+    "reportUnnecessaryContains": "none",
+    "reportImplicitStringConcatenation": "none",
+    "reportInvalidStubStatement": "none",
+    "reportIncompleteStub": "none",
+    "reportGeneralTypeIssues": "none",
+    "reportInvalidStringEscapeSequence": "none",
+    "reportUnnecessaryIsInstance": "none"
+  },
 
-            # ==================== Python 格式化与检查 ====================
-            "autopep8.path": ["autopep8"],
-            "autopep8.args": ["--max-line-length=120"],
-            "[python]": {
-                "editor.tabSize": 4,
-                "editor.defaultFormatter": "ms-python.autopep8",
-                "editor.quickSuggestions": {
-                    "other": True,
-                    "comments": False,
-                    "strings": True
-                },
-                "editor.acceptSuggestionOnEnter": "on"
-            },
-            "[javascript]": {
-                "editor.defaultFormatter": "esbenp.prettier-vscode"
-            },
-            "[typescript]": {
-                "editor.defaultFormatter": "esbenp.prettier-vscode"
-            },
-            "[json]": {
-                "editor.defaultFormatter": "esbenp.prettier-vscode"
-            },
-            "[jsonc]": {
-                "editor.defaultFormatter": "esbenp.prettier-vscode"
-            },
-            "[html]": {
-                "editor.defaultFormatter": "esbenp.prettier-vscode"
-            },
-            "[css]": {
-                "editor.defaultFormatter": "esbenp.prettier-vscode"
-            },
-            "[scss]": {
-                "editor.defaultFormatter": "esbenp.prettier-vscode"
-            },
-            "[markdown]": {
-                "editor.defaultFormatter": "esbenp.prettier-vscode"
-            },
-            "[yaml]": {
-                "editor.defaultFormatter": "esbenp.prettier-vscode"
-            },
-
-            "isort.args": ["--profile=pycharm", "--line-length=120"],
-
-            # ==================== Python 类型检查与分析 (Pyright) ====================
-            "python.analysis.typeCheckingMode": "standard",
-            "python.analysis.autoImportCompletions": True,
-            "python.analysis.useImportHeuristic": True,
-            "python.analysis.autoSearchPaths": True,
-            "python.analysis.diagnosticMode": "openFilesOnly",
-            "python.analysis.diagnosticSeverityOverrides": {
-                # --- Error (会阻止代码运行或导致严重问题) ---
-                "reportPropertyTypeMismatch": "error",
-                "reportFunctionMemberAccess": "error",
-                "reportInvalidTypeForm": "error",
-                "reportOptionalSubscript": "error",
-                "reportOptionalMemberAccess": "error",
-                "reportOptionalCall": "error",
-                "reportOptionalIterable": "error",
-                "reportOptionalContextManager": "error",
-                "reportOptionalOperand": "error",
-                "reportIncompatibleMethodOverride": "error",
-                "reportIncompatibleVariableOverride": "error",
-                "reportOverlappingOverload": "error",
-                "reportUndefinedVariable": "error",
-                "reportUnboundVariable": "error",
-                "reportMatchNotExhaustive": "error",
-
-                # --- Warning (代码质量问题, 建议修复) ---
-                "reportPossiblyUnboundVariable": "warning",
-                "reportMissingImports": "warning",
-                "reportReturnType": "warning",
-                "reportMissingModuleSource": "warning",
-                "reportImportCycles": "warning",
-                "reportUnusedImport": "warning",
-                "reportUnusedClass": "warning",
-                "reportUnusedFunction": "warning",
-                "reportUnusedVariable": "warning",
-                "reportDuplicateImport": "warning",
-                "reportUntypedClassDecorator": "warning",
-                "reportUntypedBaseClass": "warning",
-                "reportUntypedNamedTuple": "warning",
-                "reportPrivateUsage": "warning",
-                "reportConstantRedefinition": "warning",
-                "reportDeprecated": "warning",
-                "reportInvalidTypeVarUse": "warning",
-                "reportUnnecessaryCast": "warning",
-                "reportAssertAlwaysTrue": "warning",
-                "reportSelfClsParameterName": "warning",
-                "reportUnsupportedDunderAll": "warning",
-                "reportUnusedExpression": "warning",
-                "reportShadowedImports": "warning",
-
-                # --- Information (提示信息) ---
-                "reportUnnecessaryTypeIgnoreComment": "information",
-
-                # --- None (禁用检查) ---
-                "reportCallInDefaultInitializer": "none",
-                "reportCallIssue": "none",
-                "reportAttributeAccessIssue": "none",
-                "reportAssignmentType": "none",
-                "reportArgumentType": "none",
-                "reportUnknownParameterType": "none",
-                "reportUnknownArgumentType": "none",
-                "reportUnknownLambdaType": "none",
-                "reportUnknownVariableType": "none",
-                "reportUnknownMemberType": "none",
-                "reportMissingTypeStubs": "none",
-                "reportUntypedFunctionDecorator": "none",
-                "reportUninitializedInstanceVariable": "none",
-                "reportMissingTypeArgument": "none",
-                "reportMissingSuperCall": "none",
-                "reportUnnecessaryComparison": "none",
-                "reportUnnecessaryContains": "none",
-                "reportImplicitStringConcatenation": "none",
-                "reportInvalidStubStatement": "none",
-                "reportIncompleteStub": "none",
-                "reportGeneralTypeIssues": "none",
-                "reportInvalidStringEscapeSequence": "none",
-                "reportUnnecessaryIsInstance": "none"
-            },
-
-            # ==================== Python 代码检查 (Pylint) ====================
-            "pylint.args": [
-                "--max-line-length=120",
-                "--disable=W0511,W0613,E1101,C0114,C0115,C0116,W1514,W0707,W1203,W0718,C0209,C0103,W1510,W0702",
-                "--enable=W0611,W0612,W0404,W0621,W0622,W0101,W0102,W0104,W1515"
-            ],
-
-            # 兼容旧版本: python.linting.* 已废弃，保留仅供旧版本参考
-            "python.linting.enabled": False
-        }
+  // ==================== Python 代码检查 (Pylint) ====================
+  "pylint.args": [
+    "--max-line-length=120",
+    "--disable=C0103,C0114,C0115,C0116,C0209,C0303,E1101,W0511,W0613,W0702,W0707,W0718,W1203,W1510,W1514",
+    "--enable=W0101,W0102,W0104,W0404,W0611,W0612,W0621,W0622,W1515"
+  ]
+}'''
 
     def install_vscode_settings(self, project_path: Path):
         """安装VS Code项目设置"""
@@ -394,8 +385,14 @@ venv/
         vscode_dir = self.get_vscode_dir(project_path)
         vscode_settings_file = vscode_dir / self.SettingsFileName
 
-        settings_data = self.get_vscode_settings_template()
-        self._write_config_file(vscode_settings_file, settings_data, "已创建 VS Code 设置")
+        settings_content = self.get_vscode_settings_template()
+        self.backup_config_file(vscode_settings_file)
+        try:
+            with open(vscode_settings_file, 'w', encoding='utf-8') as f:
+                f.write(settings_content)
+            print(f"  已创建 VS Code 设置: {vscode_settings_file}")
+        except Exception as e:
+            print(f"  错误: 无法写入 VS Code 设置 - {str(e)}")
 
     def install_project_debug_config(self, project_path: Path):
         """安装项目调试配置"""
@@ -470,8 +467,6 @@ venv/
 
         vscode_dir = self.get_vscode_dir(project_path)
         extensions_file = vscode_dir / self.ExtensionsFileName
-
-        # 使用字符串直接写入以保留注释（VS Code 支持 JSONC 格式）
         extensions_content = '''{
   "recommendations": [
     // ==================== Python开发 (必选) ====================

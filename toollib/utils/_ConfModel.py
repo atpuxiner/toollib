@@ -7,7 +7,7 @@ import yaml
 from dotenv import load_dotenv
 
 from toollib.common.error import ConfModelError
-from toollib.utils import VConvert, FrozenVar, Undefined, get_cls_attrs, parse_variable
+from toollib.utils import VConverter, FrozenVar, Undefined, get_cls_attrs, parse_variable
 
 
 class ConfModel:
@@ -42,7 +42,7 @@ class ConfModel:
             attr_prefer_env: bool = True,
             skip_empty_env: bool = True,
             v_from: dict = None,
-            v_converts: dict[str, VConvert] = None,
+            v_converters: dict[str, VConverter] = None,
             sep: str = ",",
             kv_sep: str = ":",
             ignore_unsupported_type: bool = True,
@@ -60,7 +60,7 @@ class ConfModel:
         :param attr_prefer_env: 属性加载优先env
         :param skip_empty_env: 跳过空字符串env
         :param v_from: 值来源（默认从yaml文件加载）
-        :param v_converts: 值转换
+        :param v_converters: 值转换器
         :param sep: 分隔符，针对list、tuple、set、dict
         :param kv_sep: 键值分隔符，针对dict
         :param ignore_unsupported_type: 忽略不支持的类型（直接设置）
@@ -93,7 +93,7 @@ class ConfModel:
             attr_prefer_env=attr_prefer_env,
             skip_empty_env=skip_empty_env,
             v_from=v_from,
-            v_converts=v_converts,
+            v_converters=v_converters,
             sep=sep,
             kv_sep=kv_sep,
             ignore_unsupported_type=ignore_unsupported_type,
@@ -105,7 +105,7 @@ class ConfModel:
             attr_prefer_env: bool = True,
             skip_empty_env: bool = True,
             v_from: dict = None,
-            v_converts: dict[str, VConvert] = None,
+            v_converters: dict[str, VConverter] = None,
             sep: str = ",",
             kv_sep: str = ":",
             ignore_unsupported_type: bool = True,
@@ -116,14 +116,14 @@ class ConfModel:
         :param attr_prefer_env: 属性加载优先env
         :param skip_empty_env: 跳过空字符串env
         :param v_from: 值来源（默认从yaml文件加载）
-        :param v_converts: 值转换
+        :param v_converters: 值转换器
         :param sep: 分隔符，针对list、tuple、set、dict
         :param kv_sep: 键值分隔符，针对dict
         :param ignore_unsupported_type: 忽略不支持的类型（直接设置）
         :param raise_on_error: 遇错抛异常
         :return:
         """
-        v_converts = v_converts or {}
+        v_converters = v_converters or {}
         _v_from = v_from if v_from is not None else self.load_yaml()
         _os_environ = {
             alias: os.environ[k]
@@ -147,7 +147,7 @@ class ConfModel:
                 v_type=v_type,
                 v_from=v_from,
                 default=v,
-                v_convert=v_converts.get(k),
+                v_converter=v_converters.get(k),
                 sep=sep,
                 kv_sep=kv_sep,
                 ignore_unsupported_type=ignore_unsupported_type,
