@@ -596,24 +596,41 @@ venv/
         else:
             print("  警告: 未找到 conda，跳过 Conda 初始化")
 
+    def print_completion_message(self, project_path: Path):
+        """打印完成消息"""
+        print("-" * 25)
+        print("  全部配置安装完成!")
+        print("-" * 25)
+        print("")
+        print("配置文件位置:")
+        print(f"  - 全局:     {self.user_profile / self.PrettierConfigName}")
+        print(f"  - 项目:     {project_path / self.VSCodeDirName / self.SettingsFileName}")
+        print(f"  - 项目:     {project_path / self.VSCodeDirName / self.LaunchFileName}")
+        print(f"  - 项目:     {project_path / self.VSCodeDirName / self.ExtensionsFileName}")
+        print("")
+        print("-" * 50)
+        print("  重要: 安装 VS Code 扩展（请查看项目根目录下的 .vscode/extensions.json）")
+        print("")
+        print("安装方式:")
+        print("  - 按 Ctrl+Shift+X 打开扩展面板")
+        print("  - 搜索扩展名称并安装")
+        print("-" * 35)
+
     def run(self):
         """入口"""
         os.system('cls' if os.name == 'nt' else 'clear')
-        print("==========================================")
-        print("  开发环境配置工具")
-        print("==========================================")
+        print("┌" + "─" * 46 + "┐")
+        print("│" + " " * 14 + "VSCode环境配置工具" + " " * 14 + "│")
+        print("└" + "─" * 46 + "┘")
         print("")
         print("请选择要执行的配置:")
         print("")
         print("  [1] 配置 (全局 + 项目)")
         print("  [2] 删除配置 (全局 + 项目)")
-        print("  [0] 退出")
+        print("  [q] 退出")
         print("")
 
-        choice = input("请输入选项 (默认0): ").strip()
-        if not choice:
-            choice = "0"
-            print("  直接回车默认选择 0")
+        choice = input("请输入选项 (默认q): ").strip() or "q"
 
         if choice == "1":
             print("")
@@ -630,10 +647,9 @@ venv/
                 return
 
             print("")
-            print("==========================================")
+            print("-" * 25)
             print("  开始安装全局配置")
-            print("==========================================")
-            print("")
+            print("-" * 25)
 
             # 初始化Conda
             self.initialize_conda()
@@ -655,24 +671,24 @@ venv/
             print(f"  将采用默认路径: {project_path}")
 
             print("")
-            print("==========================================")
+            print("-" * 25)
             print("  开始删除配置")
-            print("==========================================")
+            print("-" * 25)
 
             self.remove_global_config()
             self.remove_project_config(project_path)
 
             print("")
-            print("==========================================")
+            print("-" * 25)
             print("  配置删除完成!")
-            print("==========================================")
+            print("-" * 25)
             print("")
             print("已删除的配置:")
             print(f"  - 全局: {self.user_profile / self.PrettierConfigName}")
             print(f"  - 全局: {self.user_profile / self.PrettierIgnoreName}")
             print(f"  - 项目: {project_path / self.VSCodeDirName}")
 
-        elif choice == "0":
+        elif choice == "q":
             print("已取消")
             return
         else:
@@ -680,23 +696,3 @@ venv/
             return
 
         input("\n按 Enter 键退出...")
-
-    def print_completion_message(self, project_path: Path):
-        """打印完成消息"""
-        print("==========================================")
-        print("  全部配置安装完成!")
-        print("==========================================")
-        print("")
-        print("配置文件位置:")
-        print(f"  - 全局:     {self.user_profile / self.PrettierConfigName}")
-        print(f"  - 项目:     {project_path / self.VSCodeDirName / self.SettingsFileName}")
-        print(f"  - 项目:     {project_path / self.VSCodeDirName / self.LaunchFileName}")
-        print(f"  - 项目:     {project_path / self.VSCodeDirName / self.ExtensionsFileName}")
-        print("")
-        print("========================================")
-        print("  重要: 安装 VS Code 扩展（请查看项目根目录下的 .vscode/extensions.json）")
-        print("========================================")
-        print("")
-        print("安装方式:")
-        print("  - 按 Ctrl+Shift+X 打开扩展面板")
-        print("  - 搜索扩展名称并安装")
