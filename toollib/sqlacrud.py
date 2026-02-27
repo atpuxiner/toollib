@@ -165,8 +165,7 @@ def _dialect(session: AsyncSession) -> str:
 def _build_where_clauses(
         model, where: dict[str, Any]
         | ColumnElement[Any]
-        | list[ColumnElement[Any]]
-        | tuple[ColumnElement[Any], ...]
+        | Sequence[ColumnElement[Any]]
         | None = None
 ) -> list[ColumnElement[Any]]:
     """构建 where 条件列表
@@ -175,7 +174,7 @@ def _build_where_clauses(
     - None: 返回空列表
     - dict: {"name": "Tom", "age": 18} -> [User.name == "Tom", User.age == 18]
     - ColumnElement: User.age > 18 -> [User.age > 18]
-    - list/tuple: [User.age > 18, User.status == 1] -> [User.age > 18, User.status == 1]
+    - Sequence[ColumnElement]: [User.age > 18, User.status == 1] -> [User.age > 18, User.status == 1]
     """
     if where is None:
         return []
@@ -307,8 +306,7 @@ async def fetch_one(
         columns: Sequence[str] | None = None,
         where: dict[str, Any]
         | ColumnElement[Any]
-        | list[ColumnElement[Any]]
-        | tuple[ColumnElement[Any], ...]
+        | Sequence[ColumnElement[Any]]
         | None = None,
         order_by: str | Sequence[str] | None = None,
         converters: dict[str, Callable] | None = None,
@@ -323,8 +321,7 @@ async def fetch_one(
             - None: 无过滤条件
             - dict: {"name": "Tom", "age": 18}
             - ColumnElement: User.age > 18
-            - list[ColumnElement]: [User.age > 18, User.status == 1]
-            - tuple[ColumnElement, ...]: (User.age > 18, User.status == 1)
+            - Sequence[ColumnElement]: [User.age > 18, User.status == 1]
         order_by: 排序字段，支持多字段。字符串前面加 "-" 表示降序
         converters: 字段转换器，{"field": func}
 
@@ -372,8 +369,7 @@ async def fetch_all(
         columns: Sequence[str] | None = None,
         where: dict[str, Any]
         | ColumnElement[Any]
-        | list[ColumnElement[Any]]
-        | tuple[ColumnElement[Any], ...]
+        | Sequence[ColumnElement[Any]]
         | None = None,
         order_by: str | Sequence[str] | None = None,
         offset: int | None = None,
@@ -390,8 +386,7 @@ async def fetch_all(
             - None: 无过滤条件
             - dict: {"name": "Tom", "age": 18}
             - ColumnElement: User.age > 18
-            - list[ColumnElement]: [User.age > 18, User.status == 1]
-            - tuple[ColumnElement, ...]: (User.age > 18, User.status == 1)
+            - Sequence[ColumnElement]: [User.age > 18, User.status == 1]
         order_by: 排序字段，支持 "-field" 降序
         offset: 分页偏移
         limit: 分页限制
@@ -444,8 +439,7 @@ async def count(
         *,
         where: dict[str, Any]
         | ColumnElement[Any]
-        | list[ColumnElement[Any]]
-        | tuple[ColumnElement[Any], ...]
+        | Sequence[ColumnElement[Any]]
         | None = None,
 ) -> int:
     """统计记录数
@@ -458,8 +452,7 @@ async def count(
         where: 过滤条件，支持：
             - dict: {"name": "Tom", "age": 18}
             - ColumnElement: User.age > 18
-            - list[ColumnElement]: [User.age > 18, User.status == 1]
-            - tuple[ColumnElement, ...]: (User.age > 18, User.status == 1)
+            - Sequence[ColumnElement]: [User.age > 18, User.status == 1]
             - None: 统计全部记录
 
     Returns:
@@ -567,8 +560,7 @@ async def delete(
         *,
         where: dict[str, Any]
         | ColumnElement[Any]
-        | list[ColumnElement[Any]]
-        | tuple[ColumnElement[Any], ...]
+        | Sequence[ColumnElement[Any]]
         | None = None,
         allow_all: bool = False,
         flush: bool = False,
@@ -585,8 +577,7 @@ async def delete(
             - None: 删除全部记录（需 allow_all=True）
             - dict: {"id": 1}
             - ColumnElement: User.id == 1
-            - list[ColumnElement]: [User.age < 18, User.status == 0]
-            - tuple[ColumnElement, ...]: (User.age < 18, User.status == 0)
+            - Sequence[ColumnElement]: [User.age < 18, User.status == 0]
         allow_all: 是否允许无条件删除（全表删除），默认 False
         flush: 是否立即刷入数据库，默认 False 由调用方控制事务提交
 
@@ -656,8 +647,7 @@ async def update(
         values: dict[str, Any],
         where: dict[str, Any]
         | ColumnElement[Any]
-        | list[ColumnElement[Any]]
-        | tuple[ColumnElement[Any], ...]
+        | Sequence[ColumnElement[Any]]
         | None = None,
         allow_all: bool = False,
         exclude_none: bool = True,
@@ -677,8 +667,7 @@ async def update(
             - None: 更新全部记录（需 allow_all=True）
             - dict: {"id": 1}
             - ColumnElement: User.id == 1
-            - list[ColumnElement]: [User.age < 18, User.status == 0]
-            - tuple[ColumnElement, ...]: (User.age < 18, User.status == 0)
+            - Sequence[ColumnElement]: [User.age < 18, User.status == 0]
         allow_all: 是否允许无条件更新（全表更新），默认 False
         exclude_none: 是否自动排除值为 None 的字段，True 时跳过 None 值
         returning: 是否返回更新后的数据字典（不支持全表更新）。需要额外查询。
@@ -1232,8 +1221,7 @@ class CRUDMixin:
             columns: Sequence[str] | None = None,
             where: dict[str, Any]
             | ColumnElement[Any]
-            | list[ColumnElement[Any]]
-            | tuple[ColumnElement[Any], ...]
+            | Sequence[ColumnElement[Any]]
             | None = None,
             order_by: str | Sequence[str] | None = None,
             converters: dict[str, Callable] | None = None,
@@ -1247,8 +1235,7 @@ class CRUDMixin:
                 - None: 无过滤条件
                 - dict: {"name": "Tom", "age": 18}
                 - ColumnElement: User.age > 18
-                - list[ColumnElement]: [User.age > 18, User.status == 1]
-                - tuple[ColumnElement, ...]: (User.age > 18, User.status == 1)
+                - Sequence[ColumnElement]: [User.age > 18, User.status == 1]
             order_by: 排序字段，支持多字段。字符串前面加 "-" 表示降序
             converters: 字段转换器，{"field": func}
 
@@ -1267,8 +1254,7 @@ class CRUDMixin:
             columns: Sequence[str] | None = None,
             where: dict[str, Any]
             | ColumnElement[Any]
-            | list[ColumnElement[Any]]
-            | tuple[ColumnElement[Any], ...]
+            | Sequence[ColumnElement[Any]]
             | None = None,
             order_by: str | Sequence[str] | None = None,
             offset: int | None = None,
@@ -1284,8 +1270,7 @@ class CRUDMixin:
                 - None: 无过滤条件
                 - dict: {"name": "Tom", "age": 18}
                 - ColumnElement: User.age > 18
-                - list[ColumnElement]: [User.age > 18, User.status == 1]
-                - tuple[ColumnElement, ...]: (User.age > 18, User.status == 1)
+                - Sequence[ColumnElement]: [User.age > 18, User.status == 1]
             order_by: 排序字段，支持 "-field" 降序
             offset: 分页偏移
             limit: 分页限制
@@ -1312,8 +1297,7 @@ class CRUDMixin:
             *,
             where: dict[str, Any]
             | ColumnElement[Any]
-            | list[ColumnElement[Any]]
-            | tuple[ColumnElement[Any], ...]
+            | Sequence[ColumnElement[Any]]
             | None = None,
     ) -> int:
         """统计记录数
@@ -1325,8 +1309,7 @@ class CRUDMixin:
             where: 过滤条件，支持：
                 - dict: {"name": "Tom", "age": 18}
                 - ColumnElement: User.age > 18
-                - list[ColumnElement]: [User.age > 18, User.status == 1]
-                - tuple[ColumnElement, ...]: (User.age > 18, User.status == 1)
+                - Sequence[ColumnElement]: [User.age > 18, User.status == 1]
                 - None: 统计全部记录
 
         Returns:
@@ -1379,8 +1362,7 @@ class CRUDMixin:
             *,
             where: dict[str, Any]
             | ColumnElement[Any]
-            | list[ColumnElement[Any]]
-            | tuple[ColumnElement[Any], ...]
+            | Sequence[ColumnElement[Any]]
             | None = None,
             allow_all: bool = False,
             flush: bool = False,
@@ -1396,8 +1378,7 @@ class CRUDMixin:
                 - None: 删除全部记录（需 allow_all=True）
                 - dict: {"id": 1}
                 - ColumnElement: User.id == 1
-                - list[ColumnElement]: [User.age < 18, User.status == 0]
-                - tuple[ColumnElement, ...]: (User.age < 18, User.status == 0)
+                - Sequence[ColumnElement]: [User.age < 18, User.status == 0]
             allow_all: 是否允许无条件删除（全表删除），默认 False
             flush: 是否立即刷入数据库，默认 False 由调用方控制事务提交
 
@@ -1416,8 +1397,7 @@ class CRUDMixin:
             values: dict[str, Any],
             where: dict[str, Any]
             | ColumnElement[Any]
-            | list[ColumnElement[Any]]
-            | tuple[ColumnElement[Any], ...]
+            | Sequence[ColumnElement[Any]]
             | None = None,
             allow_all: bool = False,
             exclude_none: bool = True,
@@ -1436,8 +1416,7 @@ class CRUDMixin:
                 - None: 更新全部记录（需 allow_all=True）
                 - dict: {"id": 1}
                 - ColumnElement: User.id == 1
-                - list[ColumnElement]: [User.age < 18, User.status == 0]
-                - tuple[ColumnElement, ...]: (User.age < 18, User.status == 0)
+                - Sequence[ColumnElement]: [User.age < 18, User.status == 0]
             allow_all: 是否允许无条件更新（全表更新），默认 False
             exclude_none: 是否自动排除值为 None 的字段，True 时跳过 None 值
             returning: 是否返回更新后的数据字典（不支持全表更新）。需要额外查询。
