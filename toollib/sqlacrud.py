@@ -208,13 +208,13 @@ def _columns(model) -> list[str]:
     return [column.name for column in inspect(model).mapper.columns]
 
 
-def _to_dict(model, fields: Sequence[str] | None = None) -> dict[str, Any]:
+def _to_dict(model, columns: Sequence[str] | None = None) -> dict[str, Any]:
     """模型实例转字典"""
     if not model:
         return {}
-    if fields is None:
-        fields = _columns(model)
-    return {field: getattr(model, field) for field in fields if hasattr(model, field)}
+    if columns is None:
+        columns = _columns(model)
+    return {col: getattr(model, col) for col in columns if hasattr(model, col)}
 
 
 def _parse_order_by(model, order_by: str | Sequence[str]) -> list[ColumnElement[Any]]:
@@ -230,12 +230,12 @@ def _parse_order_by(model, order_by: str | Sequence[str]) -> list[ColumnElement[
         order_by = (order_by,)
 
     result = []
-    for order_field in order_by:
-        if order_field.startswith("-"):
-            column_name = order_field[1:]
+    for order_column in order_by:
+        if order_column.startswith("-"):
+            column_name = order_column[1:]
             desc = True
         else:
-            column_name = order_field
+            column_name = order_column
             desc = False
 
         if not hasattr(model, column_name):
@@ -246,16 +246,21 @@ def _parse_order_by(model, order_by: str | Sequence[str]) -> list[ColumnElement[
     return result
 
 
+# -----------------------------------------------------------------------------
+# 格式化操作
+# -----------------------------------------------------------------------------
+
+
 def format_row(
         row,
-        fields: Sequence[str],
+        columns: Sequence[str],
         converters: dict[str, Callable] | None = None,
 ) -> dict[str, Any]:
     """格式化单行结果
 
     Args:
         row: 数据库结果行
-        fields: 字段列表
+        columns: 列名列表
         converters: 字段转换器
 
     Returns:
@@ -263,7 +268,7 @@ def format_row(
     """
     if not row:
         return {}
-    data = row._asdict() if hasattr(row, "_asdict") else dict(zip(fields, row))
+    data = row._asdict() if hasattr(row, "_asdict") else dict(zip(columns, row))
     if converters:
         for key, converter in converters.items():
             if key in data:
@@ -273,14 +278,14 @@ def format_row(
 
 def format_rows(
         rows,
-        fields: Sequence[str],
+        columns: Sequence[str],
         converters: dict[str, Callable] | None = None,
 ) -> list[dict[str, Any]]:
     """格式化多行结果
 
     Args:
         rows: 数据库结果行列表
-        fields: 字段列表
+        columns: 列名列表
         converters: 字段转换器
 
     Returns:
@@ -289,7 +294,7 @@ def format_rows(
     if not rows:
         return []
     return [
-        format_row(row, fields, converters)
+        format_row(row, columns, converters)
         for row in rows
     ]
 
@@ -323,7 +328,7 @@ async def fetch_one(
             - ColumnElement: User.age > 18
             - Sequence[ColumnElement]: [User.age > 18, User.status == 1]
         order_by: 排序字段，支持多字段。字符串前面加 "-" 表示降序
-        converters: 字段转换器，{"field": func}
+        converters: 字段转换器，{"column": func}
 
     Returns:
         单条记录字典
@@ -387,10 +392,10 @@ async def fetch_all(
             - dict: {"name": "Tom", "age": 18}
             - ColumnElement: User.age > 18
             - Sequence[ColumnElement]: [User.age > 18, User.status == 1]
-        order_by: 排序字段，支持 "-field" 降序
+        order_by: 排序字段，支持 "-column" 降序
         offset: 分页偏移
         limit: 分页限制
-        converters: 字段转换器，{"field": func}
+        converters: 字段转换器，{"column": func}
 
     Returns:
         记录字典列表
@@ -1180,38 +1185,38 @@ class CRUDMixin:
     @staticmethod
     def format_row(
             row,
-            fields: Sequence[str],
+            columns: Sequence[str],
             converters: dict[str, Callable] | None = None,
     ) -> dict[str, Any]:
         """格式化单行结果
 
         Args:
             row: 数据库结果行
-            fields: 字段列表
+            columns: 列名列表
             converters: 字段转换器
 
         Returns:
             字典格式的单行数据
         """
-        return format_row(row, fields, converters)
+        return format_row(row, columns, converters)
 
     @staticmethod
     def format_rows(
             rows,
-            fields: Sequence[str],
+            columns: Sequence[str],
             converters: dict[str, Callable] | None = None,
     ) -> list[dict[str, Any]]:
         """格式化多行结果
 
         Args:
             rows: 数据库结果行列表
-            fields: 字段列表
+            columns: 列名列表
             converters: 字段转换器
 
         Returns:
             字典列表格式的多行数据
         """
-        return format_rows(rows, fields, converters)
+        return format_rows(rows, columns, converters)
 
     @classmethod
     async def fetch_one(
@@ -1237,7 +1242,7 @@ class CRUDMixin:
                 - ColumnElement: User.age > 18
                 - Sequence[ColumnElement]: [User.age > 18, User.status == 1]
             order_by: 排序字段，支持多字段。字符串前面加 "-" 表示降序
-            converters: 字段转换器，{"field": func}
+            converters: 字段转换器，{"column": func}
 
         Returns:
             单条记录字典
@@ -1271,10 +1276,10 @@ class CRUDMixin:
                 - dict: {"name": "Tom", "age": 18}
                 - ColumnElement: User.age > 18
                 - Sequence[ColumnElement]: [User.age > 18, User.status == 1]
-            order_by: 排序字段，支持 "-field" 降序
+            order_by: 排序字段，支持 "-column" 降序
             offset: 分页偏移
             limit: 分页限制
-            converters: 字段转换器，{"field": func}
+            converters: 字段转换器，{"column": func}
 
         Returns:
             记录字典列表
