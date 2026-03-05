@@ -6,22 +6,24 @@
 @description
 @history
 """
+
 from toollib.tcli.base import BaseCmd
 from toollib.tcli.commands.plugins import snowflake_service
 from toollib.tcli.option import Options, Arg
 
 
 class Cmd(BaseCmd):
-
     def add_options(self):
         options = Options(
-            name='snowflake',
-            desc='雪花服务',
-            optional={self.snowflake: [
-                Arg('--host', default='0.0.0.0', type=str, help='host'),
-                Arg('--port', default=9000, type=int, help='port'),
-                Arg('--workers', default=4, type=int, help='进程数'),
-            ]}
+            name="snowflake",
+            desc="雪花服务",
+            optional={
+                self.snowflake: [
+                    Arg("--host", default="0.0.0.0", type=str, help="host"),
+                    Arg("--port", default=9000, type=int, help="port"),
+                    Arg("--workers", default=4, type=int, help="进程数"),
+                ]
+            },
         )
         return options
 

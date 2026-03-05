@@ -39,7 +39,7 @@ class Arg:
         self.dest = dest
         self.version = version
         for k, v in kwargs.items():
-            self.k = v
+            setattr(self, k, v)
 
     @property
     def parse_arg(self):

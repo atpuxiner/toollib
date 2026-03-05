@@ -2,130 +2,69 @@
 @author axiner
 @version v1.0.0
 @created 2023/9/21 10:10
-@abstract VSCode 配置
+@abstract 设置 VS Code
 @description
 @history
 """
-import os
-import json
-import shutil
-import subprocess
-import tempfile
-from pathlib import Path
+
 from datetime import datetime
-from typing import Any
+import json
+import os
+from pathlib import Path
+import subprocess
+import shutil
 
 
 class SetVSCode:
-    """VSCode 配置"""
+    def __init__(
+        self,
+        project_dir: str | Path | None = None,
+        enable_conda: bool = False,
+        enable_prettier: bool = False,
+    ):
+        self.project_dir = Path(project_dir).resolve() if project_dir else Path.cwd()
+        self.enable_conda = enable_conda
+        self.enable_prettier = enable_prettier
 
-    def __init__(self):
-        # 目录和文件名称常量
         self.PrettierConfigName = ".prettierrc"
         self.PrettierIgnoreName = ".prettierignore"
+
         self.VSCodeDirName = ".vscode"
         self.SettingsFileName = "settings.json"
         self.LaunchFileName = "launch.json"
         self.ExtensionsFileName = "extensions.json"
-        self.BackupDirName = ".vscode-backup"
+        self.PyprojectFileName = "pyproject.toml"
 
-        # 用户主目录
-        self.user_profile = Path.home()
-        self.temp_dir = Path(tempfile.gettempdir())
-
-        # 配置模板
-        self._init_config_templates()
-
-    def _init_config_templates(self):
-        """初始化配置模板"""
-        self.prettier_config = {
-            "semi": True,
-            "singleQuote": False,
-            "tabWidth": 2,
-            "useTabs": False,
-            "printWidth": 100,
-            "trailingComma": "es5",
-            "bracketSpacing": True,
-            "arrowParens": "avoid",
-            "endOfLine": "auto",
-            "htmlWhitespaceSensitivity": "css",
-            "vueIndentScriptAndStyle": False
-        }
-
-        self.prettier_ignore_content = '''# 依赖目录
-node_modules/
-dist/
-build/
-
-# Python 相关
-__pycache__/
-*.pyc
-.venv/
-venv/
-
-# 日志和数据
-*.log
-*.min.js
-*.min.css
-
-# 其他
-.git/
-.idea/
-#.vscode/
-'''
-
-    def get_vscode_dir(self, project_path: Path) -> Path:
-        """获取或创建VS Code配置目录"""
-        vscode_dir = project_path / self.VSCodeDirName
-        if not vscode_dir.exists():
-            vscode_dir.mkdir(parents=True, exist_ok=True)
-            print(f"  创建目录: {vscode_dir}")
-        return vscode_dir
+        self.BackupDirName = ".config-backup"
 
     def backup_config_file(self, file_path: Path) -> Path | None:
-        """备份配置文件到临时目录"""
+        if not self.project_dir:
+            return None
         if file_path.exists():
-            backup_dir = self.temp_dir / self.BackupDirName
+            backup_dir = self.project_dir / self.BackupDirName
             backup_dir.mkdir(exist_ok=True)
 
-            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
             backup_file = backup_dir / f"{file_path.name}.{timestamp}.bak"
 
             shutil.copy2(file_path, backup_file)
             print(f"  已备份: {backup_file}")
 
-            # 清理旧备份文件
-            self.cleanup_old_backups(backup_dir)
+            self._cleanup_old_backups(backup_dir)
 
             return backup_file
         return None
 
     @staticmethod
-    def cleanup_old_backups(backup_dir: Path, max_age_days: int = 30, max_count: int = 5*2) -> int:
-        """
-        清理旧的备份文件
-
-        Args:
-            backup_dir: 备份目录路径
-            max_age_days: 最大保留天数（默认30天）
-            max_count: 最大保留数量（默认10个）
-
-        Returns:
-            清理的文件数量
-        """
+    def _cleanup_old_backups(backup_dir: Path, max_age_days: int = 30, max_count: int = 6 * 2) -> int:
         if not backup_dir.exists():
             return 0
 
         now = datetime.now()
-        backup_files = sorted(
-            backup_dir.glob("*.bak"),
-            key=lambda f: f.stat().st_mtime,
-            reverse=True
-        )
+        backup_files = sorted(backup_dir.glob("*.bak"), key=lambda f: f.stat().st_mtime, reverse=True)
 
         cleaned_count = 0
 
-        # 按数量限制清理（保留最新的N个）
         if len(backup_files) > max_count:
             for old_file in backup_files[max_count:]:
                 try:
@@ -134,7 +73,6 @@ venv/
                 except Exception:
                     pass
 
-        # 按时间清理（删除超过N天的备份）
         for backup_file in backup_files[:max_count]:
             try:
                 file_mtime = datetime.fromtimestamp(backup_file.stat().st_mtime)
@@ -149,65 +87,26 @@ venv/
 
         return cleaned_count
 
-    def _write_config_file(self, file_path: Path, config_data: dict[str, Any], description: str):
-        """写入配置文件的通用方法"""
+    def write_config_file(self, file_path: Path, config_data: dict | str, description: str):
         self.backup_config_file(file_path)
         try:
-            with open(file_path, 'w', encoding='utf-8') as f:
-                json.dump(config_data, f, indent=2, ensure_ascii=False)
-            print(f"  {description}: {file_path}")
+            with open(file_path, "w", encoding="utf-8") as f:
+                if isinstance(config_data, dict):
+                    json.dump(config_data, f, indent=2, ensure_ascii=False)
+                else:
+                    f.write(config_data)
+            print(f"  已写入 {description}: {file_path}")
         except Exception as e:
-            print(f"  错误: 无法写入 {description} - {str(e)}")
+            print(f"  错误: 无法写入 {description} - {e}")
 
-    def install_prettier_config(self):
-        """安装Prettier配置"""
-        print("\n[*] 配置 Prettier...")
-
-        # 安装 Prettier 配置文件
-        prettier_config_file = self.user_profile / self.PrettierConfigName
-        self._write_config_file(
-            prettier_config_file,
-            self.prettier_config,
-            "已安装 Prettier 配置"
-        )
-
-        # 安装 Prettier 忽略文件
-        prettier_ignore_file = self.user_profile / self.PrettierIgnoreName
-        self.backup_config_file(prettier_ignore_file)
-        try:
-            with open(prettier_ignore_file, 'w', encoding='utf-8') as f:
-                f.write(self.prettier_ignore_content)
-            print(f"  已安装: {prettier_ignore_file}")
-        except Exception as e:
-            print(f"  错误: 无法写入 Prettier 忽略文件 - {str(e)}")
-
-    def get_vscode_settings_template(self) -> str:
-        """获取VS Code设置模板"""
-        return '''{
-  // ==================== Conda 默认环境（自行修改） ====================
-  "terminal.integrated.profiles.windows": {
-    "PowerShell": {
-      "source": "PowerShell",
-      "args": ["-NoExit", "-Command", "conda activate base"]
-    }
-  },
-
-  // ==================== 基本配置 ====================
-  "editor.codeActionsOnSave": {
-    "source.organizeImports": "explicit"
-  },
-  "editor.formatOnSave": true,
-  "editor.rulers": [120],
-  "editor.fontSize": 14,
-  "editor.lineHeight": 1.5,
-  "editor.tabSize": 2,
-  "editor.detectIndentation": false,
-  "editor.insertSpaces": true,
-  "editor.wordWrap": "off",
-  "editor.minimap.enabled": false,
-  "editor.stickyScroll.enabled": true,
-  "editor.bracketPairColorization.enabled": true,
-  "editor.guides.bracketPairs": true,
+    def set_vscode_settings(self, vscode_dir: Path):
+        print("\n[*] 配置 VS Code 设置...")
+        vscode_settings_content = """{
+  // ================= basic =================
+  "explorer.decorations.badges": true,
+  "explorer.confirmDelete": true,
+  "explorer.confirmDragAndDrop": true,
+  "explorer.decorations.colors": true,
   "workbench.colorCustomizations": {
     "editorGroup.border": "#888888",
     "sideBar.border": "#666666",
@@ -218,55 +117,96 @@ venv/
     "tab.activeBorder": "#00aaff",
     "tab.activeBorderTop": "#00aaff"
   },
+  "editor.formatOnSave": true,
+  "editor.rulers": [120],
+  "editor.fontSize": 14,
+  "editor.lineHeight": 1.5,
+  "editor.tabSize": 2,
+  "editor.insertSpaces": true,
+  "editor.detectIndentation": false,
+  "editor.wordWrap": "off",
+  "editor.minimap.enabled": false,
+  "editor.stickyScroll.enabled": true,
+  "editor.bracketPairColorization.enabled": true,
+  "editor.guides.bracketPairs": true,
+  "files.enableTrash": true,
   "files.exclude": {
     "**/.git": true,
-    "**/.idea": true,
-    "**/__pycache__": true,
-    "**/.venv": true,
+    "**/.hg": true,
+    "**/.svn": true,
     "**/venv": true,
+    "**/.venv": true,
+    "**/env": true,
     "**/node_modules": true,
-    "**/.DS_Store": true,
-    "**/Thumbs.db": true
+    "**/__pycache__": true,
+    "**/*.pyc": true,
+    "**/*.pyo": true,
+    "**/*.pyd": true,
+    "**/.pytest_cache": true,
+    "**/.tox": true,
+    "**/.mypy_cache": true,
+    "**/.ruff_cache": true,
+    "**/.pyright": true,
+    "**/.coverage": true,
+    "**/htmlcov": true
   },
-  "files.enableTrash": true,
-  "explorer.decorations.badges": true,
-  "explorer.confirmDelete": true,
-  "explorer.confirmDragAndDrop": true,
-  "explorer.decorations.colors": true,
+  "search.exclude": {
+    "**/.git": true,
+    "**/.hg": true,
+    "**/.svn": true,
+    "**/venv": true,
+    "**/.venv": true,
+    "**/env": true,
+    "**/node_modules": true,
+    "**/__pycache__": true,
+    "**/*.pyc": true,
+    "**/*.pyo": true,
+    "**/*.pyd": true,
+    "**/.pytest_cache": true,
+    "**/.tox": true,
+    "**/.mypy_cache": true,
+    "**/.ruff_cache": true,
+    "**/.pyright": true,
+    "**/.coverage": true,
+    "**/htmlcov": true,
+    "**/build": true,
+    "**/dist": true,
+    "**/*.egg-info": true,
+    "**/*.log": true,
+    "**/*.tmp": true,
+    "**/temp": true,
+    "**/tmp": true
+  },
 
-  // ==================== 终端配置 ====================
+  // ================= Terminal =================
   "terminal.integrated.defaultProfile.windows": "PowerShell",
-  "terminal.integrated.enablePersistentSessions": true,
   "terminal.integrated.fontSize": 13,
   "terminal.integrated.lineHeight": 1.2,
-  "python.terminal.activateEnvironment": false,
+  "terminal.integrated.enablePersistentSessions": true,
+  "python.terminal.activateEnvironment": true,
   "python.terminal.executeInFileDir": true,
   "python.terminal.focusAfterLaunch": true,
 
-  // ==================== Code Runner 配置 ====================
-  "code-runner.runInTerminal": true,
-  "code-runner.executorMap": {
-    "python": "python -u"
-  },
-  "code-runner.preserveFocus": true,
-  "code-runner.clearPreviousOutput": false,
-  "code-runner.ignoreSelection": false,
-  "code-runner.showRunIconInEditorTitleMenu": false,
-  "code-runner.showRunCommandInEditorContextMenu": false,
+  // ================= Python analysis =================
+  "basedpyright.analysis.typeCheckingMode": "standard",
+  "basedpyright.analysis.diagnosticMode": "openFilesOnly",
+  "basedpyright.analysis.autoImportCompletions": true,
+  "basedpyright.analysis.inlayHints.variableTypes": false,
+  "basedpyright.analysis.inlayHints.functionReturnTypes": false,
+  "basedpyright.analysis.inlayHints.callArgumentNames": false,
 
-  // ==================== Python 格式化与检查 ====================
-  "autopep8.path": ["autopep8"],
-  "autopep8.args": ["--max-line-length=120"],
+  // ================= Ruff =================
   "[python]": {
     "editor.tabSize": 4,
-    "editor.defaultFormatter": "ms-python.autopep8",
-    "editor.quickSuggestions": {
-      "other": true,
-      "comments": false,
-      "strings": true
-    },
-    "editor.acceptSuggestionOnEnter": "on"
+    "editor.formatOnSave": true,
+    "editor.defaultFormatter": "charliermarsh.ruff",
+    "editor.codeActionsOnSave": {
+      "source.fixAll.ruff": "explicit",
+      "source.organizeImports.ruff": "explicit"
+    }
   },
+
+  // ================= Prettier =================
   "[javascript]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode"
   },
@@ -285,414 +225,494 @@ venv/
   "[css]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode"
   },
-  "[scss]": {
-    "editor.defaultFormatter": "esbenp.prettier-vscode"
-  },
   "[markdown]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode"
-  },
-  "[yaml]": {
-    "editor.defaultFormatter": "esbenp.prettier-vscode"
-  },
-  "isort.args": ["--profile=pycharm", "--line-length=120"],
-
-  // ==================== Python 类型检查与分析 (Pyright) ====================
-  "python.analysis.typeCheckingMode": "standard",
-  "python.analysis.autoImportCompletions": true,
-  "python.analysis.autoSearchPaths": true,
-  "python.analysis.diagnosticMode": "openFilesOnly",
-  "python.analysis.diagnosticSeverityOverrides": {
-    // --- Error (会阻止代码运行或导致严重问题) ---
-    "reportPropertyTypeMismatch": "error",
-    "reportFunctionMemberAccess": "error",
-    "reportInvalidTypeForm": "error",
-    "reportOptionalSubscript": "error",
-    "reportOptionalMemberAccess": "error",
-    "reportOptionalCall": "error",
-    "reportOptionalIterable": "error",
-    "reportOptionalContextManager": "error",
-    "reportOptionalOperand": "error",
-    "reportIncompatibleMethodOverride": "error",
-    "reportIncompatibleVariableOverride": "error",
-    "reportOverlappingOverload": "error",
-    "reportUndefinedVariable": "error",
-    "reportUnboundVariable": "error",
-    "reportMatchNotExhaustive": "error",
-    // --- Warning (代码质量问题, 建议修复) ---
-    "reportPossiblyUnboundVariable": "warning",
-    "reportMissingImports": "warning",
-    "reportReturnType": "warning",
-    "reportMissingModuleSource": "warning",
-    "reportImportCycles": "warning",
-    "reportUnusedImport": "warning",
-    "reportUnusedClass": "warning",
-    "reportUnusedFunction": "warning",
-    "reportUnusedVariable": "warning",
-    "reportDuplicateImport": "warning",
-    "reportUntypedClassDecorator": "warning",
-    "reportUntypedBaseClass": "warning",
-    "reportUntypedNamedTuple": "warning",
-    "reportPrivateUsage": "warning",
-    "reportConstantRedefinition": "warning",
-    "reportDeprecated": "warning",
-    "reportInvalidTypeVarUse": "warning",
-    "reportUnnecessaryCast": "warning",
-    "reportAssertAlwaysTrue": "warning",
-    "reportSelfClsParameterName": "warning",
-    "reportUnsupportedDunderAll": "warning",
-    "reportUnusedExpression": "warning",
-    "reportShadowedImports": "warning",
-    // --- Information (提示信息) ---
-    "reportUnnecessaryTypeIgnoreComment": "information",
-    // --- None (禁用检查) ---
-    "reportCallInDefaultInitializer": "none",
-    "reportCallIssue": "none",
-    "reportAttributeAccessIssue": "none",
-    "reportAssignmentType": "none",
-    "reportArgumentType": "none",
-    "reportUnknownParameterType": "none",
-    "reportUnknownArgumentType": "none",
-    "reportUnknownLambdaType": "none",
-    "reportUnknownVariableType": "none",
-    "reportUnknownMemberType": "none",
-    "reportMissingTypeStubs": "none",
-    "reportUntypedFunctionDecorator": "none",
-    "reportUninitializedInstanceVariable": "none",
-    "reportMissingTypeArgument": "none",
-    "reportMissingSuperCall": "none",
-    "reportUnnecessaryComparison": "none",
-    "reportUnnecessaryContains": "none",
-    "reportImplicitStringConcatenation": "none",
-    "reportInvalidStubStatement": "none",
-    "reportIncompleteStub": "none",
-    "reportGeneralTypeIssues": "none",
-    "reportInvalidStringEscapeSequence": "none",
-    "reportUnnecessaryIsInstance": "none"
-  },
-
-  // ==================== Python 代码检查 (Pylint) ====================
-  "pylint.args": [
-    "--max-line-length=120",
-    "--disable=C0103,C0114,C0115,C0116,C0209,C0303,E1101,W0511,W0613,W0702,W0707,W0718,W1203,W1510,W1514",
-    "--enable=W0101,W0102,W0104,W0404,W0611,W0612,W0621,W0622,W1515"
-  ]
-}'''
-
-    def install_vscode_settings(self, project_path: Path):
-        """安装VS Code项目设置"""
-        print("\n[*] 配置 VS Code 项目设置...")
-
-        vscode_dir = self.get_vscode_dir(project_path)
+  }
+}
+"""
         vscode_settings_file = vscode_dir / self.SettingsFileName
+        self.write_config_file(vscode_settings_file, vscode_settings_content, "VS Code 设置配置")
 
-        settings_content = self.get_vscode_settings_template()
-        self.backup_config_file(vscode_settings_file)
-        try:
-            with open(vscode_settings_file, 'w', encoding='utf-8') as f:
-                f.write(settings_content)
-            print(f"  已创建 VS Code 设置: {vscode_settings_file}")
-        except Exception as e:
-            print(f"  错误: 无法写入 VS Code 设置 - {str(e)}")
-
-    def install_project_debug_config(self, project_path: Path):
-        """安装项目调试配置"""
-        print("\n[*] 创建项目调试配置...")
-
-        vscode_dir = self.get_vscode_dir(project_path)
+    def set_vscode_debug_config(self, vscode_dir: Path):
+        print("\n[*] 配置 VS Code 调试...")
         launch_config_file = vscode_dir / self.LaunchFileName
-
-        launch_config = {
-            "version": "0.0.1",
-            "configurations": [
-                {
-                    "name": "Python: 当前文件",
-                    "type": "debugpy",
-                    "request": "launch",
-                    "program": "${file}",
-                    "cwd": "${fileDirname}",
-                    "console": "integratedTerminal",
-                    "justMyCode": False,
-                    "python": "${command:python.interpreterPath}"
-                },
-                {
-                    "name": "Python: 指定模块",
-                    "type": "debugpy",
-                    "request": "launch",
-                    "module": "${input:moduleName}",
-                    "cwd": "${workspaceFolder}",
-                    "console": "integratedTerminal",
-                    "justMyCode": False,
-                    "python": "${command:python.interpreterPath}"
-                },
-                {
-                    "name": "Python: 带参数调试",
-                    "type": "debugpy",
-                    "request": "launch",
-                    "program": "${file}",
-                    "cwd": "${fileDirname}",
-                    "console": "integratedTerminal",
-                    "args": "${input:arguments}",
-                    "justMyCode": False,
-                    "python": "${command:python.interpreterPath}"
-                },
-                {
-                    "name": "Python: 附加到进程",
-                    "type": "debugpy",
-                    "request": "attach",
-                    "connect": {
-                        "host": "localhost",
-                        "port": 5678
-                    }
-                }
-            ],
-            "inputs": [
-                {
-                    "id": "moduleName",
-                    "type": "promptString",
-                    "description": "输入要调试的模块名 (如: main 或 src.main)"
-                },
-                {
-                    "id": "arguments",
-                    "type": "promptString",
-                    "description": "输入命令行参数"
-                }
-            ]
+        launch_config = """{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Python: 当前文件(调试)",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${file}",
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal",
+      "justMyCode": true
+    },
+    {
+      "name": "Python: 当前模块(推荐)",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "${relativeFileDirname}.${fileBasenameNoExtension}",
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal",
+      "justMyCode": true
+    },
+    {
+      "name": "Python: 当前模块(带参数)",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "${relativeFileDirname}.${fileBasenameNoExtension}",
+      "cwd": "${workspaceFolder}",
+      "args": "${input:programArgs}",
+      "console": "integratedTerminal",
+      "justMyCode": true
+    },
+    {
+      "name": "Python: 指定模块(带参数)",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "${input:moduleName}",
+      "cwd": "${workspaceFolder}",
+      "args": "${input:programArgs}",
+      "console": "integratedTerminal",
+      "justMyCode": true
+    },
+    {
+      "name": "Python: pytest(当前文件)",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "pytest",
+      "args": ["${file}", "-s", "-vv"],
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal",
+      "justMyCode": true
+    },
+    {
+      "name": "Python: pytest(指定测试)",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "pytest",
+      "args": "${input:testArgs}",
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal",
+      "justMyCode": true
+    },
+    {
+      "name": "Python: 附加到(本地进程)",
+      "type": "debugpy",
+      "request": "attach",
+      "processId": "${command:pickProcess}"
+    },
+    {
+      "name": "Python: 附加到(远程服务)",
+      "type": "debugpy",
+      "request": "attach",
+      "connect": {
+        "host": "localhost",
+        "port": 5678
+      },
+      "pathMappings": [
+        {
+          "localRoot": "${workspaceFolder}",
+          "remoteRoot": "."
         }
+      ]
+    }
+  ],
+  "inputs": [
+    {
+      "id": "moduleName",
+      "type": "promptString",
+      "description": "输入模块名 (例如: app.main)"
+    },
+    {
+      "id": "programArgs",
+      "type": "promptString",
+      "description": "输入程序参数 (例如: --config config.yaml)"
+    },
+    {
+      "id": "testArgs",
+      "type": "promptString",
+      "description": "输入pytest参数 (例如: tests/test_api.py::test_login)"
+    }
+  ]
+}
+"""
+        self.write_config_file(launch_config_file, launch_config, "VS Code 调试配置")
 
-        self._write_config_file(launch_config_file, launch_config, "已创建调试配置")
-
-    def install_vscode_extensions_config(self, project_path: Path):
-        """安装VS Code扩展配置"""
-        print("\n[*] 创建扩展配置...")
-
-        vscode_dir = self.get_vscode_dir(project_path)
+    def set_vscode_extensions_config(self, vscode_dir: Path):
+        print("\n[*] 配置 VS Code 扩展...")
         extensions_file = vscode_dir / self.ExtensionsFileName
-        extensions_content = '''{
+        extensions_content = """{
   "recommendations": [
     // ==================== Python开发 (必选) ====================
     "ms-python.python",
     "ms-python.debugpy",
-    "ms-python.autopep8",
-    "ms-python.isort",
-    "ms-pyright.pyright",
-    "ms-python.pylint",
-    "formulahendry.code-runner",
+    "detachhead.basedpyright",
+    "charliermarsh.ruff",
     "njpwerner.autodocstring",
 
     // ==================== 前端开发 (可选) ====================
     "esbenp.prettier-vscode",
-    "Vue.volar",
+    "vue.volar",
 
     // ==================== 效率工具 (可选) ====================
     "alefragnani.project-manager",
     "k--kato.intellij-idea-keybindings",
     "mhutchie.git-graph",
-    "Alibaba-cloud.tongyi-lingma",
-
-    // ==================== 数据库工具 (可选) ====================
-    "mtxr.sqltools",
-    "mtxr.sqltools-driver-mysql",
-    "mtxr.sqltools-driver-pg",
-    "mtxr.sqltools-driver-sqlite",
-    "cweijan.vscode-redis-client"
+    "cweijan.vscode-database-client2",
+    "cweijan.dbclient-jdbc",
+    "alibaba-cloud.tongyi-lingma"
   ]
-}'''
+}
+"""
+        self.write_config_file(extensions_file, extensions_content, "VS Code 扩展配置")
 
-        self.backup_config_file(extensions_file)
-        try:
-            with open(extensions_file, 'w', encoding='utf-8') as f:
-                f.write(extensions_content)
-            print(f"  已创建扩展配置: {extensions_file}")
-        except Exception as e:
-            print(f"  错误: 无法写入扩展配置 - {str(e)}")
+    @staticmethod
+    def _get_pyproject_config(tool_name: str) -> str:
+        if tool_name == "basedpyright":
+            return """# ==================== BasedPyright 配置 ====================
+[tool.basedpyright]
+typeCheckingMode = "standard"
+include = [
+  "**/*.py",
+]
+exclude = [
+  "**/build/**",
+  "**/dist/**",
+  "**/.egg-info/**",
+  "**/venv/**",
+  "**/.venv/**",
+  "**/__pycache__/**",
+  "**/.mypy_cache/**",
+  "**/.pytest_cache/**",
+  "**/.tox/**",
+  "**/migrations/**",
+  "**/node_modules/**",
+]
 
-    def install_all_global(self, project_path: Path):
-        """安装所有全局配置"""
-        self.install_prettier_config()
-        self.install_vscode_settings(project_path)
-        self.install_project_debug_config(project_path)
-        self.install_vscode_extensions_config(project_path)
+# diagnosticSeverityOverrides
+reportAttributeAccessIssue = "warning"
+reportCallIssue = "warning"
+reportOptionalMemberAccess = "warning"
+reportUnusedImport = "information"
+reportUnusedClass = "information"
+reportUnusedFunction = "information"
+reportArgumentType = "none"
+reportAssignmentType = "none"
+reportUnknownVariableType = "none"
+reportUnknownMemberType = "none"
+reportUnknownParameterType = "none"
+reportMissingTypeStubs = "none"
+"""
+        elif tool_name == "ruff":
+            return """# ==================== Ruff 配置 ====================
+[tool.ruff]
+line-length = 120
 
-    def remove_global_config(self):
-        """删除全局配置"""
-        print("\n[*] 删除全局配置...")
+[tool.ruff.format]
+skip-magic-trailing-comma = false
 
-        # 删除 Prettier 配置
-        prettier_config_file = self.user_profile / self.PrettierConfigName
-        prettier_ignore_file = self.user_profile / self.PrettierIgnoreName
+[tool.ruff.lint]
+select = [
+  "E",   # pycodestyle errors
+  "W",   # pycodestyle warnings
+  "F",   # pyflakes
+  "I",   # isort (导入排序)
+  "UP",  # pyupgrade (提示新语法)
+  "B",   # flake8-bugbear (常见bug)
+  "SIM", # flake8-simplify (代码简化)
+  "C4",  # flake8-comprehensions (推导式优化)
+  "RUF", # Ruff 特有规则
+]
 
-        for config_file in [prettier_config_file, prettier_ignore_file]:
-            if config_file.exists():
-                config_file.unlink()
-                print(f"  已删除: {config_file}")
-            else:
-                print(f"  不存在: {config_file}")
+ignore = [
+  "E501",   # 行长度由 formatter 控制，lint 不需要报错
+  "B008",   # 允许在函数默认参数中调用函数 (常用于 FastAPI/Depends)
+  "COM812", # 避免与 formatter 的 trailing comma 冲突
+  "D",      # 忽略所有文档字符串相关规则（如 D100、D205 等）
+  "RUF001", # 允许注释中使用非 ASCII 字符（如中文）
+  "RUF002", # 允许字符串字面量中使用非 ASCII 字符（如中文提示语）
+  "RUF003", # 允许文档字符串（docstring）中使用非 ASCII 字符
+  "I001",
+  "W293",
+  "UP015",
+  "RUF022",
+  "RUF012",
+]
 
-        print("  全局配置文件已清理")
-
-    def remove_project_config(self, project_path: Path):
-        """删除项目配置"""
-        print("\n[*] 删除项目配置...")
-
-        vscode_dir = project_path / self.VSCodeDirName
-        if vscode_dir.exists():
-            shutil.rmtree(vscode_dir)
-            print(f"  已删除: {vscode_dir}")
+[tool.ruff.lint.per-file-ignores]
+"__init__.py" = ["F401"]
+"tests/**" = ["S101", "PLR2004", "ARG", "B018"]
+"test_*.py" = ["S101", "PLR2004", "ARG", "B018"]
+"*_test.py" = ["S101", "PLR2004", "ARG", "B018"]
+"scripts/**" = ["T201", "INP001"]
+"bin/**" = ["T201", "INP001"]
+"conftest.py" = ["F401"]
+"settings.py" = ["F401"]
+"config.py" = ["F401"]
+"*.ipynb" = ["E402", "E703"]
+"**/migrations/**" = ["E501", "N999"]
+"**/alembic/versions/**" = ["E501", "N999"]
+"""
         else:
-            print(f"  不存在: {vscode_dir}")
+            return ""
 
-    def run_command(self, cmd_list: list, cwd: Path = None) -> tuple:
-        """运行命令并返回结果"""
+    def set_pyproject_config(self):
+        print("\n[*] 配置 pyproject.toml (basedpyright & ruff)...")
+
+        description = "pyproject.toml 配置"
+        tool_names = ["basedpyright", "ruff"]
+
+        pyproject_file = self.project_dir / self.PyprojectFileName
+        if pyproject_file.is_file():
+            try:
+                with open(pyproject_file, "r", encoding="utf-8") as f:
+                    content = f.read()
+            except Exception as e:
+                print(f"  错误: 无法读取 {description} - {e}")
+                return
+
+            self.backup_config_file(pyproject_file)
+
+            append_content = ""
+            for tool_name in tool_names:
+                if f"[tool.{tool_name}]" not in content:
+                    append_content += self._get_pyproject_config(tool_name).strip()
+                    append_content += "\n\n"
+                    print(f"  已追加 {tool_name} 配置")
+                else:
+                    print(f"  已忽略 {tool_name} 配置已存在")
+
+            if append_content:
+                content = content.strip() + "\n\n"
+                new_content = content + append_content
+                try:
+                    with open(pyproject_file, "w", encoding="utf-8") as f:
+                        f.write(new_content.strip() + "\n")
+                    print(f"  已更新 {description} - {pyproject_file}")
+                except Exception as e:
+                    print(f"  错误: 无法写入 {description} - {e}")
+            else:
+                print("  已忽略 BasedPyright & Ruff 配置已存在")
+        else:
+            new_content = ""
+            for tool_name in tool_names:
+                new_content += self._get_pyproject_config(tool_name).strip()
+                new_content += "\n\n"
+            self.write_config_file(pyproject_file, new_content.strip() + "\n", description)
+
+    def set_prettier_config(self):
+        print("\n[*] 配置 Prettier...")
+        prettier_config_content = """{
+  "semi": true,
+  "singleQuote": false,
+  "tabWidth": 2,
+  "useTabs": false,
+  "printWidth": 120,
+  "trailingComma": "es5",
+  "bracketSpacing": true,
+  "arrowParens": "avoid",
+  "endOfLine": "auto",
+  "htmlWhitespaceSensitivity": "css",
+  "vueIndentScriptAndStyle": false
+}
+"""
+        prettier_config_file = self.project_dir / self.PrettierConfigName
+        self.write_config_file(prettier_config_file, prettier_config_content, "Prettier 配置")
+        # 安装 Prettier 忽略配置
+        prettier_ignore_content = """# === 构建产物 & 打包输出 ===
+dist/
+out/
+build/
+public/build/
+.next/
+.nuxt/
+.cache/
+
+# === 依赖目录 ===
+node_modules/
+.venv/
+venv/
+env/
+
+# === Python 相关 ===
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.egg-info/
+
+# === 日志 & 临时文件 ===
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# === 压缩/编译后的资源（Prettier 不应格式化）===
+*.min.js
+*.min.css
+*.bundle.js
+*.chunk.js
+
+# === 版本控制 ===
+.git/
+.svn/
+.hg/
+
+# === IDE / 编辑器 ===
+.idea/
+.vscode/
+*.sublime-project
+*.sublime-workspace
+
+# === 系统文件 ===
+.DS_Store
+Thumbs.db
+desktop.ini
+Icon?
+
+# === 配置与锁文件（通常不格式化）===
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+poetry.lock
+Pipfile.lock
+
+# === 静态资源（图片、字体、二进制等）===
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.svg
+*.ico
+*.woff
+*.woff2
+*.ttf
+*.eot
+*.pdf
+*.zip
+*.tar.gz
+
+# === 其他不应格式化的文件 ===
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+Dockerfile
+Makefile
+"""
+        prettier_ignore_file = self.project_dir / self.PrettierIgnoreName
+        self.write_config_file(prettier_ignore_file, prettier_ignore_content, "Prettier 忽略配置")
+
+    def set_configs(self, enable_prettier: bool = False):
+        vscode_dir = self.project_dir / self.VSCodeDirName
+        if not vscode_dir.exists():
+            vscode_dir.mkdir(parents=True, exist_ok=True)
+        self.set_vscode_settings(vscode_dir)
+        self.set_vscode_debug_config(vscode_dir)
+        self.set_vscode_extensions_config(vscode_dir)
+        self.set_pyproject_config()
+        if enable_prettier:
+            self.set_prettier_config()
+
+    def _run_command(self, cmd_list: list, cwd: Path | None = None) -> tuple:
         try:
-            # 在 Windows 上使用 shell=True 以正确解析 PATH
             result = subprocess.run(
                 cmd_list,
                 capture_output=True,
                 text=True,
                 cwd=cwd,
-                encoding='utf-8',
-                shell=os.name == 'nt'  # Windows 使用 shell=True
+                encoding="utf-8",
+                shell=os.name == "nt",  # Windows 使用 shell=True
             )
             return result.returncode == 0, result.stdout, result.stderr
         except Exception as e:
             return False, "", str(e)
 
-    def install_python_tools(self):
-        """安装Python工具包"""
-        print("\n[*] 安装 Python 工具包...")
-
-        # 检查python命令是否存在
-        success, _, _ = self.run_command(['python', '--version'])
+    def install_tools(self):
+        print("\n[*] 安装工具包...")
+        success, _, _ = self._run_command(["python", "--version"])
         if not success:
-            print("  警告: 未找到 python 命令，跳过 Python 工具安装")
+            print("  警告: 未找到 python 命令，跳过 ruff 安装")
             return
-
-        print("  正在安装 autopep8, isort, pylint...")
-        success, _, _ = self.run_command([
-            'python', '-m', 'pip', 'install', '-U', 'autopep8', 'isort', 'pylint', '-q', '--no-warn-script-location'
-        ])
-
-        # 检查npm命令是否存在
-        npm_success, _, _ = self.run_command(['npm', '--version'])
-        if not npm_success:
-            print("  警告: 未找到 npm，跳过 pyright 安装")
+        print("  正在安装 ruff...")
+        success, _, _ = self._run_command(
+            [
+                "python",
+                "-m",
+                "pip",
+                "install",
+                "-U",
+                "ruff",
+                "-q",
+                "--user",
+                "--no-warn-script-location",
+            ]
+        )
+        if success:
+            print("  已安装 ruff")
         else:
-            print("  正在安装 pyright (Node.js 工具)...")
-            npm_success, _, npm_stderr = self.run_command(['npm', 'install', '-g', 'pyright'])
-            if npm_success:
-                print("    pyright 安装成功")
-            else:
-                print(f"    pyright 安装失败: {npm_stderr}")
-
-        print("  Python 工具包安装完成")
+            print("  警告: ruff 安装失败")
 
     def initialize_conda(self):
-        """初始化Conda for PowerShell"""
         print("[*] 初始化 Conda for PowerShell...")
-
-        success, _, _ = self.run_command(['conda', 'init', 'powershell'])
+        success, _, _ = self._run_command(["conda", "init", "powershell"])
         if success:
-            print("  Conda 初始化完成 (请重启 VS Code 生效)")
+            print("  已初始化 Conda (请重启 VS Code 生效)")
         else:
             print("  警告: 未找到 conda，跳过 Conda 初始化")
 
-    def print_completion_message(self, project_path: Path):
-        """打印完成消息"""
+    def run(self):
+        """入口"""
+        os.system("cls" if os.name == "nt" else "clear")
+
+        if not self.project_dir.is_dir():
+            print(f"错误: 路径不是目录 {self.project_dir}")
+            return
+
+        print("")
         print("-" * 25)
-        print("  全部配置安装完成!")
+        print("  开始配置")
+        print("-" * 25)
+
+        # 初始化Conda
+        if self.enable_conda:
+            self.initialize_conda()
+        # 安装工具
+        self.install_tools()
+        # 设置配置
+        self.set_configs(enable_prettier=self.enable_prettier)
+
+        print("")
+        print("-" * 25)
+        print("  全部配置完成!")
         print("-" * 25)
         print("")
         print("配置文件位置:")
-        print(f"  - 全局:     {self.user_profile / self.PrettierConfigName}")
-        print(f"  - 项目:     {project_path / self.VSCodeDirName / self.SettingsFileName}")
-        print(f"  - 项目:     {project_path / self.VSCodeDirName / self.LaunchFileName}")
-        print(f"  - 项目:     {project_path / self.VSCodeDirName / self.ExtensionsFileName}")
+        print(f"  - 项目:     {self.project_dir / self.VSCodeDirName / self.SettingsFileName}")
+        print(f"  - 项目:     {self.project_dir / self.VSCodeDirName / self.LaunchFileName}")
+        print(f"  - 项目:     {self.project_dir / self.VSCodeDirName / self.ExtensionsFileName}")
+        print(f"  - 项目:     {self.project_dir / self.PyprojectFileName}")
+        if self.enable_prettier:
+            print(f"  - 项目:     {self.project_dir / self.PrettierConfigName}")
+            print(f"  - 项目:     {self.project_dir / self.PrettierIgnoreName}")
+        print(f"  - 备份:     {self.project_dir / self.BackupDirName}")
         print("")
         print("-" * 50)
         print("  重要: 安装 VS Code 扩展（请查看项目根目录下的 .vscode/extensions.json）")
         print("")
-        print("安装方式:")
-        print("  - 按 Ctrl+Shift+X 打开扩展面板")
-        print("  - 搜索扩展名称并安装")
+        print("  安装方式:")
+        print("    - 按 Ctrl+Shift+X 打开扩展面板")
+        print("    - 搜索扩展名称并安装")
         print("-" * 35)
 
-    def run(self):
-        """入口"""
-        os.system('cls' if os.name == 'nt' else 'clear')
-        print("┌" + "─" * 46 + "┐")
-        print("│" + " " * 14 + "VSCode环境配置工具" + " " * 14 + "│")
-        print("└" + "─" * 46 + "┘")
-        print("")
-        print("请选择要执行的配置:")
-        print("")
-        print("  [1] 配置 (全局 + 项目)")
-        print("  [2] 删除配置 (全局 + 项目)")
-        print("  [q] 退出")
-        print("")
 
-        choice = input("请输入选项 (默认q): ").strip() or "q"
-
-        if choice == "1":
-            print("")
-            default_path = Path.cwd()
-            project_path_input = input(f"请输入项目根目录路径 [默认: {default_path}]: ").strip()
-            project_path = Path(project_path_input) if project_path_input else default_path
-            print(f"  将采用默认路径: {project_path}")
-
-            if not project_path.exists():
-                print(f"错误: 路径不存在 {project_path}")
-                return
-            if not project_path.is_dir():
-                print(f"错误: 路径不是目录 {project_path}")
-                return
-
-            print("")
-            print("-" * 25)
-            print("  开始安装全局配置")
-            print("-" * 25)
-
-            # 初始化Conda
-            self.initialize_conda()
-
-            # 安装Python工具
-            self.install_python_tools()
-
-            # 安装所有配置
-            self.install_all_global(project_path)
-
-            print("")
-            self.print_completion_message(project_path)
-
-        elif choice == "2":
-            print("")
-            default_path = Path.cwd()
-            project_path_input = input(f"请输入项目根目录路径 [默认: {default_path}]: ").strip()
-            project_path = Path(project_path_input) if project_path_input else default_path
-            print(f"  将采用默认路径: {project_path}")
-
-            print("")
-            print("-" * 25)
-            print("  开始删除配置")
-            print("-" * 25)
-
-            self.remove_global_config()
-            self.remove_project_config(project_path)
-
-            print("")
-            print("-" * 25)
-            print("  配置删除完成!")
-            print("-" * 25)
-            print("")
-            print("已删除的配置:")
-            print(f"  - 全局: {self.user_profile / self.PrettierConfigName}")
-            print(f"  - 全局: {self.user_profile / self.PrettierIgnoreName}")
-            print(f"  - 项目: {project_path / self.VSCodeDirName}")
-
-        elif choice == "q":
-            print("已取消")
-            return
-        else:
-            print("无效选项")
-            return
-
-        input("\n按 Enter 键退出...")
+if __name__ == "__main__":
+    s = SetVSCode(
+        enable_conda=True,
+        enable_prettier=True,
+    )
+    s.run()

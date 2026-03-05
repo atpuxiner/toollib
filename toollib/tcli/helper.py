@@ -19,7 +19,7 @@ Commands:
   set-vscode        设置vscode配置
   docker            docker操作
   pydpack           pyd打包
-  snowflake         雪花服务    
+  snowflake         雪花服务
   bash              bash模板
   grpc              grpc模板
   pkgup             包更新
@@ -50,7 +50,7 @@ set_sshkey = """usage:
   pytcli set-sshkey
 options:
   -h/--help     帮助
-  -i/--infos    主机信息（"ip1,user1,pass1,port1 ip2,user2,pass2,port2 ..."|也可指定文件:一行一个） 
+  -i/--infos    主机信息（"ip1,user1,pass1,port1 ip2,user2,pass2,port2 ..."|也可指定文件:一行一个）
   --sysname     系统名称（以防自动获取不精确）[可选]
 """
 
@@ -58,6 +58,9 @@ set_vscode = """usage:
   pytcli set-vscode
 options:
   -h/--help     帮助
+  -d/--dest     目标路径[可选]
+  --conda       是否初始化conda[可选]
+  --prettier    是否初始化prettier[可选]
 """
 
 docker = """usage:
@@ -66,7 +69,7 @@ options:
   -h/--help     帮助
   set-daemon    设置daemon配置（镜像源等）
     --sysname   系统名称（以防自动获取不精确）[可选]
-    --dns       是否dns配置（默认不配置）[可选]
+    --dns       是否dns配置[可选]
   yaml          yaml配置
     -n/--name       服务名称（多个用逗号隔开）
     -o/--outdir     输出目录[可选]
@@ -80,8 +83,8 @@ options:
   -s/--src          源（py目录或文件）
   -e/--exclude      排除编译（正则表达式，使用管道等注意加引号）[可选]
   -i/--ignore       忽略复制（正则表达式，使用管道等注意加引号）[可选]
-  --ext-suffix      是否保留扩展后缀（默认不保留）[可选]
-  --clean           是否清理（默认不清理）[可选]
+  --ext-suffix      是否保留扩展后缀[可选]
+  --clean           是否清理[可选]
 """
 
 snowflake = """usage:
@@ -117,5 +120,5 @@ options:
   -r/--requirements     依赖文件（默认requirements.txt）[可选]
   --skips               跳过（默认空，多个用`,`隔开）[可选]
   --sep                 分隔符（默认==）[可选]
-  --overwrite           是否覆盖（默认不覆盖）[可选]
+  --overwrite           是否覆盖[可选]
 """

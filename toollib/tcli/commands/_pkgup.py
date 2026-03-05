@@ -6,6 +6,7 @@
 @description
 @history
 """
+
 import os
 import re
 import subprocess
@@ -17,17 +18,24 @@ from toollib.tcli.option import Options, Arg
 
 
 class Cmd(BaseCmd):
-
     def add_options(self):
         options = Options(
-            name='pkgup',
-            desc='包更新',
-            optional={self.pkgup: [
-                Arg("-r", "--requirements", default="requirements.txt", type=str, help='依赖文件（默认requirements.txt）'),
-                Arg("--skips", default="", type=str, help='跳过（默认空，多个用`,`隔开）'),
-                Arg("--sep", default="==", choices=["==", ">=", "<=", "~="], help='分隔符（默认==）'),
-                Arg("--overwrite", action='store_true', help='是否覆盖（默认不覆盖）'),
-            ]}
+            name="pkgup",
+            desc="包更新",
+            optional={
+                self.pkgup: [
+                    Arg(
+                        "-r",
+                        "--requirements",
+                        default="requirements.txt",
+                        type=str,
+                        help="依赖文件（默认requirements.txt）",
+                    ),
+                    Arg("--skips", default="", type=str, help="跳过（默认空，多个用`,`隔开）"),
+                    Arg("--sep", default="==", choices=["==", ">=", "<=", "~="], help="分隔符（默认==）"),
+                    Arg("--overwrite", action="store_true", help="是否覆盖"),
+                ]
+            },
         )
         return options
 
@@ -46,7 +54,7 @@ class Cmd(BaseCmd):
                             continue
                         if pkg := re.split(r"[<>=~]", t, maxsplit=1)[0]:
                             if "#" in t:
-                                pkg = t[:t.index("#")]
+                                pkg = t[: t.index("#")]
                             if pkg := pkg.strip():
                                 if skips and pkg in skips:
                                     continue
@@ -64,10 +72,10 @@ class Cmd(BaseCmd):
                             sys.stdout.write(f"TIP: Please update manually `{pkg}`\n")
                             t = f"{pkg}  # Please update manually"
                         else:
-                            pkg_extra = t[t.index(";"):] if ";" in t else ""
+                            pkg_extra = t[t.index(";") :] if ";" in t else ""
                             try:
                                 if "[" in pkg and "]" in pkg:
-                                    ver = metadata.version(pkg[:pkg.index("[")])
+                                    ver = metadata.version(pkg[: pkg.index("[")])
                                 else:
                                     ver = metadata.version(pkg)
                                 t = f"{pkg}{self.parse_args.sep}{ver}{pkg_extra}"
