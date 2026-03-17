@@ -16,7 +16,7 @@ e.g.::
         created = await create(session, User, values={"name": "Tom"})
 
         # 删除
-        deleted = await delete(session, User, where={"id": 1})        
+        deleted = await delete(session, User, where={"id": 1})
 
         # 更新
         updated = await update(session, User, values={"name": "New"}, where={"id": 1})
@@ -27,7 +27,7 @@ e.g.::
 """
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
-from typing import Literal, Any, Callable
+from typing import Any, Callable
 
 from sqlalchemy import (
     select,
@@ -101,7 +101,7 @@ class Updated:
 
     ok: bool  # 是否成功
     rowcount: int = 0  # 影响行数
-    data: dict[str, Any] | None = None  # 更新后的数据（可选）
+    data: dict[str, Any] | None = None  # 更新后的数据
 
     def __bool__(self) -> bool:
         return self.ok
@@ -111,19 +111,12 @@ class Updated:
 class Upserted:
     """更新插入操作结果"""
 
-    data: Any  # 数据对象
-    action: Literal["insert", "update", "noop"] = "insert"
+    ok: bool  # 是否成功
+    rowcount: int = 0  # 影响行数
+    data: dict[str, Any] | None = None  # 操作后的数据
 
     def __bool__(self) -> bool:
-        return self.action != "noop"
-
-    @property
-    def inserted(self) -> bool:
-        return self.action == "insert"
-
-    @property
-    def updated(self) -> bool:
-        return self.action == "update"
+        return self.ok
 
 
 @dataclass(frozen=True, slots=True)
@@ -770,6 +763,7 @@ async def upsert(
         values: dict[str, Any],
         keys: Sequence[str],
         updates: Sequence[str] | None = None,
+        returning: bool = False,
         flush: bool = False,
 ) -> Upserted:
     """存在则更新，不存在则创建（Upsert）
@@ -786,12 +780,14 @@ async def upsert(
         values: 完整数据字典
         keys: 唯一键字段列表，用于判断记录是否存在，如 ("id",), ("email",)
         updates: 指定更新时的字段列表，None 表示更新除 keys 外的所有字段
+        returning: 是否返回操作后的数据字典，需要额外查询
         flush: 是否立即刷入数据库，默认 False 由调用方控制事务提交
 
     Returns:
         Upserted: Upsert 操作结果
-            - data: 数据对象（SQLAlchemy 模型实例）
-            - action: 操作类型 - "insert"(新建) / "update"(更新) / "noop"(无变化)
+            - ok: True 表示操作成功（新建或更新），False 表示无修改
+            - rowcount: 影响行数（1 表示有变化，0 表示无变化）
+            - data: 操作后的数据字典（returning=True 时）
 
     e.g.::
 
@@ -802,10 +798,8 @@ async def upsert(
             values={"id": 1, "name": "Tom", "email": "tom@test.com"},
             keys=("id",)
         )
-        if upserted.inserted:
-            print("新建用户")
-        elif upserted.updated:
-            print("更新用户")
+        if upserted:
+            print(f"操作成功，影响 {upserted.rowcount} 条记录")
 
         # 只更新特定字段
         upserted = await upsert(
@@ -816,6 +810,16 @@ async def upsert(
             updates=("name",)  # 只更新 name，email 不变
         )
 
+        # 获取更新后的数据
+        upserted = await upsert(
+            session,
+            User,
+            values={"id": 1, "name": "New"},
+            keys=("id",),
+            returning=True
+        )
+        print(upserted.data)  # 更新后的完整记录
+
         +++++[更多详见参数或源码]+++++
     """
     if not keys or not all(key in values for key in keys):
@@ -825,9 +829,9 @@ async def upsert(
 
     if dialect in ("postgresql", "mysql", "sqlite"):
         return await _upsert_native(
-            session, model, values, keys, updates, dialect, flush
+            session, model, values, keys, updates, dialect, returning, flush
         )
-    return await _upsert_fallback(session, model, values, keys, updates, flush)
+    return await _upsert_fallback(session, model, values, keys, updates, returning, flush)
 
 
 async def _upsert_native(
@@ -837,6 +841,7 @@ async def _upsert_native(
         keys: Sequence[str],
         updates: Sequence[str] | None,
         dialect: str,
+        returning: bool = False,
         flush: bool = False,
 ) -> Upserted:
     """使用数据库原生 upsert 语法实现
@@ -871,36 +876,13 @@ async def _upsert_native(
     if flush:
         await session.flush()
 
-    # 查询获取完整对象
-    where = {k: values[k] for k in keys if k in values}
-    obj_data = await fetch_one(session, model, where=where)
-    obj = model(**obj_data) if obj_data else model(**values)
+    rowcount = getattr(result, "rowcount", 0)
+    updated_data = None
+    if returning:
+        where = {k: values[k] for k in keys if k in values}
+        updated_data = await fetch_one(session, model, where=where)
 
-    # 判断操作类型
-    rowcount = getattr(result, "rowcount", 1)
-    if dialect == "mysql":
-        # MySQL ON DUPLICATE KEY UPDATE 返回值：
-        # - 0: 新插入行
-        # - 1: 行已存在但数据未变化
-        # - 2: 行已存在且已更新
-        if rowcount == 0:
-            action = "insert"
-        elif rowcount == 2:
-            action = "update"
-        else:
-            action = "noop"
-    else:
-        # PostgreSQL/SQLite ON CONFLICT 返回值：
-        # - 1: 新插入行
-        # - 0: 冲突但未更新（ON CONFLICT DO NOTHING）
-        if rowcount == 0:
-            action = "noop"
-        elif update_data:
-            action = "update"
-        else:
-            action = "insert"
-
-    return Upserted(data=obj, action=action)
+    return Upserted(ok=rowcount > 0, rowcount=rowcount, data=updated_data)
 
 
 async def _upsert_fallback(
@@ -909,6 +891,7 @@ async def _upsert_fallback(
         values: dict[str, Any],
         keys: Sequence[str],
         updates: Sequence[str] | None,
+        returning: bool = False,
         flush: bool = False,
 ) -> Upserted:
     """Upsert 的通用 fallback 实现（先查后改）
@@ -929,15 +912,15 @@ async def _upsert_fallback(
             await session.execute(stmt)
             if flush:
                 await session.flush()
-            updated_data = await fetch_one(session, model, where=where)
-            return Upserted(data=model(**updated_data), action="update")
-        return Upserted(data=model(**existing), action="noop")
+            updated_data = await fetch_one(session, model, where=where) if returning else None
+            return Upserted(ok=True, rowcount=1, data=updated_data)
+        return Upserted(ok=False, rowcount=0, data=existing if returning else None)
 
     obj = model(**values)
     session.add(obj)
     if flush:
         await session.flush()
-    return Upserted(data=obj, action="insert")
+    return Upserted(ok=True, rowcount=1, data=_to_dict(obj) if returning else None)
 
 
 async def batch_create(
@@ -1452,6 +1435,7 @@ class CRUDMixin:
             values: dict[str, Any],
             keys: Sequence[str],
             updates: Sequence[str] | None = None,
+            returning: bool = False,
             flush: bool = False,
     ) -> Upserted:
         """存在则更新，不存在则创建（Upsert）
@@ -1467,15 +1451,17 @@ class CRUDMixin:
             values: 完整数据字典
             keys: 唯一键字段列表，用于判断记录是否存在，如 ("id",), ("email",)
             updates: 指定更新时的字段列表，None 表示更新除 keys 外的所有字段
+            returning: 是否返回操作后的数据字典，需要额外查询
             flush: 是否立即刷入数据库，默认 False 由调用方控制事务提交
 
         Returns:
             Upserted: Upsert 操作结果
-                - data: 数据对象（SQLAlchemy 模型实例）
-                - action: 操作类型 - "insert"(新建) / "update"(更新) / "noop"(无变化)
+                - ok: True 表示操作成功（新建或更新），False 表示无修改
+                - rowcount: 影响行数（1 表示有变化，0 表示无变化）
+                - data: 操作后的数据字典（returning=True 时）
         """
         return await upsert(
-            session, cls, values=values, keys=keys, updates=updates, flush=flush
+            session, cls, values=values, keys=keys, updates=updates, returning=returning, flush=flush
         )
 
     @classmethod
