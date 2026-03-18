@@ -31,22 +31,22 @@ class ConfModel:
     """
 
     def __init__(
-            self,
-            dotenv_path: str | Path | None = None,
-            dotenv_encoding: str = "utf-8",
-            dotenv_override_env: bool = False,
-            dotenv_interpolate: bool = True,
-            yaml_path: str | Path | None = None,
-            yaml_encoding: str = "utf-8",
-            file_prefer_env: bool = True,
-            attr_prefer_env: bool = True,
-            skip_empty_env: bool = True,
-            v_from: dict = None,
-            v_converters: dict[str, VConverter] = None,
-            sep: str = ",",
-            kv_sep: str = ":",
-            ignore_unsupported_type: bool = True,
-            raise_on_error: bool = False,
+        self,
+        dotenv_path: str | Path | None = None,
+        dotenv_encoding: str = "utf-8",
+        dotenv_override_env: bool = False,
+        dotenv_interpolate: bool = True,
+        yaml_path: str | Path | None = None,
+        yaml_encoding: str = "utf-8",
+        file_prefer_env: bool = True,
+        attr_prefer_env: bool = True,
+        skip_empty_env: bool = True,
+        v_from: dict | None = None,
+        v_converters: dict[str, VConverter] | None = None,
+        sep: str = ",",
+        kv_sep: str = ":",
+        ignore_unsupported_type: bool = True,
+        raise_on_error: bool = False,
     ):
         """
         初始化
@@ -66,29 +66,31 @@ class ConfModel:
         :param ignore_unsupported_type: 忽略不支持的类型（直接设置）
         :param raise_on_error: 遇错抛异常
         """
-        _dotenv_path = (os.environ.get("dotenv_path") if file_prefer_env else None) or dotenv_path
+        _dotenv_path = (os.environ.get("DOTENV_PATH") if file_prefer_env else None) or dotenv_path
         if _dotenv_path is not None:
             if not Path(_dotenv_path).is_file():
                 raise ConfModelError(
                     f"The specified .env file does not exist or is not a regular file: {_dotenv_path!r}"
                 )
-            _dotenv_encoding = (os.environ.get("dotenv_encoding") if file_prefer_env else None) or dotenv_encoding
-            _dotenv_override_env = (os.environ.get(
-                "dotenv_override_env") if file_prefer_env else None) or dotenv_override_env
-            _dotenv_interpolate = (os.environ.get(
-                "dotenv_interpolate") if file_prefer_env else None) or dotenv_interpolate
+            _dotenv_encoding = (os.environ.get("DOTENV_ENCODING") if file_prefer_env else None) or dotenv_encoding
+            _dotenv_override_env = (
+                os.environ.get("DOTENV_OVERRIDE_ENV") if file_prefer_env else None
+            ) or dotenv_override_env
+            _dotenv_interpolate = (
+                os.environ.get("DOTENV_INTERPOLATE") if file_prefer_env else None
+            ) or dotenv_interpolate
             load_dotenv(
                 dotenv_path=_dotenv_path,
                 encoding=_dotenv_encoding,
                 override=_dotenv_override_env,
                 interpolate=_dotenv_interpolate,
             )
-        self._yaml_path = (os.environ.get("yaml_path") if file_prefer_env else None) or yaml_path
+        self._yaml_path = (os.environ.get("YAML_PATH") if file_prefer_env else None) or yaml_path
         if self._yaml_path is not None and not Path(self._yaml_path).is_file():
             raise ConfModelError(
                 f"The specified yaml file does not exist or is not a regular file: {self._yaml_path!r}"
             )
-        self._yaml_encoding = (os.environ.get("yaml_encoding") if file_prefer_env else None) or yaml_encoding
+        self._yaml_encoding = (os.environ.get("YAML_ENCODING") if file_prefer_env else None) or yaml_encoding
         self.load(
             attr_prefer_env=attr_prefer_env,
             skip_empty_env=skip_empty_env,
@@ -101,15 +103,15 @@ class ConfModel:
         )
 
     def load(
-            self,
-            attr_prefer_env: bool = True,
-            skip_empty_env: bool = True,
-            v_from: dict = None,
-            v_converters: dict[str, VConverter] = None,
-            sep: str = ",",
-            kv_sep: str = ":",
-            ignore_unsupported_type: bool = True,
-            raise_on_error: bool = False,
+        self,
+        attr_prefer_env: bool = True,
+        skip_empty_env: bool = True,
+        v_from: dict |None = None,
+        v_converters: dict[str, VConverter]|None = None,
+        sep: str = ",",
+        kv_sep: str = ":",
+        ignore_unsupported_type: bool = True,
+        raise_on_error: bool = False,
     ):
         """
         加载
@@ -138,10 +140,7 @@ class ConfModel:
                 if v is Undefined:
                     raise ConfModelError(f"Undefined required frozen variable: {k!r}")
                 continue
-            if attr_prefer_env and k in _os_environ:
-                v_from = _os_environ
-            else:
-                v_from = _v_from
+            v_from = _os_environ if attr_prefer_env and k in _os_environ else _v_from
             v = parse_variable(
                 k=k,
                 v_type=v_type,

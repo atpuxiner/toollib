@@ -240,7 +240,7 @@ class SetVSCode:
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "Python: 当前文件(调试)",
+      "name": "Python: 当前文件",
       "type": "debugpy",
       "request": "launch",
       "program": "${file}",
@@ -249,7 +249,16 @@ class SetVSCode:
       "justMyCode": true
     },
     {
-      "name": "Python: 当前模块(推荐)",
+      "name": "Python: 当前文件(切目录)",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${file}",
+      "cwd": "${fileDirname}",
+      "console": "integratedTerminal",
+      "justMyCode": true
+    },
+    {
+      "name": "Python: 当前模块",
       "type": "debugpy",
       "request": "launch",
       "module": "${relativeFileDirname}.${fileBasenameNoExtension}",
@@ -268,17 +277,7 @@ class SetVSCode:
       "justMyCode": true
     },
     {
-      "name": "Python: 指定模块(带参数)",
-      "type": "debugpy",
-      "request": "launch",
-      "module": "${input:moduleName}",
-      "cwd": "${workspaceFolder}",
-      "args": "${input:programArgs}",
-      "console": "integratedTerminal",
-      "justMyCode": true
-    },
-    {
-      "name": "Python: pytest(当前文件)",
+      "name": "Python: PYTEST(当前文件)",
       "type": "debugpy",
       "request": "launch",
       "module": "pytest",
@@ -288,52 +287,17 @@ class SetVSCode:
       "justMyCode": true
     },
     {
-      "name": "Python: pytest(指定测试)",
-      "type": "debugpy",
-      "request": "launch",
-      "module": "pytest",
-      "args": "${input:testArgs}",
-      "cwd": "${workspaceFolder}",
-      "console": "integratedTerminal",
-      "justMyCode": true
-    },
-    {
       "name": "Python: 附加到(本地进程)",
       "type": "debugpy",
       "request": "attach",
       "processId": "${command:pickProcess}"
-    },
-    {
-      "name": "Python: 附加到(远程服务)",
-      "type": "debugpy",
-      "request": "attach",
-      "connect": {
-        "host": "localhost",
-        "port": 5678
-      },
-      "pathMappings": [
-        {
-          "localRoot": "${workspaceFolder}",
-          "remoteRoot": "."
-        }
-      ]
     }
   ],
   "inputs": [
     {
-      "id": "moduleName",
-      "type": "promptString",
-      "description": "输入模块名 (例如: app.main)"
-    },
-    {
       "id": "programArgs",
       "type": "promptString",
       "description": "输入程序参数 (例如: --config config.yaml)"
-    },
-    {
-      "id": "testArgs",
-      "type": "promptString",
-      "description": "输入pytest参数 (例如: tests/test_api.py::test_login)"
     }
   ]
 }

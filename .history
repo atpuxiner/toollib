@@ -3,6 +3,7 @@
 ## v2.1.5
 - opt@调整vscode配置
 - fix@数据库upsert结果
+- opt@优化配置模型
 
 ## v2.1.4
 - opt@规范参数
