@@ -10,8 +10,8 @@
 import os
 
 from toollib import utils
-from toollib.tcli.base import BaseCmd
 from toollib.common import constor
+from toollib.tcli.base import BaseCmd
 from toollib.tcli.option import Options
 
 

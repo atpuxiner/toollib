@@ -12,7 +12,7 @@ import sys
 
 from toollib.tcli.base import BaseCmd
 from toollib.tcli.commands.plugins.aliyun_mirrors import mirrors_cmds
-from toollib.tcli.option import Options, Arg
+from toollib.tcli.option import Arg, Options
 
 
 class Cmd(BaseCmd):

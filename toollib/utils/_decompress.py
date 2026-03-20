@@ -2,19 +2,17 @@ import stat
 import tarfile
 import traceback
 from pathlib import Path
-from typing import Union
 
 from toollib.common import rarfile, zipfile
-
 from toollib.utils import listfile
 
 
 def decompress(
-        src: Union[str, Path],
-        dst: Union[str, Path] = None,
-        pattern: str = '*[.pzr2]',
-        is_r: bool = False,
-        is_raise: bool = True,
+    src: str | Path,
+    dst: str | Path | None = None,
+    pattern: str = "*[.pzr2]",
+    is_r: bool = False,
+    is_raise: bool = True,
 ) -> int:
     """
     解压文件
@@ -35,12 +33,17 @@ def decompress(
     :return: count（解压数量）
     """
     _support_types = [
-        '.zip',
-        '.rar',
-        '.tar',
-        '.gz', '.tgz',
-        '.xz', '.txz',
-        '.bz2', '.tbz', '.tbz2', '.tb2',
+        ".zip",
+        ".rar",
+        ".tar",
+        ".gz",
+        ".tgz",
+        ".xz",
+        ".txz",
+        ".bz2",
+        ".tbz",
+        ".tbz2",
+        ".tb2",
     ]
     src = Path(src).absolute()
     src_is_dir = False
@@ -49,7 +52,7 @@ def decompress(
         src_files = listfile(src, pattern=pattern, is_r=is_r)
     else:
         if src.suffix not in _support_types:
-            raise ValueError('only supported: %s' % _support_types)
+            raise ValueError(f"only supported: {_support_types}")
         src_files = [src]
     if not dst:
         dst_dir = src.absolute() if src_is_dir else src.absolute().parent
@@ -59,7 +62,7 @@ def decompress(
     dst_dir.chmod(stat.S_IRWXU)
     count = 0
     for src_file in src_files:
-        file_name, file_type = src_file.name, src_file.suffix
+        _, file_type = src_file.name, src_file.suffix
         if file_type:
             file_type = file_type.lower()
             if file_type not in _support_types:
@@ -67,17 +70,17 @@ def decompress(
         else:
             continue
         try:
-            if file_type == '.zip':
+            if file_type == ".zip":
                 zip_file = zipfile.ZipFile(src_file)
                 for f in zip_file.namelist():
                     zip_file.extract(f, dst_dir)
                 zip_file.close()
-            elif file_type == '.rar':
+            elif file_type == ".rar":
                 rar_file = rarfile.RarFile(src_file)
                 rar_file.extractall(dst_dir)
                 rar_file.close()
             else:
-                tar_file = tarfile.open(src_file)
+                tar_file = tarfile.open(src_file)  # noqa: SIM115
                 for name in tar_file.getnames():
                     tar_file.extract(name, dst_dir)
                 tar_file.close()

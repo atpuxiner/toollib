@@ -1,14 +1,14 @@
 from datetime import datetime
-from typing import Literal, Union
+from typing import Literal
 from zoneinfo import ZoneInfo
 
 
 def timestamp2time(
-        timestamp: Union[int, float],
-        unit: Literal['s', 'ms', 'us', 'ns'] = "ms",
-        fmt: str = None,
-        tzname: str = None,
-) -> Union[datetime, str]:
+    timestamp: int | float,
+    unit: Literal["s", "ms", "us", "ns"] = "ms",
+    fmt: str | None = None,
+    tzname: str | None = None,
+) -> datetime | str:
     """
     时间戳转时间对象或时间字符串(fmt若存在)
 

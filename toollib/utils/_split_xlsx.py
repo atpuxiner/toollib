@@ -1,19 +1,21 @@
 import warnings
+from collections.abc import Generator
 from pathlib import Path
-from typing import Generator, Literal
-from openpyxl import load_workbook, Workbook
+from typing import Literal
+
+from openpyxl import Workbook, load_workbook
 
 
 def split_xlsx(
-        filepath: str,
-        max_rows: int,
-        max_files: int = None,
-        output_dir: str = None,
-        part_sep: str = "_",
-        part_prefix: str = "",
-        part_zfill: int = 3,
-        part_pos: Literal["after", "before"] = "after",
-        sheet_name: int | str = 0,
+    filepath: str,
+    max_rows: int,
+    max_files: int | None = None,
+    output_dir: str | None = None,
+    part_sep: str = "_",
+    part_prefix: str = "",
+    part_zfill: int = 3,
+    part_pos: Literal["after", "before"] = "after",
+    sheet_name: int | str = 0,
 ) -> Generator[str, None, None]:
     """
     分割 xlsx 文件
@@ -65,7 +67,7 @@ def split_xlsx(
     try:
         header = next(rows_iter)
     except StopIteration:
-        warnings.warn("No rows found in the sheet.")
+        warnings.warn("No rows found in the sheet.", stacklevel=2)
         wb_src.close()
         return
 
@@ -83,7 +85,7 @@ def split_xlsx(
                 file_name = f"{src_path.stem}{part_sep}{part_name}{src_path.suffix}"
             else:
                 file_name = f"{part_name}{part_sep}{src_path.stem}{src_path.suffix}"
-            out_path = output_dir / file_name
+            out_path = output_dir / file_name  # type: ignore
             out_wb = Workbook()
             out_ws = out_wb.active
             out_ws.title = target_sheet_name

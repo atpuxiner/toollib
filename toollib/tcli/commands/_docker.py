@@ -17,7 +17,7 @@ from toollib.common import constor
 from toollib.decorator import sys_required
 from toollib.tcli import here
 from toollib.tcli.base import BaseCmd
-from toollib.tcli.option import Options, Arg
+from toollib.tcli.option import Arg, Options
 
 
 class Cmd(BaseCmd):
@@ -87,17 +87,16 @@ class Cmd(BaseCmd):
                 print(f"{name}: 抱歉暂未收录")
             else:
                 existing_content = ""
-                file_exists_and_nonempty = False
+                has_content = False
                 if os.path.isfile(yaml_path):
                     with open(yaml_path, "r", encoding="utf-8") as fp:
                         existing_content = fp.read().rstrip()
                     if existing_content:
-                        file_exists_and_nonempty = True
-                if file_exists_and_nonempty:
+                        has_content = True
+                if has_content:
                     if re.search(rf"\r?\n\s\s{name}(-\w*)?:\s*\r?\n", existing_content):
                         print(f"{name}: `{yaml_path}`疑似存在")
                         continue
-                if file_exists_and_nonempty:
                     yaml_to_write = existing_content + "\n" + yaml_conf
                 else:
                     yaml_to_write = "services:\n" + yaml_conf
@@ -112,10 +111,7 @@ class Cmd(BaseCmd):
     def _search_yaml_conf(self, names: str):
         with open(self.yaml_path, "r") as fp:
             yaml_text = fp.read()
-            if names == "all":
-                namelist = self._findall_services()
-            else:
-                namelist = names.split(",")
+            namelist = self._findall_services() if names == "all" else names.split(",")
             for n in namelist:
                 regex = r"\r?\n(\s{2}" + n + r"(-\w*)?:\s*.*?)(?=\r?\n\s*\r?\n|$)"
                 matches = re.search(regex, yaml_text, re.DOTALL)

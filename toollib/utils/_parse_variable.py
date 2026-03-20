@@ -1,19 +1,19 @@
 import warnings
-from typing import Type, Any, get_origin
+from typing import Any, get_origin
 
-from toollib.utils import VFrom, VConverter
+from toollib.utils import VConverter, VFrom
 
 
 def parse_variable(
-        k: str,
-        v_type: Type[Any],
-        v_from: VFrom,
-        v_converter: VConverter = None,
-        default: Any = None,
-        sep: str = ",",
-        kv_sep: str = ":",
-        ignore_unsupported_type: bool = True,
-        raise_on_error: bool = False,
+    k: str,
+    v_type: type[Any],
+    v_from: VFrom,
+    v_converter: VConverter | None = None,
+    default: Any = None,
+    sep: str = ",",
+    kv_sep: str = ":",
+    ignore_unsupported_type: bool = True,
+    raise_on_error: bool = False,
 ):
     """
     解析变量
@@ -70,7 +70,7 @@ def parse_variable(
                     )
                 return res
             elif v_type is int:
-                if '.' in v:
+                if "." in v:
                     f = float(v)
                     if not f.is_integer():
                         raise ValueError(f"Cannot convert non-integer float string to int for {k!r}: {v!r}")
@@ -82,17 +82,16 @@ def parse_variable(
                 return v_type([vv for v in v.split(sep) if (vv := v.strip())])
             elif v_type is dict:
                 return {
-                    (parts := item.strip().split(kv_sep, 1))[0].strip():
-                        parts[1].strip() if len(parts) > 1 else None
+                    (parts := item.strip().split(kv_sep, 1))[0].strip(): parts[1].strip() if len(parts) > 1 else None
                     for item in v.split(sep)
                     if item.strip()
                 }
         return v_type(v)
     except (
-            AttributeError,
-            ValueError,
-            TypeError,
-            Exception,
+        AttributeError,
+        ValueError,
+        TypeError,
+        Exception,
     ) as e:
         if raise_on_error:
             raise

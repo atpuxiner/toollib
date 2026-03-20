@@ -6,6 +6,7 @@
 @description
 @history
 """
+
 import importlib
 import sys
 
@@ -14,7 +15,6 @@ from toollib.tcli import helper
 
 
 class Cmd:
-
     def __init__(self, argv=None):
         self.argv = argv or sys.argv[1:]
         self.commands = self.find_commands()
@@ -24,26 +24,25 @@ class Cmd:
             sys.exit()
         curr_command = self.argv[0]
         self._check_command(curr_command)
-        self.argv[0] = curr_command.replace('-', '_')
+        self.argv[0] = curr_command.replace("-", "_")
 
     def _check_command(self, command):
         if command not in self.commands:
-            if command in ['-h', '--help']:
+            if command in ["-h", "--help"]:
                 sys.stdout.write(self.usage)
                 sys.exit()
-            sys.stderr.write("ERROR: Unknown command '%s'\n" % command)
+            sys.stderr.write(f"ERROR: Unknown command '{command}'\n")
             sys.stderr.write(self.usage)
             sys.exit(1)
 
     @staticmethod
     def find_commands():
-        commands_dir = here.joinpath('tcli/commands')
-        commands = [cmd.stem[1:].replace('_', '-') for cmd in commands_dir.rglob('_*.py')
-                    if cmd.stem != '__init__']
+        commands_dir = here.joinpath("tcli/commands")
+        commands = [cmd.stem[1:].replace("_", "-") for cmd in commands_dir.rglob("_*.py") if cmd.stem != "__init__"]
         return commands
 
     def load_command_class(self):
-        cmdmod = importlib.import_module('toollib.tcli.commands._%s' % self.argv[0])
+        cmdmod = importlib.import_module(f"toollib.tcli.commands._{self.argv[0]}")
         return cmdmod.Cmd()
 
     def execute(self):

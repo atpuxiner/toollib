@@ -1,16 +1,16 @@
 import csv
 import warnings
-from typing import Generator
+from collections.abc import Generator
 
 from toollib.utils import detect_encoding
 
 
 def read_csv(
-        filepath: str,
-        column_names: list[str] = None,
-        min_rows: int = None,
-        max_rows: int = None,
-        encoding: str = None,
+    filepath: str,
+    column_names: list[str] | None = None,
+    min_rows: int | None = None,
+    max_rows: int | None = None,
+    encoding: str | None = None,
 ) -> Generator[tuple[int, dict], None, None]:
     """
     读取 csv 文件
@@ -30,11 +30,11 @@ def read_csv(
     :return:
     """
     encoding = encoding or detect_encoding(filepath)
-    with open(filepath, 'r', encoding=encoding, newline='') as file:
+    with open(filepath, "r", encoding=encoding, newline="") as file:
         reader = csv.DictReader(file)
         actual_headers = reader.fieldnames
         if actual_headers is None:
-            warnings.warn("No rows found in the file.")
+            warnings.warn("No rows found in the file.", stacklevel=2)
             return
         final_columns: list[str] = column_names if column_names is not None else actual_headers
         for idx, row_dict in enumerate(reader):

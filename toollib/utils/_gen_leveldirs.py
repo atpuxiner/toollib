@@ -2,12 +2,12 @@ import os
 
 
 def gen_leveldirs(
-        tag: str,
-        number: int = 3,
-        length: int = 2,
-        is_keep_extra: bool = False,
-        prefix: str = None,
-        sep: str = os.sep,
+    tag: str,
+    number: int = 3,
+    length: int = 2,
+    is_keep_extra: bool = False,
+    prefix: str | None = None,
+    sep: str = os.sep,
 ) -> str:
     """
     生成层级目录
@@ -27,9 +27,9 @@ def gen_leveldirs(
     :param sep: 分隔符
     :return:
     """
-    dirs = [d for i in range(0, number * length, length) if (d := tag[i:i + length])]
+    dirs = [d for i in range(0, number * length, length) if (d := tag[i : i + length])]
     if is_keep_extra:
-        dirs.append(tag[len(''.join(dirs)):])
+        dirs.append(tag[len("".join(dirs)) :])
     if prefix:
         dirs.insert(0, prefix)
     return sep.join(filter(bool, dirs))

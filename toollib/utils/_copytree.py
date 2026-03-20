@@ -1,15 +1,15 @@
 import re
 import shutil
+from collections.abc import Callable
 from pathlib import Path
-from typing import Callable
 
 
 def copytree(
-        src: str | Path,
-        dst: str | Path,
-        ignore_regex: str | None = None,
-        dirs_exist_ok: bool = False,
-        copy_function: Callable[[str, str], None] = shutil.copy2,
+    src: str | Path,
+    dst: str | Path,
+    ignore_regex: str | None = None,
+    dirs_exist_ok: bool = False,
+    copy_function: Callable[[str, str], None] = shutil.copy2,
 ):
     """
     复制目录树

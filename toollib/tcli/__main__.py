@@ -6,6 +6,7 @@
 @description
 @history
 """
+
 from toollib.tcli.cmder import run
 
 
@@ -13,5 +14,5 @@ def main():
     run()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

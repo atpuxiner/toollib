@@ -20,9 +20,6 @@ def get_cls_attrs(cls) -> dict:
     """
     attrs = {}
     for attr_name, attr_type in get_type_hints(cls).items():
-        if hasattr(cls, attr_name):
-            attr_value = getattr(cls, attr_name)
-        else:
-            attr_value = Undefined
+        attr_value = getattr(cls, attr_name) if hasattr(cls, attr_name) else Undefined
         attrs[attr_name] = (attr_type, attr_value)
     return attrs

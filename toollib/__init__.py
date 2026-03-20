@@ -6,8 +6,9 @@
 @description
 @history
 """
+
 from pathlib import Path
 
 here = Path(__file__).absolute().parent
 
-__version__ = "2.1.5"
+__version__ = "2.1.6"

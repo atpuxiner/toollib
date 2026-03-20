@@ -6,12 +6,14 @@
 @description
 @history
 """
+
 import os
 import re
+from contextlib import suppress
 from pathlib import Path
 from shutil import rmtree
 
-from setuptools import setup, Command
+from setuptools import Command, setup
 
 here = Path(__file__).absolute().parent
 pkg_name = "toollib"
@@ -35,10 +37,8 @@ class BuildCommand(Command):
     @staticmethod
     def _clean_dist_dirs():
         for path in ["dist", "build", f"{pkg_name}.egg-info"]:
-            try:
+            with suppress(FileNotFoundError):
                 rmtree(here / path)
-            except FileNotFoundError:
-                pass
 
     @staticmethod
     def _update_version():

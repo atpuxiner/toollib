@@ -14,7 +14,7 @@ import sys
 from importlib import metadata
 
 from toollib.tcli.base import BaseCmd
-from toollib.tcli.option import Options, Arg
+from toollib.tcli.option import Arg, Options
 
 
 class Cmd(BaseCmd):
@@ -60,7 +60,7 @@ class Cmd(BaseCmd):
                                     continue
                                 pkgs[i] = pkg
                 if not pkgs:
-                    sys.stdout.write(f"TIP: No matching package\n")
+                    sys.stdout.write("TIP: No matching package\n")
                     sys.exit()
                 if pip_pkgs := [p for p in pkgs.values() if p not in ["toollib", "pytcli"]]:
                     subprocess.run(["pip", "install", "-U", *pip_pkgs], check=True)

@@ -7,7 +7,7 @@ import yaml
 from dotenv import load_dotenv
 
 from toollib.common.error import ConfModelError
-from toollib.utils import VConverter, FrozenVar, Undefined, get_cls_attrs, parse_variable
+from toollib.utils import FrozenVar, Undefined, VConverter, get_cls_attrs, parse_variable
 
 
 class ConfModel:
@@ -106,8 +106,8 @@ class ConfModel:
         self,
         attr_prefer_env: bool = True,
         skip_empty_env: bool = True,
-        v_from: dict |None = None,
-        v_converters: dict[str, VConverter]|None = None,
+        v_from: dict | None = None,
+        v_converters: dict[str, VConverter] | None = None,
         sep: str = ",",
         kv_sep: str = ":",
         ignore_unsupported_type: bool = True,

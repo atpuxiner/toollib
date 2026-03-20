@@ -1,14 +1,14 @@
 from datetime import datetime
-from typing import Literal, Union
+from typing import Literal
 from zoneinfo import ZoneInfo
 
 
 def timestr2time(
-        timestr: str,
-        fmt: str = None,
-        unit: Literal['fs', 's', 'ms', 'us', 'ns'] = None,
-        tzname: str = None,
-) -> Union[datetime, int, float]:
+    timestr: str,
+    fmt: str | None = None,
+    unit: Literal["fs", "s", "ms", "us", "ns"] | None = None,
+    tzname: str | None = None,
+) -> datetime | int | float:
     """
     时间字符串转时间对象或时间戳(unit若存在)
 
@@ -26,10 +26,7 @@ def timestr2time(
     """
     if "T" in timestr:
         timestr = timestr.replace("Z", "+00:00")
-    if not fmt:
-        dt = datetime.fromisoformat(timestr)
-    else:
-        dt = datetime.strptime(timestr, fmt)
+    dt = datetime.fromisoformat(timestr) if not fmt else datetime.strptime(timestr, fmt)
     if unit:
         if tzname:
             dt = dt.replace(tzinfo=ZoneInfo(tzname))

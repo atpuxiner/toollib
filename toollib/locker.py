@@ -6,12 +6,12 @@
 @description
 @history
 """
+
 import time
-import typing as t
 
 from redis.exceptions import WatchError
 
-__all__ = ['Locker']
+__all__ = ["Locker"]
 
 
 class Locker:
@@ -41,12 +41,12 @@ class Locker:
     """
 
     def __init__(
-            self,
-            redis_cli,
-            acquire_timeout: int = 2,
-            timeout: int = 30,
-            lock_name: str = 'locker',
-            lock_value: str = 'locker!@#',
+        self,
+        redis_cli,
+        acquire_timeout: int = 2,
+        timeout: int = 30,
+        lock_name: str = "locker",
+        lock_value: str = "locker!@#",
     ):
         """
         初始化
@@ -59,11 +59,11 @@ class Locker:
         self.redis_cli = redis_cli
         self.acquire_timeout = acquire_timeout
         self.timeout = timeout
-        self.lock_name = lock_name if lock_name else 'locker'
-        self.lock_value = lock_value if lock_value else 'locker!@#'
+        self.lock_name = lock_name if lock_name else "locker"
+        self.lock_value = lock_value if lock_value else "locker!@#"
         self.is_lock = False
 
-    def acquire(self, acquire_timeout: t.Union[int, float] = None, timeout: int = None) -> bool:
+    def acquire(self, acquire_timeout: int | float | None = None, timeout: int | None = None) -> bool:
         """
         获取锁
         :param acquire_timeout: 获取锁的超时时间

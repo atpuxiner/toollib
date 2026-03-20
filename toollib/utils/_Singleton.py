@@ -13,6 +13,7 @@ class Singleton(type):
 
         +++++[更多详见参数或源码]+++++
     """
+
     _instances = {}
     _locks = {}
 
@@ -22,5 +23,5 @@ class Singleton(type):
                 cls._locks[cls] = Lock()
             with cls._locks[cls]:
                 if cls not in cls._instances:
-                    cls._instances[cls] = super(Singleton, cls).__call__(*args, **kwargs)
+                    cls._instances[cls] = super().__call__(*args, **kwargs)
         return cls._instances[cls]

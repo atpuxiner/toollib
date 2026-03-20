@@ -1,8 +1,7 @@
 import tempfile
-from typing import Union
 
 
-def writetemp(content: Union[bytes, str], suffix: str, **kwargs) -> str:
+def writetemp(content: bytes | str, suffix: str, **kwargs) -> str:
     """
     写入临时文件
 
@@ -18,10 +17,10 @@ def writetemp(content: Union[bytes, str], suffix: str, **kwargs) -> str:
     :return:
     """
     with tempfile.NamedTemporaryFile(
-            suffix=suffix,
-            mode="w+b" if isinstance(content, bytes) else "w+",
-            delete=False,
-            **kwargs,
+        suffix=suffix,
+        mode="w+b" if isinstance(content, bytes) else "w+",
+        delete=False,
+        **kwargs,
     ) as f:
         f.write(content)
         return f.name

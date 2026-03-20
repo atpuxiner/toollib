@@ -1,10 +1,10 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from zoneinfo import ZoneInfo
 
 
 def now2timestr(
-        fmt: str = "%Y-%m-%d %H:%M:%S",
-        tzname="Asia/Shanghai",
+    fmt: str = "%Y-%m-%d %H:%M:%S",
+    tzname="Asia/Shanghai",
 ) -> str:
     """
     获取当前时间字符串
@@ -19,4 +19,4 @@ def now2timestr(
     :param tzname: 时区名称
     :return:
     """
-    return datetime.now(timezone.utc).astimezone(ZoneInfo(tzname)).strftime(fmt)
+    return datetime.now(UTC).astimezone(ZoneInfo(tzname)).strftime(fmt)

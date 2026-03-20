@@ -6,17 +6,16 @@
 @description
 @history
 """
+
 import time
 from datetime import datetime, timedelta
-
-import typing as t
 
 from toollib.common.error import SystemClockError
 from toollib.utils import Singleton, now2timestr
 
 __all__ = [
-    'SnowFlake',
-    'RedisUid',
+    "SnowFlake",
+    "RedisUid",
 ]
 
 
@@ -43,15 +42,15 @@ class SnowFlake(metaclass=Singleton):
     """
 
     def __init__(
-            self,
-            worker_id: int = 0,
-            datacenter_id: int = 0,
-            sequence=0,
-            epoch_timestamp: int = 1288834974657,
-            worker_id_bits: int = 5,
-            datacenter_id_bits: int = 5,
-            sequence_bits: int = 12,
-            to_str: bool = False,
+        self,
+        worker_id: int = 0,
+        datacenter_id: int = 0,
+        sequence=0,
+        epoch_timestamp: int = 1288834974657,
+        worker_id_bits: int = 5,
+        datacenter_id_bits: int = 5,
+        sequence_bits: int = 12,
+        to_str: bool = False,
     ):
         """
         初始化
@@ -91,7 +90,7 @@ class SnowFlake(metaclass=Singleton):
 
         self.to_str = to_str
 
-    def gen_uid(self, to_str: bool = None):
+    def gen_uid(self, to_str: bool | None = None):
         """
         生成唯一id
         :param to_str: 是否转为字符串(可覆盖cls中的to_str)
@@ -101,8 +100,9 @@ class SnowFlake(metaclass=Singleton):
             to_str = self.to_str
         timestamp = self._current_timestamp()
         if timestamp < self.last_timestamp:
-            raise SystemClockError("Clock moved backwards. Refusing to generate id for %s milliseconds" % (
-                    self.last_timestamp - timestamp))
+            raise SystemClockError(
+                "Clock moved backwards. Refusing to generate id for %s milliseconds" % (self.last_timestamp - timestamp)
+            )
         if timestamp == self.last_timestamp:
             self.sequence = (self.sequence + 1) & self.sequence_mask
             if self.sequence == 0:
@@ -110,9 +110,12 @@ class SnowFlake(metaclass=Singleton):
         else:
             self.sequence = 0
         self.last_timestamp = timestamp
-        uid = ((timestamp - self.epoch_timestamp) << self.timestamp_left_shift) | \
-              (self.datacenter_id << self.datacenter_id_shift) | \
-              (self.worker_id << self.worker_id_shift) | self.sequence
+        uid = (
+            ((timestamp - self.epoch_timestamp) << self.timestamp_left_shift)
+            | (self.datacenter_id << self.datacenter_id_shift)
+            | (self.worker_id << self.worker_id_shift)
+            | self.sequence
+        )
         if to_str is True:
             uid = str(uid)
         return uid
@@ -143,15 +146,15 @@ class RedisUid:
     """
 
     def __init__(
-            self,
-            redis_cli,
-            prefix: str = None,
-            seq_name: str = None,
-            seq_beg: int = 0,
-            seq_len: int = 9,
-            seq_ex: datetime = None,
-            date_fmt: t.Union[str, NoneType] = '%Y%m%d',
-            sep: str = '',
+        self,
+        redis_cli,
+        prefix: str | None = None,
+        seq_name: str | None = None,
+        seq_beg: int = 0,
+        seq_len: int = 9,
+        seq_ex: datetime | None = None,
+        date_fmt: str | None = "%Y%m%d",
+        sep: str = "",
     ):
         """
         初始化
@@ -199,13 +202,10 @@ class RedisUid:
         if self.redis_cli.ttl(self.seq_name) < 0:
             self.redis_cli.set(self.seq_name, self.seq_beg)
             self.redis_cli.expireat(self.seq_name, self._set_ex(self.seq_ex))
-        _prefix = self.prefix or ''
-        _date_value = now2timestr(self.date_fmt) if self.date_fmt else ''
+        _prefix = self.prefix or ""
+        _date_value = now2timestr(self.date_fmt) if self.date_fmt else ""
         _seq_value = self.redis_cli.incrby(self.seq_name, seq_step)
-        uid = self.sep.join([
-            _prefix,
-            _date_value,
-            str(_seq_value).zfill(self.seq_len)]).lstrip(self.sep)
+        uid = self.sep.join([_prefix, _date_value, str(_seq_value).zfill(self.seq_len)]).lstrip(self.sep)
         return uid
 
     @staticmethod

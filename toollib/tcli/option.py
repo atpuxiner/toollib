@@ -6,26 +6,30 @@
 @description
 @history
 """
-import typing as t
+
+from collections.abc import Callable, Iterable
+from typing import Any
+
 from toollib.validator import Attr
 
 
 class Arg:
-
-    def __init__(self,
-                 *name_or_flags: str,
-                 action: str = None,
-                 nargs: t.Union[int, str] = None,
-                 const: t.Any = None,
-                 default: t.Any = None,
-                 type: type = None,
-                 choices: t.Iterable = None,
-                 required: bool = False,
-                 help: str = None,
-                 metavar: t.Union[str, t.Tuple[str]] = None,
-                 dest: str = None,
-                 version: str = None,
-                 **kwargs: t.Any):
+    def __init__(
+        self,
+        *name_or_flags: str,
+        action: str | None = None,
+        nargs: int | str | None = None,
+        const: Any = None,
+        default: Any = None,
+        type: type | None = None,
+        choices: Iterable | None = None,
+        required: bool = False,
+        help: str | None = None,
+        metavar: str | tuple[str] | None = None,
+        dest: str | None = None,
+        version: str | None = None,
+        **kwargs,
+    ):
         self.name_or_flags = name_or_flags
         self.action = action
         self.nargs = nargs
@@ -44,14 +48,14 @@ class Arg:
     @property
     def parse_arg(self):
         arg = {k: v for k, v in self.__dict__.items() if v}
-        return arg.pop('name_or_flags'), arg
+        return arg.pop("name_or_flags"), arg
 
 
 def check_optional(optional):
     for subcmd, args in optional.items():
         if callable(subcmd) is False:
             raise TypeError('"subcmd" only supported: Callable')
-        errmsg = '"optional" value only supported: Union[List[Arg], None]'
+        errmsg = '"optional" value only supported: list[Arg] | None'
         if not isinstance(args, (list, type(None))):
             raise TypeError(errmsg)
         if args:
@@ -61,11 +65,14 @@ def check_optional(optional):
 
 
 class Options:
-
-    name: str = Attr('name', str, required=True)
-    desc: str = Attr('desc', str, required=True)
-    optional: t.Dict[t.Callable, t.Union[t.List[Arg], None]] = Attr(
-        'optional', dict, required=True, callback=check_optional)
+    name: str = Attr("name", str, required=True)
+    desc: str = Attr("desc", str, required=True)
+    optional: dict[Callable, list[Arg] | None] = Attr(
+        "optional",
+        dict,
+        required=True,
+        callback=check_optional,
+    )
 
     def __init__(self, name, desc, optional):
         self.name = name

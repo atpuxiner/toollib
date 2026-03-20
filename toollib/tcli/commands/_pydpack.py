@@ -11,7 +11,7 @@ import sys
 
 from toollib.pyd import PydPacker
 from toollib.tcli.base import BaseCmd
-from toollib.tcli.option import Options, Arg
+from toollib.tcli.option import Arg, Options
 
 
 class Cmd(BaseCmd):

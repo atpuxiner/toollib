@@ -15,7 +15,7 @@ import sys
 from toollib.decorator import sys_required
 from toollib.tcli import here
 from toollib.tcli.base import BaseCmd
-from toollib.tcli.option import Options, Arg
+from toollib.tcli.option import Arg, Options
 
 
 class Cmd(BaseCmd):

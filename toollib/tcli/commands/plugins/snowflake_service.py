@@ -6,26 +6,28 @@
 @description
 @history
 """
+
 import os
 import sys
 
 from toollib.guid import SnowFlake
+
 try:
     import uvicorn
     from fastapi import FastAPI
 except ImportError as err:
-    sys.stderr.write(f'ERROR: {err}\n')
+    sys.stderr.write(f"ERROR: {err}\n")
     sys.exit(1)
 
 app = FastAPI()
 
-snow = SnowFlake(epoch_timestamp=int(os.environ.setdefault('epoch-timestamp', '1288834974657')))
+snow = SnowFlake(epoch_timestamp=int(os.environ.setdefault("epoch-timestamp", "1288834974657")))
 
 
-@app.get('/gen-snowid')
+@app.get("/gen-snowid")
 async def gen_snowid(to_str: bool = False):
     snowid = snow.gen_uid(to_str=to_str)
-    return {'snowid': snowid}
+    return {"snowid": snowid}
 
 
 def run(host: str, port: int, workers: int):

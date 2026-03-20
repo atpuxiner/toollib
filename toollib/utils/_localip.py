@@ -1,7 +1,7 @@
 import socket
 
 
-def localip(dns_servers: list[str] = None) -> str:
+def localip(dns_servers: list[str] | None = None) -> str:
     """
     本地ip
 
@@ -23,12 +23,13 @@ def localip(dns_servers: list[str] = None) -> str:
         "8.8.8.8",  # 谷歌DNS
     ]
     for dns in dns_servers if dns_servers else default_dns:
+        s = None
         try:
             with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
                 s.settimeout(2)
                 s.connect((dns, 80))
                 return s.getsockname()[0]
-        except (socket.timeout, OSError, Exception):
+        except (TimeoutError, OSError, Exception):
             continue
         finally:
             if isinstance(s, socket.socket):

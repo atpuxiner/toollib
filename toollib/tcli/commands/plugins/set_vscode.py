@@ -7,12 +7,12 @@
 @history
 """
 
-from datetime import datetime
 import json
 import os
-from pathlib import Path
-import subprocess
 import shutil
+import subprocess
+from datetime import datetime
+from pathlib import Path
 
 
 class SetVSCode:
@@ -403,6 +403,7 @@ ignore = [
   "UP015",
   "RUF022",
   "RUF012",
+  "RUF023",
 ]
 
 [tool.ruff.lint.per-file-ignores]

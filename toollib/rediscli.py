@@ -6,9 +6,10 @@
 @description
 @history
 """
-from redis import Redis, ConnectionPool
 
-__all__ = ['RedisCli']
+from redis import ConnectionPool, Redis
+
+__all__ = ["RedisCli"]
 
 
 class RedisCli:
@@ -42,13 +43,13 @@ class RedisCli:
     """
 
     def __init__(
-            self,
-            host="localhost",
-            port=6379,
-            db=0,
-            password=None,
-            max_connections=None,
-            **kwargs,
+        self,
+        host="localhost",
+        port=6379,
+        db=0,
+        password=None,
+        max_connections=None,
+        **kwargs,
     ):
         """
         初始化

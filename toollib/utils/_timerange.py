@@ -4,10 +4,10 @@ from toollib.utils import timestr2time
 
 
 def timerange(
-        start: str,
-        end: str = None,
-        fmt: str = None,
-        unit: Literal['fs', 's', 'ms', 'us', 'ns'] = None,
+    start: str,
+    end: str | None = None,
+    fmt: str | None = None,
+    unit: Literal["fs", "s", "ms", "us", "ns"] | None = None,
 ) -> tuple:
     """
     时间范围

@@ -25,23 +25,28 @@ e.g.::
 
     +++++[更多详见参数或源码]+++++
 """
-from collections.abc import Mapping, Sequence
+
+from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass, field
-from typing import Any, Callable
+from typing import Any
 
 from sqlalchemy import (
-    select,
-    func,
-    text,
-    update as sa_update,
-    delete as sa_delete,
-    inspect,
     ColumnElement,
+    func,
+    inspect,
+    select,
+    text,
 )
-from sqlalchemy.engine import Result
+from sqlalchemy import (
+    delete as sa_delete,
+)
+from sqlalchemy import (
+    update as sa_update,
+)
 from sqlalchemy.dialects.mysql import insert as mysql_insert
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.dialects.sqlite import insert as sqlite_insert
+from sqlalchemy.engine import Result
 from sqlalchemy.ext.asyncio import AsyncSession
 
 __all__ = [
@@ -137,9 +142,7 @@ class BulkInserted:
 
     ok: bool  # 是否成功
     rowcount: int = 0  # 插入数量
-    data: list[dict[str, Any]] = field(
-        default_factory=list
-    )  # 插入的数据（可能包含默认值）
+    data: list[dict[str, Any]] = field(default_factory=list)  # 插入的数据（可能包含默认值）
 
     def __bool__(self) -> bool:
         return self.ok
@@ -156,10 +159,7 @@ def _dialect(session: AsyncSession) -> str:
 
 
 def _build_where_clauses(
-        model, where: dict[str, Any]
-        | ColumnElement[Any]
-        | Sequence[ColumnElement[Any]]
-        | None = None
+    model, where: dict[str, Any] | ColumnElement[Any] | Sequence[ColumnElement[Any]] | None = None
 ) -> list[ColumnElement[Any]]:
     """构建 where 条件列表
 
@@ -245,9 +245,9 @@ def _parse_order_by(model, order_by: str | Sequence[str]) -> list[ColumnElement[
 
 
 def format_row(
-        row,
-        columns: Sequence[str],
-        converters: dict[str, Callable] | None = None,
+    row,
+    columns: Sequence[str],
+    converters: dict[str, Callable] | None = None,
 ) -> dict[str, Any]:
     """格式化单行结果
 
@@ -261,7 +261,7 @@ def format_row(
     """
     if not row:
         return {}
-    data = row._asdict() if hasattr(row, "_asdict") else dict(zip(columns, row))
+    data = row._asdict() if hasattr(row, "_asdict") else dict(zip(columns, row, strict=False))
     if converters:
         for key, converter in converters.items():
             if key in data:
@@ -270,9 +270,9 @@ def format_row(
 
 
 def format_rows(
-        rows,
-        columns: Sequence[str],
-        converters: dict[str, Callable] | None = None,
+    rows,
+    columns: Sequence[str],
+    converters: dict[str, Callable] | None = None,
 ) -> list[dict[str, Any]]:
     """格式化多行结果
 
@@ -286,10 +286,7 @@ def format_rows(
     """
     if not rows:
         return []
-    return [
-        format_row(row, columns, converters)
-        for row in rows
-    ]
+    return [format_row(row, columns, converters) for row in rows]
 
 
 # -----------------------------------------------------------------------------
@@ -298,16 +295,13 @@ def format_rows(
 
 
 async def fetch_one(
-        session: AsyncSession,
-        model,
-        *,
-        columns: Sequence[str] | None = None,
-        where: dict[str, Any]
-        | ColumnElement[Any]
-        | Sequence[ColumnElement[Any]]
-        | None = None,
-        order_by: str | Sequence[str] | None = None,
-        converters: dict[str, Callable] | None = None,
+    session: AsyncSession,
+    model,
+    *,
+    columns: Sequence[str] | None = None,
+    where: dict[str, Any] | ColumnElement[Any] | Sequence[ColumnElement[Any]] | None = None,
+    order_by: str | Sequence[str] | None = None,
+    converters: dict[str, Callable] | None = None,
 ) -> dict[str, Any] | None:
     """查询单条记录
 
@@ -351,7 +345,7 @@ async def fetch_one(
 
     stmt = select(*selected_columns).select_from(model)
 
-    if where:
+    if where:  # type: ignore
         stmt = stmt.where(*_build_where_clauses(model, where))
     if order_by:
         stmt = stmt.order_by(*_parse_order_by(model, order_by))
@@ -361,18 +355,15 @@ async def fetch_one(
 
 
 async def fetch_all(
-        session: AsyncSession,
-        model,
-        *,
-        columns: Sequence[str] | None = None,
-        where: dict[str, Any]
-        | ColumnElement[Any]
-        | Sequence[ColumnElement[Any]]
-        | None = None,
-        order_by: str | Sequence[str] | None = None,
-        offset: int | None = None,
-        limit: int | None = None,
-        converters: dict[str, Callable] | None = None,
+    session: AsyncSession,
+    model,
+    *,
+    columns: Sequence[str] | None = None,
+    where: dict[str, Any] | ColumnElement[Any] | Sequence[ColumnElement[Any]] | None = None,
+    order_by: str | Sequence[str] | None = None,
+    offset: int | None = None,
+    limit: int | None = None,
+    converters: dict[str, Callable] | None = None,
 ) -> list[dict[str, Any]]:
     """查询多条记录
 
@@ -418,7 +409,7 @@ async def fetch_all(
 
     stmt = select(*selected_columns).select_from(model)
 
-    if where:
+    if where:  # type: ignore
         stmt = stmt.where(*_build_where_clauses(model, where))
     if order_by:
         stmt = stmt.order_by(*_parse_order_by(model, order_by))
@@ -432,13 +423,10 @@ async def fetch_all(
 
 
 async def count(
-        session: AsyncSession,
-        model,
-        *,
-        where: dict[str, Any]
-        | ColumnElement[Any]
-        | Sequence[ColumnElement[Any]]
-        | None = None,
+    session: AsyncSession,
+    model,
+    *,
+    where: dict[str, Any] | ColumnElement[Any] | Sequence[ColumnElement[Any]] | None = None,
 ) -> int:
     """统计记录数
 
@@ -473,7 +461,7 @@ async def count(
         +++++[更多详见参数或源码]+++++
     """
     stmt = select(func.count()).select_from(model)
-    if where:
+    if where:  # type: ignore
         stmt = stmt.where(*_build_where_clauses(model, where))
     result = await session.execute(stmt)
     return result.scalar() or 0
@@ -485,13 +473,13 @@ async def count(
 
 
 async def create(
-        session: AsyncSession,
-        model,
-        *,
-        values: dict[str, Any],
-        on_conflict: dict[str, Any] | None = None,
-        returning: bool = True,
-        flush: bool = False,
+    session: AsyncSession,
+    model,
+    *,
+    values: dict[str, Any],
+    on_conflict: dict[str, Any] | None = None,
+    returning: bool = True,
+    flush: bool = False,
 ) -> Created:
     """创建单条记录
 
@@ -536,9 +524,8 @@ async def create(
 
         +++++[更多详见参数或源码]+++++
     """
-    if on_conflict:
-        if existing := await fetch_one(session, model, where=on_conflict):
-            return Created(ok=False, rowcount=0, data=existing)
+    if on_conflict and (existing := await fetch_one(session, model, where=on_conflict)):
+        return Created(ok=False, rowcount=0, data=existing)
 
     obj = model(**values)
     session.add(obj)
@@ -553,15 +540,12 @@ async def create(
 
 
 async def delete(
-        session: AsyncSession,
-        model,
-        *,
-        where: dict[str, Any]
-        | ColumnElement[Any]
-        | Sequence[ColumnElement[Any]]
-        | None = None,
-        allow_all: bool = False,
-        flush: bool = False,
+    session: AsyncSession,
+    model,
+    *,
+    where: dict[str, Any] | ColumnElement[Any] | Sequence[ColumnElement[Any]] | None = None,
+    allow_all: bool = False,
+    flush: bool = False,
 ) -> Deleted:
     """删除记录
 
@@ -634,23 +618,20 @@ async def delete(
     if flush:
         await session.flush()
 
-    rowcount = result.rowcount or 0
+    rowcount = result.rowcount or 0  # type: ignore
     return Deleted(ok=rowcount > 0, rowcount=rowcount)
 
 
 async def update(
-        session: AsyncSession,
-        model,
-        *,
-        values: dict[str, Any],
-        where: dict[str, Any]
-        | ColumnElement[Any]
-        | Sequence[ColumnElement[Any]]
-        | None = None,
-        allow_all: bool = False,
-        exclude_none: bool = True,
-        returning: bool = False,
-        flush: bool = False,
+    session: AsyncSession,
+    model,
+    *,
+    values: dict[str, Any],
+    where: dict[str, Any] | ColumnElement[Any] | Sequence[ColumnElement[Any]] | None = None,
+    allow_all: bool = False,
+    exclude_none: bool = True,
+    returning: bool = False,
+    flush: bool = False,
 ) -> Updated:
     """更新记录
 
@@ -733,9 +714,7 @@ async def update(
     if not clauses and returning:
         raise ValueError("'returning' is not supported for full-table update")
 
-    data = (
-        {k: v for k, v in values.items() if v is not None} if exclude_none else values
-    )
+    data = {k: v for k, v in values.items() if v is not None} if exclude_none else values
     if not data:
         return Updated(ok=False, rowcount=0)
 
@@ -746,25 +725,21 @@ async def update(
     if flush:
         await session.flush()
 
-    rowcount = result.rowcount or 0
-    updated_data = (
-        await fetch_one(session, model, where=where)
-        if (returning and rowcount > 0 and clauses)
-        else None
-    )
+    rowcount = result.rowcount or 0  # type: ignore
+    updated_data = await fetch_one(session, model, where=where) if (returning and rowcount > 0 and clauses) else None
 
     return Updated(ok=rowcount > 0, rowcount=rowcount, data=updated_data)
 
 
 async def upsert(
-        session: AsyncSession,
-        model,
-        *,
-        values: dict[str, Any],
-        keys: Sequence[str],
-        updates: Sequence[str] | None = None,
-        returning: bool = False,
-        flush: bool = False,
+    session: AsyncSession,
+    model,
+    *,
+    values: dict[str, Any],
+    keys: Sequence[str],
+    updates: Sequence[str] | None = None,
+    returning: bool = False,
+    flush: bool = False,
 ) -> Upserted:
     """存在则更新，不存在则创建（Upsert）
 
@@ -828,21 +803,19 @@ async def upsert(
     dialect = _dialect(session)
 
     if dialect in ("postgresql", "mysql", "sqlite"):
-        return await _upsert_native(
-            session, model, values, keys, updates, dialect, returning, flush
-        )
+        return await _upsert_native(session, model, values, keys, updates, dialect, returning, flush)
     return await _upsert_fallback(session, model, values, keys, updates, returning, flush)
 
 
 async def _upsert_native(
-        session: AsyncSession,
-        model,
-        values: dict[str, Any],
-        keys: Sequence[str],
-        updates: Sequence[str] | None,
-        dialect: str,
-        returning: bool = False,
-        flush: bool = False,
+    session: AsyncSession,
+    model,
+    values: dict[str, Any],
+    keys: Sequence[str],
+    updates: Sequence[str] | None,
+    dialect: str,
+    returning: bool = False,
+    flush: bool = False,
 ) -> Upserted:
     """使用数据库原生 upsert 语法实现
 
@@ -867,10 +840,7 @@ async def _upsert_native(
         else:
             stmt = stmt.on_conflict_do_update(index_elements=keys, set_=update_data)
     else:
-        if dialect == "mysql":
-            stmt = stmt.prefix_with("IGNORE")
-        else:
-            stmt = stmt.on_conflict_do_nothing(index_elements=keys)
+        stmt = stmt.prefix_with("IGNORE") if dialect == "mysql" else stmt.on_conflict_do_nothing(index_elements=keys)
 
     result = await session.execute(stmt)
     if flush:
@@ -886,13 +856,13 @@ async def _upsert_native(
 
 
 async def _upsert_fallback(
-        session: AsyncSession,
-        model,
-        values: dict[str, Any],
-        keys: Sequence[str],
-        updates: Sequence[str] | None,
-        returning: bool = False,
-        flush: bool = False,
+    session: AsyncSession,
+    model,
+    values: dict[str, Any],
+    keys: Sequence[str],
+    updates: Sequence[str] | None,
+    returning: bool = False,
+    flush: bool = False,
 ) -> Upserted:
     """Upsert 的通用 fallback 实现（先查后改）
 
@@ -906,9 +876,7 @@ async def _upsert_fallback(
         update_cols = updates if updates is not None else tuple(col for col in values if col not in keys)
         update_data = {col: values[col] for col in update_cols if col in values}
         if update_data:
-            stmt = sa_update(model).where(
-                *_build_where_clauses(model, where)
-            ).values(**update_data)
+            stmt = sa_update(model).where(*_build_where_clauses(model, where)).values(**update_data)
             await session.execute(stmt)
             if flush:
                 await session.flush()
@@ -924,12 +892,12 @@ async def _upsert_fallback(
 
 
 async def batch_create(
-        session: AsyncSession,
-        model,
-        *,
-        values: list[dict[str, Any]],
-        returning: bool = True,
-        flush: bool = False,
+    session: AsyncSession,
+    model,
+    *,
+    values: list[dict[str, Any]],
+    returning: bool = True,
+    flush: bool = False,
 ) -> BatchCreated:
     """批量创建多条记录
 
@@ -981,12 +949,12 @@ async def batch_create(
 
 
 async def bulk_insert(
-        session: AsyncSession,
-        model,
-        *,
-        values: list[dict[str, Any]],
-        return_defaults: bool = False,
-        flush: bool = False,
+    session: AsyncSession,
+    model,
+    *,
+    values: list[dict[str, Any]],
+    return_defaults: bool = False,
+    flush: bool = False,
 ) -> BulkInserted:
     """高性能批量插入记录
 
@@ -1044,18 +1012,14 @@ async def bulk_insert(
         return BulkInserted(ok=True, rowcount=0)
 
     def _bulk_insert(sync_session):
-        return sync_session.bulk_insert_mappings(
-            model, values, return_defaults=return_defaults
-        )
+        return sync_session.bulk_insert_mappings(model, values, return_defaults=return_defaults)
 
     await session.run_sync(_bulk_insert)
 
     if flush:
         await session.flush()
 
-    return BulkInserted(
-        ok=True, rowcount=len(values), data=values if return_defaults else []
-    )
+    return BulkInserted(ok=True, rowcount=len(values), data=values if return_defaults else [])
 
 
 # -----------------------------------------------------------------------------
@@ -1064,12 +1028,12 @@ async def bulk_insert(
 
 
 async def raw(
-        session: AsyncSession,
-        sql: str,
-        params: dict[str, Any] | None = None,
-        *,
-        autocommit: bool = False,
-        flush: bool = False,
+    session: AsyncSession,
+    sql: str,
+    params: dict[str, Any] | None = None,
+    *,
+    autocommit: bool = False,
+    flush: bool = False,
 ) -> Result:
     """执行原生 SQL 语句
 
@@ -1167,9 +1131,9 @@ class CRUDMixin:
 
     @staticmethod
     def format_row(
-            row,
-            columns: Sequence[str],
-            converters: dict[str, Callable] | None = None,
+        row,
+        columns: Sequence[str],
+        converters: dict[str, Callable] | None = None,
     ) -> dict[str, Any]:
         """格式化单行结果
 
@@ -1185,9 +1149,9 @@ class CRUDMixin:
 
     @staticmethod
     def format_rows(
-            rows,
-            columns: Sequence[str],
-            converters: dict[str, Callable] | None = None,
+        rows,
+        columns: Sequence[str],
+        converters: dict[str, Callable] | None = None,
     ) -> list[dict[str, Any]]:
         """格式化多行结果
 
@@ -1203,16 +1167,13 @@ class CRUDMixin:
 
     @classmethod
     async def fetch_one(
-            cls,
-            session: AsyncSession,
-            *,
-            columns: Sequence[str] | None = None,
-            where: dict[str, Any]
-            | ColumnElement[Any]
-            | Sequence[ColumnElement[Any]]
-            | None = None,
-            order_by: str | Sequence[str] | None = None,
-            converters: dict[str, Callable] | None = None,
+        cls,
+        session: AsyncSession,
+        *,
+        columns: Sequence[str] | None = None,
+        where: dict[str, Any] | ColumnElement[Any] | Sequence[ColumnElement[Any]] | None = None,
+        order_by: str | Sequence[str] | None = None,
+        converters: dict[str, Callable] | None = None,
     ) -> dict[str, Any] | None:
         """查询单条记录
 
@@ -1230,24 +1191,19 @@ class CRUDMixin:
         Returns:
             单条记录字典
         """
-        return await fetch_one(
-            session, cls, columns=columns, where=where, order_by=order_by, converters=converters
-        )
+        return await fetch_one(session, cls, columns=columns, where=where, order_by=order_by, converters=converters)
 
     @classmethod
     async def fetch_all(
-            cls,
-            session: AsyncSession,
-            *,
-            columns: Sequence[str] | None = None,
-            where: dict[str, Any]
-            | ColumnElement[Any]
-            | Sequence[ColumnElement[Any]]
-            | None = None,
-            order_by: str | Sequence[str] | None = None,
-            offset: int | None = None,
-            limit: int | None = None,
-            converters: dict[str, Callable] | None = None,
+        cls,
+        session: AsyncSession,
+        *,
+        columns: Sequence[str] | None = None,
+        where: dict[str, Any] | ColumnElement[Any] | Sequence[ColumnElement[Any]] | None = None,
+        order_by: str | Sequence[str] | None = None,
+        offset: int | None = None,
+        limit: int | None = None,
+        converters: dict[str, Callable] | None = None,
     ) -> list[dict[str, Any]]:
         """查询多条记录
 
@@ -1280,13 +1236,10 @@ class CRUDMixin:
 
     @classmethod
     async def count(
-            cls,
-            session: AsyncSession,
-            *,
-            where: dict[str, Any]
-            | ColumnElement[Any]
-            | Sequence[ColumnElement[Any]]
-            | None = None,
+        cls,
+        session: AsyncSession,
+        *,
+        where: dict[str, Any] | ColumnElement[Any] | Sequence[ColumnElement[Any]] | None = None,
     ) -> int:
         """统计记录数
 
@@ -1307,13 +1260,13 @@ class CRUDMixin:
 
     @classmethod
     async def create(
-            cls,
-            session: AsyncSession,
-            *,
-            values: dict[str, Any],
-            on_conflict: dict[str, Any] | None = None,
-            returning: bool = True,
-            flush: bool = False,
+        cls,
+        session: AsyncSession,
+        *,
+        values: dict[str, Any],
+        on_conflict: dict[str, Any] | None = None,
+        returning: bool = True,
+        flush: bool = False,
     ) -> Created:
         """创建单条记录
 
@@ -1345,15 +1298,12 @@ class CRUDMixin:
 
     @classmethod
     async def delete(
-            cls,
-            session: AsyncSession,
-            *,
-            where: dict[str, Any]
-            | ColumnElement[Any]
-            | Sequence[ColumnElement[Any]]
-            | None = None,
-            allow_all: bool = False,
-            flush: bool = False,
+        cls,
+        session: AsyncSession,
+        *,
+        where: dict[str, Any] | ColumnElement[Any] | Sequence[ColumnElement[Any]] | None = None,
+        allow_all: bool = False,
+        flush: bool = False,
     ) -> Deleted:
         """删除记录
 
@@ -1379,18 +1329,15 @@ class CRUDMixin:
 
     @classmethod
     async def update(
-            cls,
-            session: AsyncSession,
-            *,
-            values: dict[str, Any],
-            where: dict[str, Any]
-            | ColumnElement[Any]
-            | Sequence[ColumnElement[Any]]
-            | None = None,
-            allow_all: bool = False,
-            exclude_none: bool = True,
-            returning: bool = False,
-            flush: bool = False,
+        cls,
+        session: AsyncSession,
+        *,
+        values: dict[str, Any],
+        where: dict[str, Any] | ColumnElement[Any] | Sequence[ColumnElement[Any]] | None = None,
+        allow_all: bool = False,
+        exclude_none: bool = True,
+        returning: bool = False,
+        flush: bool = False,
     ) -> Updated:
         """更新记录
 
@@ -1429,14 +1376,14 @@ class CRUDMixin:
 
     @classmethod
     async def upsert(
-            cls,
-            session: AsyncSession,
-            *,
-            values: dict[str, Any],
-            keys: Sequence[str],
-            updates: Sequence[str] | None = None,
-            returning: bool = False,
-            flush: bool = False,
+        cls,
+        session: AsyncSession,
+        *,
+        values: dict[str, Any],
+        keys: Sequence[str],
+        updates: Sequence[str] | None = None,
+        returning: bool = False,
+        flush: bool = False,
     ) -> Upserted:
         """存在则更新，不存在则创建（Upsert）
 
@@ -1460,18 +1407,16 @@ class CRUDMixin:
                 - rowcount: 影响行数（1 表示有变化，0 表示无变化）
                 - data: 操作后的数据字典（returning=True 时）
         """
-        return await upsert(
-            session, cls, values=values, keys=keys, updates=updates, returning=returning, flush=flush
-        )
+        return await upsert(session, cls, values=values, keys=keys, updates=updates, returning=returning, flush=flush)
 
     @classmethod
     async def batch_create(
-            cls,
-            session: AsyncSession,
-            *,
-            values: list[dict[str, Any]],
-            returning: bool = True,
-            flush: bool = False,
+        cls,
+        session: AsyncSession,
+        *,
+        values: list[dict[str, Any]],
+        returning: bool = True,
+        flush: bool = False,
     ) -> BatchCreated:
         """批量创建多条记录
 
@@ -1489,18 +1434,16 @@ class CRUDMixin:
                 - rowcount: 实际创建的记录数
                 - data: 创建后的数据列表（returning=True 时）
         """
-        return await batch_create(
-            session, cls, values=values, returning=returning, flush=flush
-        )
+        return await batch_create(session, cls, values=values, returning=returning, flush=flush)
 
     @classmethod
     async def bulk_insert(
-            cls,
-            session: AsyncSession,
-            *,
-            values: list[dict[str, Any]],
-            return_defaults: bool = False,
-            flush: bool = False,
+        cls,
+        session: AsyncSession,
+        *,
+        values: list[dict[str, Any]],
+        return_defaults: bool = False,
+        flush: bool = False,
     ) -> BulkInserted:
         """高性能批量插入记录
 
@@ -1523,19 +1466,17 @@ class CRUDMixin:
                 - rowcount: 实际插入的记录数
                 - data: 插入的数据列表（return_defaults=True 时包含生成的默认值）
         """
-        return await bulk_insert(
-            session, cls, values=values, return_defaults=return_defaults, flush=flush
-        )
+        return await bulk_insert(session, cls, values=values, return_defaults=return_defaults, flush=flush)
 
     @classmethod
     async def raw(
-            cls,
-            session: AsyncSession,
-            sql: str,
-            params: dict[str, Any] | None = None,
-            *,
-            autocommit: bool = False,
-            flush: bool = False,
+        cls,
+        session: AsyncSession,
+        sql: str,
+        params: dict[str, Any] | None = None,
+        *,
+        autocommit: bool = False,
+        flush: bool = False,
     ) -> Result:
         """执行原生 SQL 语句
 

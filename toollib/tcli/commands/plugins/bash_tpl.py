@@ -77,7 +77,7 @@ case $1 in
 esac
 """
 
-VAR_PREFIX = 'VAR_'
+VAR_PREFIX = "VAR_"
 OPT_DEFAULT = """
   {opt})
     {var}={value}

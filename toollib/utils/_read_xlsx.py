@@ -1,14 +1,15 @@
 import warnings
-from typing import Generator
+from collections.abc import Generator
+
 from openpyxl import load_workbook
 
 
 def read_xlsx(
-        filepath: str,
-        column_names: list[str] = None,
-        min_rows: int = None,
-        max_rows: int = None,
-        sheet_name: int | str = 0,
+    filepath: str,
+    column_names: list[str] | None = None,
+    min_rows: int | None = None,
+    max_rows: int | None = None,
+    sheet_name: int | str = 0,
 ) -> Generator[tuple[int, dict[str, object]], None, None]:
     """
     读取 xlsx 文件
@@ -43,7 +44,7 @@ def read_xlsx(
     try:
         header_row = next(rows_iter)
     except StopIteration:
-        warnings.warn("No rows found in the sheet.")
+        warnings.warn("No rows found in the sheet.", stacklevel=2)
         wb.close()
         return
     if not header_row or all(cell is None for cell in header_row):

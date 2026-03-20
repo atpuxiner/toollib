@@ -1,5 +1,8 @@
 # history
 
+## v2.1.6
+- opt@升级py版本及代码格式化
+
 ## v2.1.5
 - opt@调整vscode配置
 - fix@数据库upsert结果

@@ -6,13 +6,14 @@
 @description
 @history
 """
+
 import platform
 import re
 
 __all__ = [
-    'Attr',
-    'choicer',
-    'pyv',
+    "Attr",
+    "choicer",
+    "pyv",
 ]
 
 
@@ -28,15 +29,15 @@ class Attr:
     """
 
     def __init__(
-            self,
-            key,
-            ktype=None,
-            required=False,
-            enum=None,
-            regex=None,
-            callback=None,
-            error_msg=None,
-            empty_msg=None,
+        self,
+        key,
+        ktype=None,
+        required=False,
+        enum=None,
+        regex=None,
+        callback=None,
+        error_msg=None,
+        empty_msg=None,
     ):
         self.key = key
         self.ktype = ktype
@@ -45,7 +46,7 @@ class Attr:
         self.regex = regex
         self.callback = callback
         self.error_msg = error_msg
-        self.empty_msg = empty_msg or '"%s" cannot be empty' % self.key
+        self.empty_msg = empty_msg or f'"{self.key}" cannot be empty'
 
     def __get__(self, instance, owner):
         return instance.__dict__[self.key]
@@ -59,20 +60,19 @@ class Attr:
                 if not isinstance(value, self.ktype):
                     error_msg = self.error_msg
                     if not error_msg:
-                        error_msg = f'"%s" only supported: %s' % (self.key, self.ktype)
+                        error_msg = f'"{self.key}" only supported: {self.ktype}'
                     raise TypeError(error_msg)
             elif self.enum is not None:
                 if isinstance(self.enum, (list, tuple)):
                     if value not in self.enum:
                         error_msg = self.error_msg
                         if not error_msg:
-                            error_msg = '"%s" only select from: %s' % (self.key, self.ktype)
+                            error_msg = f'"{self.key}" only select from: {self.ktype}'
                         raise TypeError(error_msg)
                 else:
                     raise TypeError('"enum" only supported: list or tuple')
-            elif self.regex is not None:
-                if re.match(self.regex, value) is None:
-                    raise TypeError('"%s" only supported: %s' % (self.key, self.regex))
+            elif self.regex is not None and re.match(self.regex, value) is None:
+                raise TypeError(f'"{self.key}" only supported: {self.regex}')
 
             if self.callback is not None:
                 self.callback(value)
@@ -82,7 +82,7 @@ class Attr:
         instance.__dict__.pop(self.key)
 
 
-def choicer(obj, choices: list, lable: str = None, errmsg: str = None):
+def choicer(obj, choices: list, lable: str | None = None, errmsg: str | None = None):
     """
     选择校验（校验通过时返回obj）
 
@@ -103,14 +103,14 @@ def choicer(obj, choices: list, lable: str = None, errmsg: str = None):
     """
     if obj not in choices:
         if not errmsg:
-            errmsg = 'only supported: %s' % choices
+            errmsg = f"only supported: {choices}"
             if lable:
-                errmsg = '"%s" %s' % (lable, errmsg)
+                errmsg = f'"{lable}" {errmsg}'
         raise TypeError(errmsg)
     return obj
 
 
-def pyv(min_v: str = '3.7', max_v: str = None) -> str:
+def pyv(min_v: str = "3.7", max_v: str | None = None) -> str:
     """
     python版本校验
 
@@ -128,8 +128,7 @@ def pyv(min_v: str = '3.7', max_v: str = None) -> str:
     """
     _pyv = platform.python_version()
     if _pyv < min_v:
-        raise Warning('python version required >= %s' % min_v)
-    if max_v:
-        if _pyv >= max_v:
-            raise Warning('python version required < %s' % max_v)
+        raise Warning(f"python version required >= {min_v}")
+    if max_v and _pyv >= max_v:
+        raise Warning(f"python version required < {max_v}")
     return _pyv

@@ -6,18 +6,17 @@
 @description
 @history
 """
+
 import os
 import sys
-from argparse import ArgumentParser, Namespace
-
 import typing as t
+from argparse import ArgumentParser, Namespace
 
 from toollib.tcli import helper
 from toollib.tcli.option import Options
 
 
 class BaseCmd:
-
     argv: list
     usage: str
     options: Options
@@ -26,12 +25,12 @@ class BaseCmd:
     parse_args: Namespace
 
     def add_options(self) -> Options:
-        raise NotImplementedError('subclasses of BaseCmd must provide a add_options() method')
+        raise NotImplementedError("subclasses of BaseCmd must provide a add_options() method")
 
     def load_options(self):
         options = self.add_options()
         if not isinstance(options, Options):
-            raise TypeError('add_options() return type only supported: Options')
+            raise TypeError("add_options() return type only supported: Options")
         return options
 
     def set_init(self, argv, usage):
@@ -39,27 +38,27 @@ class BaseCmd:
         self.usage = usage
         self.options = self.load_options()
         self.curr_usage = getattr(helper, self.argv[0], helper.usage)
-        self.curr_option = self.argv[1] if self.argv[1:] else None
-        if self.curr_option and self.curr_option in ['-h', '--help']:
+        self.curr_option = self.argv[1] if self.argv[1:] else ""
+        if self.curr_option and self.curr_option in ["-h", "--help"]:
             sys.stdout.write(self.curr_usage)
             sys.exit()
 
     @property
     def load_callcmd(self) -> t.Callable:
         subcmds = self.options.subcmds
-        posargs = ['command']
+        posargs = ["command"]
         # check
         if len(subcmds) > 1:
             if not self.curr_option:
-                sys.stderr.write('ERROR: Option is required\n')
+                sys.stderr.write("ERROR: Option is required\n")
                 sys.stderr.write(self.curr_usage)
                 sys.exit(1)
-            curr_optional = subcmds.get(self.curr_option.replace('-', '_'))
+            curr_optional = subcmds.get(self.curr_option.replace("-", "_"))
             if not curr_optional:
-                sys.stderr.write("ERROR: Unknown option '%s'\n" % self.curr_option)
+                sys.stderr.write(f"ERROR: Unknown option '{self.curr_option}'\n")
                 sys.stderr.write(self.curr_usage)
                 sys.exit(1)
-            posargs.append('option')
+            posargs.append("option")
         else:
             _, curr_optional = subcmds.popitem()
         # add args
@@ -73,9 +72,8 @@ class BaseCmd:
                 name_or_flags, kwargs = arg.parse_arg
                 parser.add_argument(*name_or_flags, **kwargs)
         self.parse_args = parser.parse_args(self.argv)
-        if hasattr(self.parse_args, 'sysname'):
-            if self.parse_args.sysname and self.parse_args.sysname != "''":
-                os.environ.setdefault('sysname', self.parse_args.sysname)
+        if hasattr(self.parse_args, "sysname") and self.parse_args.sysname and self.parse_args.sysname != "''":
+            os.environ.setdefault("sysname", self.parse_args.sysname)
         return curr_subcmd
 
     def run(self, argv, usage: str):

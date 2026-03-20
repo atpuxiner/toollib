@@ -6,26 +6,31 @@
 @description
 @history
 """
+
+import atexit
 import logging
 import logging.handlers
 import os
-import atexit
 import queue
 import traceback
+from collections.abc import Callable
+from contextlib import suppress
 from contextvars import ContextVar
 from pathlib import Path
-from typing import Literal, Callable
+from typing import Literal
 
 try:
     import orjson as json
+
     _has_orjson = True
 except ImportError:
     import json
+
     _has_orjson = False
 
 __all__ = [
-    'LogFormatter',
-    'init_logger',
+    "LogFormatter",
+    "init_logger",
 ]
 
 _LISTENERS: dict = {}
@@ -33,18 +38,17 @@ _QUEUES: dict = {}
 
 
 class LogFormatter(logging.Formatter):
-
     def __init__(
-            self,
-            fmt="%(asctime)s %(levelname)s %(name)s %(filename)s:%(lineno)d %(message)s",
-            datefmt=None,
-            style='%',
-            validate=True,
-            *,
-            defaults=None,
-            request_id_var: ContextVar = None,
-            fmt_with_request_id: str = "%(asctime)s %(levelname)s %(request_id)s %(name)s %(filename)s:%(lineno)d %(message)s",
-            serialize: bool = False,
+        self,
+        fmt="%(asctime)s %(levelname)s %(name)s %(filename)s:%(lineno)d %(message)s",
+        datefmt=None,
+        style="%",
+        validate=True,
+        *,
+        defaults=None,
+        request_id_var: ContextVar | None = None,
+        fmt_with_request_id: str = "%(asctime)s %(levelname)s %(request_id)s %(name)s %(filename)s:%(lineno)d %(message)s",
+        serialize: bool = False,
     ):
         self.request_id_var = request_id_var
         if self.request_id_var:
@@ -68,7 +72,7 @@ class LogFormatter(logging.Formatter):
                 "lineno": record.lineno,
                 "message": record.getMessage(),
             }
-            if hasattr(record, 'request_id'):
+            if hasattr(record, "request_id"):
                 log_entry["request_id"] = record.request_id
             if record.exc_info:
                 exc_type, exc_value, exc_tb = record.exc_info
@@ -78,43 +82,41 @@ class LogFormatter(logging.Formatter):
                     "stacktrace": "".join(traceback.format_exception(exc_type, exc_value, exc_tb)),
                 }
             elif record.exc_text:
-                log_entry["exception"] = {
-                    "stacktrace": record.exc_text
-                }
+                log_entry["exception"] = {"stacktrace": record.exc_text}
             if _has_orjson:
-                return json.dumps(log_entry, default=str).decode("utf-8")
-            return json.dumps(log_entry, ensure_ascii=False, default=str)
+                return json.dumps(log_entry, default=str).decode("utf-8")  # type: ignore
+            return json.dumps(log_entry, ensure_ascii=False, default=str)  # type: ignore
         else:
             return super().format(record)
 
 
 def init_logger(
-        name: str = None,
-        level: str | int = "INFO",
-        fmt: str = "%(asctime)s %(levelname)s %(name)s %(filename)s:%(lineno)d %(message)s",
-        datefmt: str = None,
-        msecfmt: str = '%s.%03d',
-        request_id_var: ContextVar = None,
-        fmt_with_request_id: str = "%(asctime)s %(levelname)s %(request_id)s %(name)s %(filename)s:%(lineno)d %(message)s",
-        serialize: bool = False,
-        formatter: Callable = None,
-        clear_handlers: bool = True,
-        enable_console: bool = True,
-        enable_file: bool = True,
-        outdir: str | Path = None,
-        access_name: str = "access.log",
-        error_name: str = "error.log",
-        name_with_pid: bool = False,
-        encoding: str = "utf-8",
-        rotation: Literal['time', 'size'] = 'time',
-        backup_count: int = 30,
-        when: Literal['s', 'm', 'h', 'd', 'midnight', 'w0', 'w1', 'w2', 'w3', 'w4', 'w5', 'w6'] = "midnight",
-        interval: int = 1,
-        max_bytes: int = 1024 * 1024 * 50,
-        propagate: bool = False,
-        enqueue: bool = False,
-        queue_maxsize: int = 5000,
-        **kwargs
+    name: str | None = None,
+    level: str | int = "INFO",
+    fmt: str = "%(asctime)s %(levelname)s %(name)s %(filename)s:%(lineno)d %(message)s",
+    datefmt: str | None = None,
+    msecfmt: str = "%s.%03d",
+    request_id_var: ContextVar | None = None,
+    fmt_with_request_id: str = "%(asctime)s %(levelname)s %(request_id)s %(name)s %(filename)s:%(lineno)d %(message)s",
+    serialize: bool = False,
+    formatter: Callable | None = None,
+    clear_handlers: bool = True,
+    enable_console: bool = True,
+    enable_file: bool = True,
+    outdir: str | Path | None = None,
+    access_name: str = "access.log",
+    error_name: str = "error.log",
+    name_with_pid: bool = False,
+    encoding: str = "utf-8",
+    rotation: Literal["time", "size"] = "time",
+    backup_count: int = 30,
+    when: Literal["s", "m", "h", "d", "midnight", "w0", "w1", "w2", "w3", "w4", "w5", "w6"] = "midnight",
+    interval: int = 1,
+    max_bytes: int = 1024 * 1024 * 50,
+    propagate: bool = False,
+    enqueue: bool = False,
+    queue_maxsize: int = 5000,
+    **kwargs,
 ) -> logging.Logger:
     """
     初始化日志器
@@ -124,7 +126,7 @@ def init_logger(
         # 初始化
         from toollib import log
 
-        logger = log.init_logger(__name__)
+        logger = log.init_logger()
         logger.info("hello")
 
         # 其他模块调用建议
@@ -199,7 +201,7 @@ def init_logger(
         log_error_file = outdir.joinpath(error_name)
 
         def make_handler(filename):
-            if rotation == 'time':
+            if rotation == "time":
                 handler = logging.handlers.TimedRotatingFileHandler(
                     filename=filename,
                     encoding=encoding,
@@ -230,19 +232,13 @@ def init_logger(
         if key not in _QUEUES:
             log_queue = _Queue(maxsize=queue_maxsize)
             _QUEUES[key] = log_queue
-            listener = logging.handlers.QueueListener(
-                log_queue,
-                *actual_handlers,
-                respect_handler_level=True
-            )
+            listener = logging.handlers.QueueListener(log_queue, *actual_handlers, respect_handler_level=True)
             listener.start()
             _LISTENERS[key] = listener
 
             def _stop_listener():
-                try:
+                with suppress(Exception):
                     listener.stop()
-                except Exception:
-                    pass
 
             atexit.register(_stop_listener)
 
@@ -259,16 +255,11 @@ def init_logger(
 
 
 class _Queue(queue.Queue):
-
     def put(self, item, block=True, timeout=None):
         try:
             super().put(item, block=False)
         except queue.Full:
-            try:
+            with suppress(queue.Empty):
                 self.get_nowait()
-            except queue.Empty:
-                pass
-            try:
+            with suppress(queue.Full):
                 super().put(item, block=False)
-            except queue.Full:
-                pass

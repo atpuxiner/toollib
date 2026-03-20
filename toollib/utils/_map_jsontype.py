@@ -1,7 +1,7 @@
 def map_jsontype(
-        typename: str,
-        is_title: bool = False,
-        is_keep_integer: bool = False,
+    typename: str,
+    is_title: bool = False,
+    is_keep_integer: bool = False,
 ) -> str:
     """
     映射json类型
@@ -19,18 +19,18 @@ def map_jsontype(
     :return:
     """
     maps = {
-        'NoneType': 'null',
-        'None': 'null',
-        'bool': 'boolean',
-        'str': 'string',
-        'int': 'number',
-        'float': 'number',
-        'list': 'array',
-        'tuple': 'array',
-        'dict': 'object',
+        "NoneType": "null",
+        "None": "null",
+        "bool": "boolean",
+        "str": "string",
+        "int": "number",
+        "float": "number",
+        "list": "array",
+        "tuple": "array",
+        "dict": "object",
     }
     if is_keep_integer:
-        maps['int'] = 'integer'
+        maps["int"] = "integer"
     if jt := maps.get(typename):
         if is_title:
             return jt.title()

@@ -6,11 +6,13 @@
 @description
 @history
 """
+
 import os
 import sqlite3
 import tempfile
 import time
-from typing import Generator, Sequence, Any
+from collections.abc import Generator, Sequence
+from typing import Any
 
 from toollib.common.error import ExpireError
 
@@ -19,7 +21,7 @@ try:
 except ImportError:
     import json
 
-__all__ = ['KValue']
+__all__ = ["KValue"]
 
 
 class KValue:
@@ -51,21 +53,20 @@ class KValue:
         +++++[更多详见参数或源码]+++++
     """
 
-    __slots__ = ('file', 'tbname', 'columns', 'conn')
+    __slots__ = ("file", "tbname", "columns", "conn")
     _support_types = (str, list, dict, int, float, bool, type(None))
 
-    def __init__(self, file: str = None, tbname: str = 'kvalue'):
+    def __init__(self, file: str | None = None, tbname: str = "kvalue"):
         if not file:
-            with tempfile.NamedTemporaryFile(mode='wb', suffix='.kv', delete=False) as t:
+            with tempfile.NamedTemporaryFile(mode="wb", suffix=".kv", delete=False) as t:
                 file = t.name
         self.file = os.path.abspath(file)
         self.tbname = tbname
-        self.columns = (('key', 'text'), ('value', 'text'), ('expire', 'real'))
+        self.columns = (("key", "text"), ("value", "text"), ("expire", "real"))
         self.conn = None
         self._new_db()
 
     def __enter__(self):
-        # 连接数据库
         self.conn = sqlite3.connect(self.file)
         return self
 
@@ -77,7 +78,7 @@ class KValue:
         if not self.conn:
             self.conn = sqlite3.connect(self.file)
         with self.conn as conn:
-            sql = f'create table if not exists {self.tbname} (key text not null primary key, value text, expire real)'
+            sql = f"create table if not exists {self.tbname} (key text not null primary key, value text, expire real)"
             cursor = conn.cursor()
             cursor.execute(sql)
 
@@ -111,7 +112,7 @@ class KValue:
         """
         with self.conn as conn:
             key, value, expire = self._validate_parameters(key=key, value=value, expire=expire)
-            sql = f'replace into {self.tbname} (key, value, expire) values (?,?,?)'
+            sql = f"replace into {self.tbname} (key, value, expire) values (?,?,?)"
             cursor = conn.cursor()
             cursor.execute(sql, (key, value, expire))
             return cursor.rowcount
@@ -125,14 +126,13 @@ class KValue:
         :return:
         """
         with self.conn as conn:
-            sql = f'select value, expire from {self.tbname} where key = ? limit 1'
+            sql = f"select value, expire from {self.tbname} where key = ? limit 1"
             cursor = conn.cursor()
             cursor.execute(sql, (key,))
             one = cursor.fetchone()
             value, expire = one if one else (None, None)
-            if raise_expire:
-                if expire and expire <= time.time():
-                    raise ExpireError(f'"{key}" already expired')
+            if raise_expire and expire and expire <= time.time():
+                raise ExpireError(f'"{key}" already expired')
             if value:
                 value = json.loads(value)
             if return_expire:
@@ -146,7 +146,7 @@ class KValue:
         """
         order = "desc" if reverse else "asc"
         with self.conn as conn:
-            sql = f'select key from {self.tbname} order by key {order}'
+            sql = f"select key from {self.tbname} order by key {order}"
             cursor = conn.cursor()
             cursor.execute(sql)
             for row in cursor:
@@ -159,11 +159,10 @@ class KValue:
         """
         order = "desc" if reverse else "asc"
         with self.conn as conn:
-            sql = f'select key, value, expire from {self.tbname} order by key {order}'
+            sql = f"select key, value, expire from {self.tbname} order by key {order}"
             cursor = conn.cursor()
             cursor.execute(sql)
-            for row in cursor:
-                yield row
+            yield from cursor
 
     def count(self) -> int:
         """
@@ -171,7 +170,7 @@ class KValue:
         :return:
         """
         with self.conn as conn:
-            sql = f'select count(key) from {self.tbname}'
+            sql = f"select count(key) from {self.tbname}"
             cursor = conn.cursor()
             cursor.execute(sql)
             return cursor.fetchone()[0]
@@ -185,7 +184,7 @@ class KValue:
         """
         with self.conn as conn:
             key, _, expire = self._validate_parameters(key=key, expire=expire)
-            sql = f'update {self.tbname} set expire = ? where key = ?'
+            sql = f"update {self.tbname} set expire = ? where key = ?"
             cursor = conn.cursor()
             cursor.execute(sql, (expire, key))
             return cursor.rowcount
@@ -197,7 +196,7 @@ class KValue:
         :return:
         """
         with self.conn as conn:
-            sql = f'select exists (select 1 from {self.tbname} where key = ?)'
+            sql = f"select exists (select 1 from {self.tbname} where key = ?)"
             cursor = conn.cursor()
             cursor.execute(sql, (key,))
             result = cursor.fetchone()[0]
@@ -210,7 +209,7 @@ class KValue:
         :return:
         """
         with self.conn as conn:
-            sql = f'delete from {self.tbname} where key = ?'
+            sql = f"delete from {self.tbname} where key = ?"
             cursor = conn.cursor()
             cursor.execute(sql, (key,))
             return cursor.rowcount
@@ -221,7 +220,7 @@ class KValue:
         :return:
         """
         with self.conn as conn:
-            sql = f'delete from {self.tbname}'
+            sql = f"delete from {self.tbname}"
             cursor = conn.cursor()
             cursor.execute(sql)
             return cursor.rowcount
@@ -232,12 +231,12 @@ class KValue:
         :return:
         """
         with self.conn as conn:
-            sql = f'delete from {self.tbname} where expire <= ?'
+            sql = f"delete from {self.tbname} where expire <= ?"
             cursor = conn.cursor()
             cursor.execute(sql, (time.time(),))
             return cursor.rowcount
 
-    def execute(self, sql: str, parameters: Sequence[Any] | dict = None):
+    def execute(self, sql: str, parameters: Sequence[Any] | dict | None = None):
         """
         执行
         :param sql: 语句
@@ -249,7 +248,7 @@ class KValue:
             cursor.execute(sql, parameters or ())
             return cursor.rowcount
 
-    def executemany(self, sql: str, parameters: Sequence[Any] | dict = None):
+    def executemany(self, sql: str, parameters: Sequence[Any] | dict | None = None):
         """
         执行
         :param sql: 语句
@@ -261,7 +260,7 @@ class KValue:
             cursor.executemany(sql, parameters or [])
             return cursor.rowcount
 
-    def fetchone(self, sql: str, parameters: Sequence[Any] | dict = None):
+    def fetchone(self, sql: str, parameters: Sequence[Any] | dict | None = None):
         """
         查询
         :param sql: 语句
@@ -273,7 +272,7 @@ class KValue:
             cursor.execute(sql, parameters or ())
             return cursor.fetchone()
 
-    def fetchall(self, sql: str, parameters: Sequence[Any] | dict = None) -> Generator:
+    def fetchall(self, sql: str, parameters: Sequence[Any] | dict | None = None) -> Generator:
         """
         查询
         :param sql: 语句
@@ -283,8 +282,7 @@ class KValue:
         with self.conn as conn:
             cursor = conn.cursor()
             cursor.execute(sql, parameters or ())
-            for row in cursor:
-                yield row
+            yield from cursor
 
     def remove(self):
         """

@@ -166,86 +166,86 @@ deb-src https://mirrors.aliyun.com/debian/ bullseye-backports main non-free cont
 
 mirrors_cmds = {
     # ubuntu
-    'ubuntu24.04': [
-        'cp /etc/apt/sources.list /etc/apt/sources.list.bak.$(date +%Y%m%d%H%M%S) 2>/dev/null ; true',
-        'echo "{mirror}" > /etc/apt/sources.list'.format(mirror=ubuntu_2404),
-        'apt-get update',
+    "ubuntu24.04": [
+        "cp /etc/apt/sources.list /etc/apt/sources.list.bak.$(date +%Y%m%d%H%M%S) 2>/dev/null ; true",
+        f'echo "{ubuntu_2404}" > /etc/apt/sources.list',
+        "apt-get update",
     ],
-    'ubuntu23.04': [
-        'cp /etc/apt/sources.list /etc/apt/sources.list.bak.$(date +%Y%m%d%H%M%S) 2>/dev/null ; true',
-        'echo "{mirror}" > /etc/apt/sources.list'.format(mirror=ubuntu_2304),
-        'apt-get update',
+    "ubuntu23.04": [
+        "cp /etc/apt/sources.list /etc/apt/sources.list.bak.$(date +%Y%m%d%H%M%S) 2>/dev/null ; true",
+        f'echo "{ubuntu_2304}" > /etc/apt/sources.list',
+        "apt-get update",
     ],
-    'ubuntu22.04': [
-        'cp /etc/apt/sources.list /etc/apt/sources.list.bak.$(date +%Y%m%d%H%M%S) 2>/dev/null ; true',
-        'echo "{mirror}" > /etc/apt/sources.list'.format(mirror=ubuntu_2204),
-        'apt-get update',
+    "ubuntu22.04": [
+        "cp /etc/apt/sources.list /etc/apt/sources.list.bak.$(date +%Y%m%d%H%M%S) 2>/dev/null ; true",
+        f'echo "{ubuntu_2204}" > /etc/apt/sources.list',
+        "apt-get update",
     ],
-    'ubuntu20.04': [
-        'cp /etc/apt/sources.list /etc/apt/sources.list.bak.$(date +%Y%m%d%H%M%S) 2>/dev/null ; true',
-        'echo "{mirror}" > /etc/apt/sources.list'.format(mirror=ubuntu_2004),
-        'apt-get update',
+    "ubuntu20.04": [
+        "cp /etc/apt/sources.list /etc/apt/sources.list.bak.$(date +%Y%m%d%H%M%S) 2>/dev/null ; true",
+        f'echo "{ubuntu_2004}" > /etc/apt/sources.list',
+        "apt-get update",
     ],
-    'ubuntu18.04': [
-        'cp /etc/apt/sources.list /etc/apt/sources.list.bak.$(date +%Y%m%d%H%M%S) 2>/dev/null ; true',
-        'echo "{mirror}" > /etc/apt/sources.list'.format(mirror=ubuntu_1804),
-        'apt-get update',
+    "ubuntu18.04": [
+        "cp /etc/apt/sources.list /etc/apt/sources.list.bak.$(date +%Y%m%d%H%M%S) 2>/dev/null ; true",
+        f'echo "{ubuntu_1804}" > /etc/apt/sources.list',
+        "apt-get update",
     ],
-    'ubuntu16.04': [
-        'cp /etc/apt/sources.list /etc/apt/sources.list.bak.$(date +%Y%m%d%H%M%S) 2>/dev/null ; true',
-        'echo "{mirror}" > /etc/apt/sources.list'.format(mirror=ubuntu_1604),
-        'apt-get update',
+    "ubuntu16.04": [
+        "cp /etc/apt/sources.list /etc/apt/sources.list.bak.$(date +%Y%m%d%H%M%S) 2>/dev/null ; true",
+        f'echo "{ubuntu_1604}" > /etc/apt/sources.list',
+        "apt-get update",
     ],
-    'ubuntu14.04': [
-        'cp /etc/apt/sources.list /etc/apt/sources.list.bak.$(date +%Y%m%d%H%M%S) 2>/dev/null ; true',
-        'echo "{mirror}" > /etc/apt/sources.list'.format(mirror=ubuntu_1404),
-        'apt-get update',
+    "ubuntu14.04": [
+        "cp /etc/apt/sources.list /etc/apt/sources.list.bak.$(date +%Y%m%d%H%M%S) 2>/dev/null ; true",
+        f'echo "{ubuntu_1404}" > /etc/apt/sources.list',
+        "apt-get update",
     ],
     # debian
-    'debian11': [
-        'cp /etc/apt/sources.list /etc/apt/sources.list.bak.$(date +%Y%m%d%H%M%S) 2>/dev/null ; true',
-        'echo "{mirror}" > /etc/apt/sources.list'.format(mirror=debian_11x),
-        'apt-get update',
+    "debian11": [
+        "cp /etc/apt/sources.list /etc/apt/sources.list.bak.$(date +%Y%m%d%H%M%S) 2>/dev/null ; true",
+        f'echo "{debian_11x}" > /etc/apt/sources.list',
+        "apt-get update",
     ],
-    'debian10': [
-        'cp /etc/apt/sources.list /etc/apt/sources.list.bak.$(date +%Y%m%d%H%M%S) 2>/dev/null ; true',
-        'echo "{mirror}" > /etc/apt/sources.list'.format(mirror=debian_10x),
-        'apt-get update',
+    "debian10": [
+        "cp /etc/apt/sources.list /etc/apt/sources.list.bak.$(date +%Y%m%d%H%M%S) 2>/dev/null ; true",
+        f'echo "{debian_10x}" > /etc/apt/sources.list',
+        "apt-get update",
     ],
-    'debian9': [
-        'cp /etc/apt/sources.list /etc/apt/sources.list.bak.$(date +%Y%m%d%H%M%S) 2>/dev/null ; true',
-        'echo "{mirror}" > /etc/apt/sources.list'.format(mirror=debian_9x),
-        'apt-get update',
+    "debian9": [
+        "cp /etc/apt/sources.list /etc/apt/sources.list.bak.$(date +%Y%m%d%H%M%S) 2>/dev/null ; true",
+        f'echo "{debian_9x}" > /etc/apt/sources.list',
+        "apt-get update",
     ],
-    'debian8': [
-        'cp /etc/apt/sources.list /etc/apt/sources.list.bak.$(date +%Y%m%d%H%M%S) 2>/dev/null ; true',
-        'echo "{mirror}" > /etc/apt/sources.list'.format(mirror=debian_8x),
-        'apt-get update',
+    "debian8": [
+        "cp /etc/apt/sources.list /etc/apt/sources.list.bak.$(date +%Y%m%d%H%M%S) 2>/dev/null ; true",
+        f'echo "{debian_8x}" > /etc/apt/sources.list',
+        "apt-get update",
     ],
-    'debian7': [
-        'cp /etc/apt/sources.list /etc/apt/sources.list.bak.$(date +%Y%m%d%H%M%S) 2>/dev/null ; true',
-        'echo "{mirror}" > /etc/apt/sources.list'.format(mirror=debian_7x),
-        'apt-get update',
+    "debian7": [
+        "cp /etc/apt/sources.list /etc/apt/sources.list.bak.$(date +%Y%m%d%H%M%S) 2>/dev/null ; true",
+        f'echo "{debian_7x}" > /etc/apt/sources.list',
+        "apt-get update",
     ],
     # centos
-    'centos8': [
-        'cp /etc/yum.repos.d/CentOS-Base.repo /etc/yum.repos.d/CentOS-Base.repo.bak.$(date +%Y%m%d%H%M%S) 2>/dev/null ; true',
-        'curl -o /etc/yum.repos.d/CentOS-Base.repo https://mirrors.aliyun.com/repo/Centos-vault-8.5.2111.repo',
-        'yum clean all && yum makecache',
+    "centos8": [
+        "cp /etc/yum.repos.d/CentOS-Base.repo /etc/yum.repos.d/CentOS-Base.repo.bak.$(date +%Y%m%d%H%M%S) 2>/dev/null ; true",
+        "curl -o /etc/yum.repos.d/CentOS-Base.repo https://mirrors.aliyun.com/repo/Centos-vault-8.5.2111.repo",
+        "yum clean all && yum makecache",
     ],
-    'centos7': [
-        'cp /etc/yum.repos.d/CentOS-Base.repo /etc/yum.repos.d/CentOS-Base.repo.bak.$(date +%Y%m%d%H%M%S) 2>/dev/null ; true',
-        'curl -o /etc/yum.repos.d/CentOS-Base.repo https://mirrors.aliyun.com/repo/Centos-7.repo',
-        'yum clean all && yum makecache',
+    "centos7": [
+        "cp /etc/yum.repos.d/CentOS-Base.repo /etc/yum.repos.d/CentOS-Base.repo.bak.$(date +%Y%m%d%H%M%S) 2>/dev/null ; true",
+        "curl -o /etc/yum.repos.d/CentOS-Base.repo https://mirrors.aliyun.com/repo/Centos-7.repo",
+        "yum clean all && yum makecache",
     ],
-    'centos6': [
-        'cp /etc/yum.repos.d/CentOS-Base.repo /etc/yum.repos.d/CentOS-Base.repo.bak.$(date +%Y%m%d%H%M%S) 2>/dev/null ; true',
-        'curl -o /etc/yum.repos.d/CentOS-Base.repo https://mirrors.aliyun.com/repo/Centos-vault-6.10.repo',
-        'yum clean all && yum makecache',
+    "centos6": [
+        "cp /etc/yum.repos.d/CentOS-Base.repo /etc/yum.repos.d/CentOS-Base.repo.bak.$(date +%Y%m%d%H%M%S) 2>/dev/null ; true",
+        "curl -o /etc/yum.repos.d/CentOS-Base.repo https://mirrors.aliyun.com/repo/Centos-vault-6.10.repo",
+        "yum clean all && yum makecache",
     ],
     # rocky
-    'rocky': [
+    "rocky": [
         """sed -e 's|^mirrorlist=|#mirrorlist=|g' -e 's|^#baseurl=http://dl.rockylinux.org/$contentdir|baseurl=https://mirrors.aliyun.com/rockylinux|g' -i.bak.$(date +%Y%m%d%H%M%S) /etc/yum.repos.d/rocky*.repo""",
-        'dnf makecache',
+        "dnf makecache",
     ],
 }

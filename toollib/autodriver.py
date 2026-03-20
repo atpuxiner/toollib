@@ -6,13 +6,13 @@
 @description
 @history
 """
+
 import os
 import platform as sysplatform
 import re
 import shutil
 import subprocess
 import sys
-import typing as t
 import urllib.request as urlrequest
 from pathlib import Path
 from urllib.error import URLError
@@ -22,11 +22,10 @@ from toollib.useragent import random_ua
 from toollib.utils import VersionCmper
 from toollib.validator import choicer
 
+__all__ = ["chromedriver"]
 
-__all__ = ['chromedriver']
 
-
-def chromedriver(driver_dir: t.Union[str, Path] = '.', platform: str = None, browser_version: str = None) -> str:
+def chromedriver(driver_dir: str | Path = ".", platform: str | None = None, browser_version: str | None = None) -> str:
     """
     自动下载谷歌驱动（注：若指定目录存在与浏览器版本一致的驱动则会跳过）
 
@@ -67,13 +66,13 @@ class ChromeDriver:
     @classmethod
     def download(cls, driver_dir: str, platform: str, browser_version: str) -> str:
         driver_dir, platform, browser_version = cls.__handle_params(driver_dir, platform, browser_version)
-        if platform.startswith('win'):
-            exec_file = 'chromedriver.exe'
-            platform = 'win32'
+        if platform.startswith("win"):
+            exec_file = "chromedriver.exe"
+            platform = "win32"
         else:
-            exec_file = 'chromedriver'
-            if platform == 'mac-arm64':
-                platform = 'mac_arm64'
+            exec_file = "chromedriver"
+            if platform == "mac-arm64":
+                platform = "mac_arm64"
         browser_latest_version = cls.__rurl("https://cdn.npmmirror.com/binaries/chromedriver/LATEST_RELEASE")
         if not browser_version:
             browser_version = browser_latest_version
@@ -83,21 +82,26 @@ class ChromeDriver:
             is_eq, local_driver_version = cls.__check_local_driver(driver_file, browser_version)
             if is_eq:
                 return driver_file
-        download_url, sml_version, is_test_version = cls.__get_download_url(platform, browser_version, browser_latest_version)
+        download_url, sml_version, is_test_version = cls.__get_download_url(
+            platform, browser_version, browser_latest_version
+        )
         if not download_url:
-            raise DriverError('This version may not exist')
-        if local_driver_version and sml_version \
-                and local_driver_version.startswith('.'.join(sml_version.split('.')[:3])):
+            raise DriverError("This version may not exist")
+        if (
+            local_driver_version
+            and sml_version
+            and local_driver_version.startswith(".".join(sml_version.split(".")[:3]))
+        ):
             return driver_file
         try:
-            download_name = download_url.split('/')[-1]
+            download_name = download_url.split("/")[-1]
             download_file = driver_dir.joinpath(download_name).as_posix()
             cls.__download_driver(download_url, download_file, is_test_version, browser_latest_version)
-            shutil.unpack_archive(download_file, driver_dir, 'zip')
+            shutil.unpack_archive(download_file, driver_dir, "zip")
             os.remove(download_file)
-            _driver_unpack_dir = download_file.rstrip('.zip')
+            _driver_unpack_dir = download_file.rstrip(".zip")
             if os.path.isdir(_driver_unpack_dir):
-                for f in [exec_file, 'LICENSE.chromedriver']:
+                for f in [exec_file, "LICENSE.chromedriver"]:
                     dst_file = os.path.join(_driver_unpack_dir, f)
                     if os.path.isfile(dst_file):
                         local_file = driver_dir.joinpath(f)
@@ -108,19 +112,19 @@ class ChromeDriver:
             if os.path.isfile(driver_file):
                 return driver_file
             else:
-                raise DriverError('Download driver failed')
+                raise DriverError("Download driver failed")
         except Exception as err:
-            if getattr(err, 'code', None) == 404:
-                sys.stdout.write('This version may not exist\n')
+            if getattr(err, "code", None) == 404:
+                sys.stdout.write("This version may not exist\n")
                 sys.exit()
             else:
                 raise
 
     @staticmethod
     def __download_driver(url, filename, is_test_version, browser_latest_version, timeout=60):
-        print('Downloading driver, please wait. This may take several minutes depending upon your network connection')
+        print("Downloading driver, please wait. This may take several minutes depending upon your network connection")
         try:
-            with urlrequest.urlopen(url, timeout=timeout) as response, open(filename, 'wb') as outfile:
+            with urlrequest.urlopen(url, timeout=timeout) as response, open(filename, "wb") as outfile:
                 shutil.copyfileobj(response, outfile)
         except URLError as err:
             print(str(err))
@@ -137,49 +141,45 @@ class ChromeDriver:
         request = urlrequest.Request(
             url,
             headers={
-                'User-Agent': random_ua(),
-            })
+                "User-Agent": random_ua(),
+            },
+        )
         return urlrequest.urlopen(request).read().decode()
 
     @staticmethod
     def __handle_params(driver_dir: str, platform: str, browser_version: str):
-        driver_dir = driver_dir if driver_dir else '.'
-        driver_dir = Path(driver_dir).absolute()
+        driver_dir = driver_dir if driver_dir else "."
+        driver_dir = Path(driver_dir).resolve()
         driver_dir.mkdir(parents=True, exist_ok=True)
         if not platform:
             _platform = sys.platform.lower()
-            if _platform.startswith('win') or _platform.startswith('cygwin'):
-                platform = 'win32'
-            elif _platform.startswith('darwin'):
-                if sysplatform.platform().lower().endswith('arm64'):
-                    platform = 'mac-arm64'
-                else:
-                    platform = 'mac64'
-            elif _platform.startswith('linux'):
-                platform = 'linux64'
+            if _platform.startswith("win") or _platform.startswith("cygwin"):
+                platform = "win32"
+            elif _platform.startswith("darwin"):
+                platform = "mac-arm64" if sysplatform.platform().lower().endswith("arm64") else "mac64"
+            elif _platform.startswith("linux"):
+                platform = "linux64"
             else:
-                raise DriverError(f'{_platform}: 不支持该系统')
+                raise DriverError(f"{_platform}: 不支持该系统")
         else:
             platform = platform.lower()
-            platform = choicer(
-                platform,
-                choices=['win32', 'win64', 'mac64', 'mac-arm64', 'linux64'],
-                lable='platform')
+            platform = choicer(platform, choices=["win32", "win64", "mac64", "mac-arm64", "linux64"], lable="platform")
         if not browser_version:
             try:
-                if platform.startswith('win'):
+                if platform.startswith("win"):
                     import winreg
-                    key = winreg.OpenKey(winreg.HKEY_CURRENT_USER, r'Software\Google\Chrome\BLBeacon')
-                    browser_version, _type = winreg.QueryValueEx(key, 'version')
+
+                    key = winreg.OpenKey(winreg.HKEY_CURRENT_USER, r"Software\Google\Chrome\BLBeacon")
+                    browser_version, _type = winreg.QueryValueEx(key, "version")
                 else:
-                    if platform.startswith('mac'):
-                        cmd = ['/Applications/Google Chrome.app/Contents/MacOS/Google Chrome', '--version']
+                    if platform.startswith("mac"):
+                        cmd = ["/Applications/Google Chrome.app/Contents/MacOS/Google Chrome", "--version"]
                     else:
-                        cmd = ['/usr/bin/google-chrome', '--version']
+                        cmd = ["/usr/bin/google-chrome", "--version"]
                     result = subprocess.run(cmd, capture_output=True, text=True)
                     browser_version = result.stdout.strip().split()[-1]
             except Exception as err:
-                sys.stderr.write(f'获取浏览器版本失败（请手动指定）：{err}\n')
+                sys.stderr.write(f"获取浏览器版本失败（请手动指定）：{err}\n")
                 sys.exit(1)
         return driver_dir, platform, browser_version
 
@@ -187,39 +187,41 @@ class ChromeDriver:
     def __check_local_driver(driver_file: str, browser_version: str) -> tuple:
         is_eq, local_driver_version = False, None
         try:
-            result = subprocess.run([driver_file, '--version'], capture_output=True, text=True)
+            result = subprocess.run([driver_file, "--version"], capture_output=True, text=True)
             local_driver_version = result.stdout.strip().split()[1]
-            browser_version_split = browser_version.split('.')
+            browser_version_split = browser_version.split(".")
             if local_driver_version != browser_version:
                 if len(browser_version_split) > 1:
-                    is_eq = local_driver_version.startswith('.'.join(browser_version_split[:3]))
+                    is_eq = local_driver_version.startswith(".".join(browser_version_split[:3]))
                 else:
-                    is_eq = (browser_version_split == local_driver_version.split('.')[:1])
+                    is_eq = browser_version_split == local_driver_version.split(".")[:1]
         except Exception:
             pass
         return is_eq, local_driver_version
 
     @classmethod
     def __get_download_url(cls, platform: str, browser_version: str, browser_latest_version: str):
-        _download_url = 'https://cdn.npmmirror.com/binaries/chromedriver/{version}/chromedriver_{platform}.zip'
+        _download_url = "https://cdn.npmmirror.com/binaries/chromedriver/{version}/chromedriver_{platform}.zip"
         # _download_test_url = 'https://edgedl.me.gvt1.com/edgedl/chrome/chrome-for-testing/{version}/{platform}/chromedriver-{platform}.zip'
-        _download_test_url = 'https://storage.googleapis.com/chrome-for-testing-public/{version}/{platform}/chromedriver-{platform}.zip'
-        download_url,  sml_version, is_test_version = None, None, False
+        _download_test_url = (
+            "https://storage.googleapis.com/chrome-for-testing-public/{version}/{platform}/chromedriver-{platform}.zip"
+        )
+        download_url, sml_version, is_test_version = None, None, False
 
         try:
-            browser_version_split = browser_version.split('.')
+            browser_version_split = browser_version.split(".")
             if VersionCmper(browser_version) <= VersionCmper(browser_latest_version):
-                resp = cls.__rurl('https://registry.npmmirror.com/-/binary/chromedriver')
+                resp = cls.__rurl("https://registry.npmmirror.com/-/binary/chromedriver")
                 vs = re.findall(r'"name":"([^"]+)/"', resp)
                 vs_dict = {}
                 max_v = 0, None
                 for v in vs:
-                    if v == 'icons':
+                    if v == "icons":
                         continue
                     if v == browser_version:
                         sml_version = v
                         break
-                    v0 = v.split('.')[0]
+                    v0 = v.split(".")[0]
                     vs_dict[v0] = v
                     if int(v0) >= max_v[0]:
                         max_v = int(v0), v
@@ -233,10 +235,10 @@ class ChromeDriver:
                 is_test_version = True
                 sml_version = cls.__find_test_version(browser_version_short=".".join(browser_version_split[:3]))
                 if sml_version:
-                    if platform == 'mac64':
-                        platform = 'mac-x64'
-                    elif platform == 'mac_arm64':
-                        platform = 'mac-arm64'
+                    if platform == "mac64":
+                        platform = "mac-x64"
+                    elif platform == "mac_arm64":
+                        platform = "mac-arm64"
                     download_url = _download_test_url.format(version=sml_version, platform=platform)
         finally:
             pass

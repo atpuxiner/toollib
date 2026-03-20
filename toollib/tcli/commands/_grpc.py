@@ -13,10 +13,11 @@ from pathlib import Path
 
 from toollib.tcli.base import BaseCmd
 from toollib.tcli.commands.plugins import grpc_tpl
-from toollib.tcli.option import Options, Arg
+from toollib.tcli.option import Arg, Options
 
 try:
-    import grpc, grpc_tools
+    import grpc
+    import grpc_tools
 except ImportError as err:
     sys.stderr.write(f"ERROR: {err} (pip install grpcio, grpcio_tools)\n")
     sys.exit(1)
@@ -54,9 +55,7 @@ class Cmd(BaseCmd):
             f1.write(self.__replace(grpc_tpl.HELLO_PROTO, name))
             f2.write(self.__replace(grpc_tpl.HELLO_SERVER, name))
             f3.write(self.__replace(grpc_tpl.HELLO_CLIENT, name))
-        cmd = "python -m grpc_tools.protoc -I {0} --python_out {0} --grpc_python_out {0} {1}".format(
-            dir_path, proto_path
-        )
+        cmd = f"python -m grpc_tools.protoc -I {dir_path} --python_out {dir_path} --grpc_python_out {dir_path} {proto_path}"
         subprocess.run(cmd, shell=True)
 
     @staticmethod

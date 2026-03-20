@@ -1,21 +1,23 @@
 import csv
 import itertools
 import warnings
+from collections.abc import Generator
 from pathlib import Path
-from typing import Generator, Literal
+from typing import Literal
+
 from toollib.utils import detect_encoding
 
 
 def split_csv(
-        filepath: str,
-        max_rows: int,
-        max_files: int = None,
-        output_dir: str = None,
-        part_sep: str = "_",
-        part_prefix: str = "",
-        part_zfill: int = 3,
-        part_pos: Literal["after", "before"] = "after",
-        encoding: str = None,
+    filepath: str,
+    max_rows: int,
+    max_files: int | None = None,
+    output_dir: str | None = None,
+    part_sep: str = "_",
+    part_prefix: str = "",
+    part_zfill: int = 3,
+    part_pos: Literal["after", "before"] = "after",
+    encoding: str | None = None,
 ) -> Generator[str, None, None]:
     """
     分割 csv 文件
@@ -48,15 +50,15 @@ def split_csv(
         raise FileNotFoundError(f"File not found: {filepath}")
 
     output_dir = Path(output_dir) if output_dir else src_path.parent
-    output_dir.mkdir(parents=True, exist_ok=True)
+    output_dir.mkdir(parents=True, exist_ok=True)  # type: ignore
 
     encoding = encoding or detect_encoding(str(src_path))
-    with open(src_path, 'r', encoding=encoding, newline='') as f:
+    with open(src_path, "r", encoding=encoding, newline="") as f:
         reader = csv.reader(f)
         try:
             header = next(reader)
         except StopIteration:
-            warnings.warn("No rows found in the file.")
+            warnings.warn("No rows found in the file.", stacklevel=2)
             return
 
         file_index = 0
@@ -68,9 +70,9 @@ def split_csv(
                 file_name = f"{src_path.stem}{part_sep}{part_name}{src_path.suffix}"
             else:
                 file_name = f"{part_name}{part_sep}{src_path.stem}{src_path.suffix}"
-            out_path = output_dir / file_name
+            out_path = output_dir / file_name  # type: ignore
             written_rows = 0
-            with open(out_path, 'w', encoding=encoding, newline='') as out_f:
+            with open(out_path, "w", encoding=encoding, newline="") as out_f:
                 writer = csv.writer(out_f)
                 writer.writerow(header)
                 for row in itertools.islice(reader, max_rows):

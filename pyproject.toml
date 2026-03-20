@@ -9,10 +9,10 @@ description = "This is a tool library."
 authors = [{ name = "axiner", email = "atpuxiner@163.com" }]
 urls = { Homepage = "https://github.com/atpuxiner/toollib" }
 classifiers = [
-    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
     "Operating System :: OS Independent",
 ]
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 license-files = ["LICENSE"]
 readme = "README.md"
 dynamic = [
@@ -111,6 +111,7 @@ ignore = [
   "UP015",
   "RUF022",
   "RUF012",
+  "RUF023",
 ]
 
 [tool.ruff.lint.per-file-ignores]

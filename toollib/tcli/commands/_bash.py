@@ -12,7 +12,7 @@ import sys
 
 from toollib.tcli.base import BaseCmd
 from toollib.tcli.commands.plugins import bash_tpl
-from toollib.tcli.option import Options, Arg
+from toollib.tcli.option import Arg, Options
 
 
 class Cmd(BaseCmd):

@@ -9,8 +9,9 @@ class Chars:
 
         +++++[更多详见参数或源码]+++++
     """
-    lowercases = 'abcdefghijklmnopqrstuvwxyz'
-    uppercases = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
-    digits = '0123456789'
+
+    lowercases = "abcdefghijklmnopqrstuvwxyz"
+    uppercases = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+    digits = "0123456789"
     punctuation = r"""~`!@#$%^&*()_-+={[}]|\:;"'<,>.?/"""
-    whitespace = ' \t\n\r\v\f'
+    whitespace = " \t\n\r\v\f"

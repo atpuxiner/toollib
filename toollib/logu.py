@@ -6,48 +6,52 @@
 @description
 @history
 """
-import logging.config
+
+import logging
 import os
 import sys
 import traceback
+from collections.abc import Callable
 from contextvars import ContextVar
 from pathlib import Path
-from typing import Callable
 
 from loguru import logger
-from loguru._logger import Logger  # noqa
+from loguru._logger import Logger
 
 try:
     import orjson as json
+
     _has_orjson = True
 except ImportError:
     import json
+
     _has_orjson = False
 
 __all__ = [
-    'LogFormatter',
-    'LogInterception',
-    'init_logger',
+    "LogFormatter",
+    "LogInterception",
+    "init_logger",
 ]
 
 
 class LogFormatter:
-
     def __init__(
-            self,
-            fmt: str = "{time:YYYY-MM-DD HH:mm:ss.SSS} {level} {name} {file}:{line} {message}",
-            datefmt: str = "%Y-%m-%d %H:%M:%S.%f",
-            msecfmt: int = 3,
-            request_id_var: ContextVar = None,
-            fmt_with_request_id: str = "{time:YYYY-MM-DD HH:mm:ss.SSS} {level} {extra[request_id]} {name} {file}:{line} {message}",
-            serialize: bool = False,
+        self,
+        fmt: str = "{time:YYYY-MM-DD HH:mm:ss.SSS} {level} {name} {file}:{line} {message}",
+        datefmt: str = "%Y-%m-%d %H:%M:%S.%f",
+        msecfmt: int = 3,
+        request_id_var: ContextVar | None = None,
+        fmt_with_request_id: str = "{time:YYYY-MM-DD HH:mm:ss.SSS} {level} {extra[request_id]} {name} {file}:{line} {message}",
+        serialize: bool = False,
     ):
         self.fmt = fmt
         self.datefmt = datefmt
         self.msecfmt = msecfmt
         self.request_id_var = request_id_var
-        if self.request_id_var: self.fmt = fmt_with_request_id
-        if self.fmt: self.fmt = self.fmt.rstrip("\n") + "\n"
+        if self.request_id_var:
+            self.fmt = fmt_with_request_id
+        if self.fmt:
+            self.fmt = self.fmt.rstrip("\n") + "\n"
         self.serialize = serialize
 
     def __call__(self, record, *args, **kwargs):
@@ -60,7 +64,7 @@ class LogFormatter:
         if self.serialize:
             timestamp = record["time"].strftime(self.datefmt)
             if ".%f" in self.datefmt:
-                timestamp = timestamp[:-self.msecfmt].rstrip(".")
+                timestamp = timestamp[: -self.msecfmt].rstrip(".")
             log_entry = {
                 "timestamp": timestamp,
                 "level": record["level"].name,
@@ -78,14 +82,14 @@ class LogFormatter:
                     "stacktrace": "".join(traceback.format_exception(exc.type, exc.value, exc.traceback)),
                 }
             if _has_orjson:
-                record["extra"]["json"] = json.dumps(log_entry, default=str).decode("utf-8")
+                record["extra"]["json"] = json.dumps(log_entry, default=str).decode("utf-8")  # type: ignore
             else:
-                record["extra"]["json"] = json.dumps(log_entry, ensure_ascii=False, default=str)
-            self.fmt = "{extra[json]}\n"
-        else:
-            if record["exception"] and "{exception}" not in self.fmt:
-                self.fmt += "{exception}"
-        return self.fmt
+                record["extra"]["json"] = json.dumps(log_entry, ensure_ascii=False, default=str)  # type: ignore
+            return "{extra[json]}\n"
+        fmt = self.fmt
+        if record["exception"] and "{exception}" not in fmt:
+            fmt += "{exception}"
+        return fmt
 
 
 class LogInterception(logging.Handler):
@@ -113,32 +117,32 @@ class LogInterception(logging.Handler):
 
 
 def init_logger(
-        name: str = None,
-        level: str | int = "INFO",
-        fmt: str = "{time:YYYY-MM-DD HH:mm:ss.SSS} {level} {name} {file}:{line} {message}",
-        datefmt: str = "%Y-%m-%d %H:%M:%S.%f",
-        msecfmt: int = 3,
-        request_id_var: ContextVar = None,
-        fmt_with_request_id: str = "{time:YYYY-MM-DD HH:mm:ss.SSS} {level} {extra[request_id]} {name} {file}:{line} {message}",
-        serialize: bool = False,
-        formatter: Callable = None,
-        clear_handlers: bool = True,
-        enable_console: bool = True,
-        enable_file: bool = True,
-        outdir: str | Path = None,
-        access_name: str = "access.log",
-        error_name: str = "error.log",
-        name_with_pid: bool = False,
-        encoding: str = "utf-8",
-        rotation: str = "00:00",
-        retention: str = "30 days",
-        compression: str = None,
-        enqueue: bool = True,
-        backtrace: bool = False,
-        diagnose: bool = False,
-        catch: bool = True,
-        interception: type[logging.Handler] = None,
-        **kwargs
+    name: str | None = None,
+    level: str | int = "INFO",
+    fmt: str = "{time:YYYY-MM-DD HH:mm:ss.SSS} {level} {name} {file}:{line} {message}",
+    datefmt: str = "%Y-%m-%d %H:%M:%S.%f",
+    msecfmt: int = 3,
+    request_id_var: ContextVar | None = None,
+    fmt_with_request_id: str = "{time:YYYY-MM-DD HH:mm:ss.SSS} {level} {extra[request_id]} {name} {file}:{line} {message}",
+    serialize: bool = False,
+    formatter: Callable | None = None,
+    clear_handlers: bool = True,
+    enable_console: bool = True,
+    enable_file: bool = True,
+    outdir: str | Path | None = None,
+    access_name: str = "access.log",
+    error_name: str = "error.log",
+    name_with_pid: bool = False,
+    encoding: str = "utf-8",
+    rotation: str = "00:00",
+    retention: str = "30 days",
+    compression: str | None = None,
+    enqueue: bool = True,
+    backtrace: bool = False,
+    diagnose: bool = False,
+    catch: bool = True,
+    interception: type[logging.Handler] | None = None,
+    **kwargs,
 ) -> Logger:
     """
     初始化日志器
@@ -148,7 +152,7 @@ def init_logger(
         # 初始化
         from toollib import logu
 
-        logger = logu.init_logger(__name__)
+        logger = logu.init_logger()
         logger.info("hello")
 
         # 其他模块调用建议
@@ -191,7 +195,6 @@ def init_logger(
         logger.remove(None)
     if interception:
         logging.basicConfig(handlers=[interception()], level=level)
-    logger.level(level)
     formatter = formatter or LogFormatter(
         fmt=fmt,
         datefmt=datefmt,

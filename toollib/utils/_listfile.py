@@ -1,13 +1,13 @@
+from collections.abc import Generator
 from pathlib import Path
-from typing import Union, Generator
 
 
 def listfile(
-        src: Union[str, Path],
-        pattern: str = '*',
-        is_str: bool = False,
-        is_name: bool = False,
-        is_r: bool = False,
+    src: str | Path,
+    pattern: str = "*",
+    is_str: bool = False,
+    is_name: bool = False,
+    is_r: bool = False,
 ) -> Generator:
     """
     文件列表
@@ -29,7 +29,7 @@ def listfile(
     """
     src_dir = Path(src).absolute()
     if not src_dir.is_dir():
-        raise FileNotFoundError(f'{src} directory does not exist')
+        raise FileNotFoundError(f"{src} directory does not exist")
     src_files = src_dir.rglob(pattern) if is_r is True else src_dir.glob(pattern)
     for f in src_files:
         if f.is_file():

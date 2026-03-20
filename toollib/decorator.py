@@ -6,31 +6,33 @@
 @description
 @history
 """
+
 import asyncio
 import os
 import re
 import sys
 import time
 import traceback
-import typing as t
-from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor
+from collections.abc import Callable
+from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
 from functools import wraps
+from typing import Any, Literal
 
 from toollib.utils import sysname
 
 __all__ = [
-    'catch_exception',
-    'timer',
-    'sys_required',
-    'to_async',
+    "catch_exception",
+    "timer",
+    "sys_required",
+    "to_async",
 ]
 
 
 def catch_exception(
-        is_raise: bool = True,
-        default: t.Any = None,
-        exception: t.Type[Exception] = None,
-        errmsg: str = None,
+    is_raise: bool = True,
+    default: Any = None,
+    exception: type[Exception] | None = None,
+    errmsg: str | None = None,
 ):
     """
     捕获异常
@@ -50,7 +52,7 @@ def catch_exception(
     :return:
     """
 
-    def wrapper(func: t.Callable):
+    def wrapper(func: Callable):
         @wraps(func)
         def inner(*args, **kwargs):
             try:
@@ -58,7 +60,7 @@ def catch_exception(
             except Exception as e:
                 if is_raise is True:
                     if exception is not None:
-                        raise exception(errmsg or str(e))
+                        raise exception(errmsg or str(e)) from e
                     raise
                 else:
                     traceback.print_exc()
@@ -69,7 +71,7 @@ def catch_exception(
     return wrapper
 
 
-def timer(func: t.Callable):
+def timer(func: Callable):
     """
     计时器
 
@@ -87,16 +89,16 @@ def timer(func: t.Callable):
 
     @wraps(func)
     def wrapper(*args, **kwargs):
-        print('[{0}]starting...'.format(func.__name__))
+        print(f"[{func.__name__}]starting...")
         start_time = time.time()
         result = func(*args, **kwargs)
-        print('[{0}]completed({1:.2f}s)'.format(func.__name__, time.time() - start_time))
+        print(f"[{func.__name__}]completed({time.time() - start_time:.2f}s)")
         return result
 
     return wrapper
 
 
-def sys_required(supported_sys: str = None, errmsg: str = None, is_raise: bool = False):
+def sys_required(supported_sys: str | None = None, errmsg: str | None = None, is_raise: bool = False):
     """
     系统要求
 
@@ -115,17 +117,17 @@ def sys_required(supported_sys: str = None, errmsg: str = None, is_raise: bool =
     :param is_raise: 是否raise
     :return:
     """
-    errmsg = errmsg or 'System only supported: %s' % supported_sys
+    errmsg = errmsg or f"System only supported: {supported_sys}"
 
     def wrapper(func):
         @wraps(func)
         def inner(*args, **kwargs):
-            curr_sysname = os.environ.get('sysname') or sysname()
+            curr_sysname = os.environ.get("sysname") or sysname()
             if supported_sys and not re.search(supported_sys, curr_sysname, re.I):
                 if is_raise is True:
                     raise TypeError(errmsg)
                 else:
-                    sys.stderr.write(errmsg + '\n')
+                    sys.stderr.write(errmsg + "\n")
                     sys.exit(1)
             return func(*args, **kwargs)
 
@@ -134,10 +136,7 @@ def sys_required(supported_sys: str = None, errmsg: str = None, is_raise: bool =
     return wrapper
 
 
-def to_async(
-        pool_type: t.Literal['thread', 'process'] = 'thread',
-        max_workers: int = None
-):
+def to_async(pool_type: Literal["thread", "process"] = "thread", max_workers: int | None = None):
     """
     转为异步函数
 
@@ -154,16 +153,16 @@ def to_async(
     :return:
     """
 
-    def wrapper(func: t.Callable):
-        if pool_type == 'thread':
+    def wrapper(func: Callable):
+        if pool_type == "thread":
             executor = ThreadPoolExecutor(max_workers=max_workers)
-        elif pool_type == 'process':
+        elif pool_type == "process":
             executor = ProcessPoolExecutor(max_workers=max_workers)
         else:
             raise ValueError("pool_type only supported: ['thread', 'process']")
 
         @wraps(func)
-        async def inner(*args, **kwargs) -> t.Any:
+        async def inner(*args, **kwargs) -> Any:
             loop = asyncio.get_running_loop()
             result = await loop.run_in_executor(executor, lambda: func(*args, **kwargs))
             return result

@@ -6,8 +6,9 @@
 @description
 @history
 """
-prog = 'pytcli'
-description = 'A command line for python toollib package'
+
+prog = "pytcli"
+description = "A command line for python toollib package"
 usage = """Usage:
   pytcli <command> [options]
 Commands:
@@ -60,7 +61,7 @@ options:
   -h/--help     帮助
   -d/--dest     目标路径[可选]
   --conda       是否初始化conda[可选]
-  --prettier    是否初始化prettier[可选]
+  --prettier    是否设置prettier[可选]
 """
 
 docker = """usage:

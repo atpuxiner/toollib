@@ -1,12 +1,12 @@
 from datetime import datetime
-from typing import Literal, Union
+from typing import Literal
 from zoneinfo import ZoneInfo
 
 
 def now2timestamp(
-        unit: Literal['fs', 's', 'ms', 'us', 'ns'] = "ms",
-        tzname: str = "Asia/Shanghai",
-) -> Union[int, float]:
+    unit: Literal["fs", "s", "ms", "us", "ns"] = "ms",
+    tzname: str = "Asia/Shanghai",
+) -> int | float:
     """
     获取当前时间戳
 

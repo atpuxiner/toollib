@@ -1,23 +1,20 @@
-from typing import Any, Protocol, TypeVar, Generic
+from typing import Any, Generic, Protocol, TypeVar
 
 
 class VFrom(Protocol):
-    def get(self, key: Any, default: Any = None) -> Any:
-        ...
+    def get(self, key: Any, default: Any = None) -> Any: ...
 
-    def __contains__(self, key: Any) -> bool:
-        ...
+    def __contains__(self, key: Any) -> bool: ...
 
 
 class VConverter(Protocol):
-    def __call__(self, value: Any) -> Any:
-        ...
+    def __call__(self, value: Any) -> Any: ...
 
 
-T = TypeVar('T')
+T = TypeVar("T")
 
 
-class FrozenVar(Generic[T]):
+class FrozenVar(Generic[T]):  # noqa: UP046
     __slots__ = ()
 
 
