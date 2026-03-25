@@ -1,29 +1,10 @@
 """
-SQLAlchemy 异步 CRUD 工具库（支持 PostgreSQL、MySQL、SQLite），其中 CRUDMixin 可集成到模型类
-
-e.g.::
-
-    from sqlalchemy.ext.asyncio import AsyncSession
-    from mymodels import User
-
-    async def example(session: AsyncSession):
-
-        # 查询
-        user = await fetch_one(session, User, where={"id": 1})
-        users = await fetch_all(session, User, limit=10)
-
-        # 创建
-        created = await create(session, User, values={"name": "Tom"})
-
-        # 删除
-        deleted = await delete(session, User, where={"id": 1})
-
-        # 更新
-        updated = await update(session, User, values={"name": "New"}, where={"id": 1})
-
-        # ...
-
-    +++++[更多详见参数或源码]+++++
+@author axiner
+@version v1.0.0
+@created 2026/2/8 10:00
+@abstract SQLAlchemy 异步 CRUD 工具库（支持 PostgreSQL、MySQL、SQLite），其中 CRUDMixin 可集成到模型类
+@description
+@history
 """
 
 from collections.abc import Callable, Mapping, Sequence

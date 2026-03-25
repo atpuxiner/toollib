@@ -210,7 +210,7 @@ class ChromeDriver:
 
         try:
             browser_version_split = browser_version.split(".")
-            if VersionCmper(browser_version) <= VersionCmper(browser_latest_version):
+            if VersionCmper.le(browser_version, browser_latest_version):
                 resp = cls.__rurl("https://registry.npmmirror.com/-/binary/chromedriver")
                 vs = re.findall(r'"name":"([^"]+)/"', resp)
                 vs_dict = {}
