@@ -25,12 +25,12 @@ from apscheduler.schedulers.blocking import BlockingScheduler
 
 logger = logging.getLogger(__name__)
 
-__all__ = ["SchedulerManager"]
+__all__ = ["Scheduler"]
 
 
-class SchedulerManager:
+class Scheduler:
     """
-    Scheduler Manager
+    Scheduler
 
     e.g.::
 
@@ -47,9 +47,9 @@ class SchedulerManager:
         └─ main.py
 
         # app/scheduler/__init__.py
-        from toollib.apsched import SchedulerManager
+        from toollib.apsched import Scheduler
 
-        sched = SchedulerManager(
+        sched = Scheduler(
             mode="blocking",
             autodiscover=["app.scheduler.jobs"],
         )
