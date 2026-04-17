@@ -29,7 +29,7 @@ except ImportError:
 
 __all__ = [
     "LogFormatter",
-    "LogInterception",
+    "InterceptionHandler",
     "init_logger",
 ]
 
@@ -92,28 +92,72 @@ class LogFormatter:
         return fmt
 
 
-class LogInterception(logging.Handler):
-    _level_map = {
-        logging.NOTSET: "NOTSET",
-        logging.DEBUG: "DEBUG",
-        logging.INFO: "INFO",
-        logging.WARNING: "WARNING",
-        logging.ERROR: "ERROR",
-        logging.CRITICAL: "CRITICAL",
-    }
+class InterceptionHandler(logging.Handler):
+    def __init__(
+        self,
+        max_depth: int = 10,
+        fields: tuple | None = (
+            "message",
+            "levelname",
+            "levelno",
+            "name",
+            "pathname",
+            "filename",
+            "module",
+            "lineno",
+            "funcName",
+            "created",
+            "msecs",
+            "relativeCreated",
+            "thread",
+            "threadName",
+            "processName",
+            "asctime",
+            "taskName",
+        ),
+        context: Callable[[], dict] | None = None,
+    ):
+        super().__init__()
+        self.max_depth = max_depth
+        self.fields = fields
+        self.context = context
 
     def emit(self, record: logging.LogRecord):
+
         if record.name.startswith("loguru."):
             return
-        level = self._level_map.get(record.levelno, record.levelno)
+
         try:
-            frame, depth = logging.currentframe(), 2
-            while frame and frame.f_code.co_filename == logging.__file__:
-                frame = frame.f_back
-                depth += 1
+            level = logger.level(record.levelname).name
         except Exception:
-            depth = 2
-        logger.opt(depth=depth, exception=record.exc_info).log(level, record.getMessage())
+            level = record.levelno
+
+        frame = sys._getframe().f_back
+        depth = 0
+        skip_file = os.path.normcase(logging.__file__)
+        while frame and depth < self.max_depth:
+            if os.path.normcase(frame.f_code.co_filename) != skip_file:
+                break
+            frame = frame.f_back
+            depth += 1
+
+        extra = {k: getattr(record, k, None) for k in self.fields or () if hasattr(record, k)}
+        if self.context:
+            try:
+                ctx = self.context()
+                if ctx:
+                    extra.update(ctx)
+            except Exception:
+                pass
+
+        exc = record.exc_info
+        if not exc or exc[0] is None:
+            exc = None
+
+        logger.opt(
+            depth=depth + 1,
+            exception=exc,
+        ).bind(**extra).log(level, record.getMessage())
 
 
 def init_logger(
@@ -141,7 +185,7 @@ def init_logger(
     backtrace: bool = False,
     diagnose: bool = False,
     catch: bool = True,
-    interception: type[logging.Handler] | None = None,
+    interception: type[logging.Handler] | None = InterceptionHandler,
     **kwargs,
 ) -> Logger:
     """
@@ -187,6 +231,10 @@ def init_logger(
     :param diagnose: 诊断
     :param catch: 捕获
     :param interception: 拦截器
+    :param kwargs:
+        interception_max_depth: int, 最大遍历深度
+        interception_fields: tuple, LogRecord字段
+        interception_context: Callable, 获取上下文的函数
     """
     if not enable_console and not enable_file:
         raise ValueError("enable_file and enable_console cannot both be False")
@@ -194,7 +242,22 @@ def init_logger(
     if clear_handlers:
         logger.remove(None)
     if interception:
-        logging.basicConfig(handlers=[interception()], level=level)
+        root_logger = logging.getLogger()
+        if clear_handlers:
+            root_logger.handlers.clear()
+        root_logger.setLevel(level)
+        if interception is InterceptionHandler:
+            _interception_kwargs = {}
+            if max_depth := kwargs.get("interception_max_depth"):
+                _interception_kwargs["max_depth"] = max_depth
+            if fields := kwargs.get("interception_fields"):
+                _interception_kwargs["fields"] = fields
+            if context := kwargs.get("interception_context"):
+                _interception_kwargs["context"] = context
+            interception_handler = interception(**_interception_kwargs)
+        else:
+            interception_handler = interception()
+        root_logger.addHandler(interception_handler)
     formatter = formatter or LogFormatter(
         fmt=fmt,
         datefmt=datefmt,

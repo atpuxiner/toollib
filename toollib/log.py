@@ -162,6 +162,7 @@ def init_logger(
     :param propagate: 向上传播
     :param enqueue: 启用队列
     :param queue_maxsize: 队列最大容量
+    :param kwargs
     """
     if not enable_console and not enable_file:
         raise ValueError("enable_file and enable_console cannot both be False")
