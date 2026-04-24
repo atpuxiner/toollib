@@ -22,9 +22,9 @@ class ConfModel:
             attr3: str = "abc"  # 选填（若[环境变量/配置文件]未设置则为初始值）
 
         # 注：
-        #   - 参数 `attr_prefer_env` 属性加载优先env，如果环境变量中存在则不从 v_from 中获取
+        #   - 参数 `prefer_env_attr` 优先env属性，如果环境变量中存在直接获取，否则从 v_from 中获取
         #   - 参数 `v_from` 值来源（默认从yaml文件加载），支持任意 dict（可从数据库等获取）
-        config = Config(dotenv_path="./.env", yaml_path="./xxx.yaml")
+        config = Config(yaml_path="./xxx.yaml", prefer_env_attr=True)
         print(config.attr1)
 
         +++++[更多详见参数或源码]+++++
@@ -34,12 +34,12 @@ class ConfModel:
         self,
         dotenv_path: str | Path | None = None,
         dotenv_encoding: str = "utf-8",
-        dotenv_override_env: bool = False,
+        dotenv_override: bool = False,
         dotenv_interpolate: bool = True,
         yaml_path: str | Path | None = None,
         yaml_encoding: str = "utf-8",
-        file_prefer_env: bool = True,
-        attr_prefer_env: bool = True,
+        prefer_env_path: bool = False,
+        prefer_env_attr: bool = False,
         skip_empty_env: bool = True,
         v_from: dict | None = None,
         v_converters: dict[str, VConverter] | None = None,
@@ -52,47 +52,47 @@ class ConfModel:
         初始化
         :param dotenv_path: .env路径
         :param dotenv_encoding: .env编码
-        :param dotenv_override_env: .env覆盖系统env
+        :param dotenv_override: .env覆盖
         :param dotenv_interpolate: .env变量插值
         :param yaml_path: yaml路径
         :param yaml_encoding: yaml编码
-        :param file_prefer_env: 文件加载优化env（文件路径、编码等）
-        :param attr_prefer_env: 属性加载优先env
+        :param prefer_env_path: 优先env路径（文件路径、编码等）
+        :param prefer_env_attr: 优先env属性
         :param skip_empty_env: 跳过空字符串env
         :param v_from: 值来源（默认从yaml文件加载）
         :param v_converters: 值转换器
         :param sep: 分隔符，针对list、tuple、set、dict
         :param kv_sep: 键值分隔符，针对dict
-        :param ignore_unsupported_type: 忽略不支持的类型（直接设置）
+        :param ignore_unsupported_type: 忽略不支持的类型（直接设置原值）
         :param raise_on_error: 遇错抛异常
         """
-        _dotenv_path = (os.environ.get("DOTENV_PATH") if file_prefer_env else None) or dotenv_path
-        if _dotenv_path is not None:
-            if not Path(_dotenv_path).is_file():
+        if prefer_env_path:
+            dotenv_path = os.environ.get("DOTENV_PATH") or dotenv_path
+        if dotenv_path is not None:
+            if not Path(dotenv_path).is_file():
                 raise ConfModelError(
-                    f"The specified .env file does not exist or is not a regular file: {_dotenv_path!r}"
+                    f"The specified .env file does not exist or is not a regular file: {dotenv_path!r}"
                 )
-            _dotenv_encoding = (os.environ.get("DOTENV_ENCODING") if file_prefer_env else None) or dotenv_encoding
-            _dotenv_override_env = (
-                os.environ.get("DOTENV_OVERRIDE_ENV") if file_prefer_env else None
-            ) or dotenv_override_env
-            _dotenv_interpolate = (
-                os.environ.get("DOTENV_INTERPOLATE") if file_prefer_env else None
-            ) or dotenv_interpolate
+            if prefer_env_path:
+                dotenv_encoding = os.environ.get("DOTENV_ENCODING") or dotenv_encoding
+                dotenv_override = os.environ.get("DOTENV_OVERRIDE") or dotenv_override
+                dotenv_interpolate = os.environ.get("DOTENV_INTERPOLATE") or dotenv_interpolate
             load_dotenv(
-                dotenv_path=_dotenv_path,
-                encoding=_dotenv_encoding,
-                override=_dotenv_override_env,
-                interpolate=_dotenv_interpolate,
+                dotenv_path=dotenv_path,
+                encoding=dotenv_encoding,
+                override=dotenv_override,
+                interpolate=dotenv_interpolate,
             )
-        self._yaml_path = (os.environ.get("YAML_PATH") if file_prefer_env else None) or yaml_path
+        self._yaml_path, self._yaml_encoding = yaml_path, yaml_encoding
+        if prefer_env_path:
+            self._yaml_path = os.environ.get("YAML_PATH") or self._yaml_path
+            self._yaml_encoding = os.environ.get("YAML_ENCODING") or self._yaml_encoding
         if self._yaml_path is not None and not Path(self._yaml_path).is_file():
             raise ConfModelError(
                 f"The specified yaml file does not exist or is not a regular file: {self._yaml_path!r}"
             )
-        self._yaml_encoding = (os.environ.get("YAML_ENCODING") if file_prefer_env else None) or yaml_encoding
         self.load(
-            attr_prefer_env=attr_prefer_env,
+            prefer_env_attr=prefer_env_attr,
             skip_empty_env=skip_empty_env,
             v_from=v_from,
             v_converters=v_converters,
@@ -104,7 +104,7 @@ class ConfModel:
 
     def load(
         self,
-        attr_prefer_env: bool = True,
+        prefer_env_attr: bool = True,
         skip_empty_env: bool = True,
         v_from: dict | None = None,
         v_converters: dict[str, VConverter] | None = None,
@@ -115,7 +115,7 @@ class ConfModel:
     ):
         """
         加载
-        :param attr_prefer_env: 属性加载优先env
+        :param prefer_env_attr: 优先env属性
         :param skip_empty_env: 跳过空字符串env
         :param v_from: 值来源（默认从yaml文件加载）
         :param v_converters: 值转换器
@@ -140,7 +140,7 @@ class ConfModel:
                 if v is Undefined:
                     raise ConfModelError(f"Undefined required frozen variable: {k!r}")
                 continue
-            v_from = _os_environ if attr_prefer_env and k in _os_environ else _v_from
+            v_from = _os_environ if prefer_env_attr and k in _os_environ else _v_from
             v = parse_variable(
                 k=k,
                 v_type=v_type,
