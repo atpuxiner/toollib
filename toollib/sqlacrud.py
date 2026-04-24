@@ -191,7 +191,9 @@ def _to_dict(model, columns: Sequence[str] | None = None) -> dict[str, Any]:
     return {col: getattr(model, col) for col in columns if hasattr(model, col)}
 
 
-def _parse_order_by(model, order_by: str | Sequence[str]) -> list[ColumnElement[Any]]:
+def _parse_order_by(
+    model, order_by: str | ColumnElement[Any] | Sequence[str | ColumnElement[Any]] | None
+) -> list[ColumnElement[Any]]:
     """解析排序字段
 
     支持格式:
@@ -199,17 +201,29 @@ def _parse_order_by(model, order_by: str | Sequence[str]) -> list[ColumnElement[
     - "-created_at" -> created_at DESC
     - ("name", "-created_at") -> name ASC, created_at DESC
     - ["name", "-created_at"] -> name ASC, created_at DESC
+    - Tb.CREATE_TIME.asc() -> 直接使用表达式
+    - [Tb.CREATE_TIME.desc(), "name"] -> 混合使用表达式和字符串
     """
+    if order_by is None:
+        return []
+
+    if isinstance(order_by, ColumnElement):
+        return [order_by]
+
     if isinstance(order_by, str):
         order_by = (order_by,)
 
     result = []
-    for order_column in order_by:
-        if order_column.startswith("-"):
-            column_name = order_column[1:]
+    for item in order_by:
+        if isinstance(item, ColumnElement):
+            result.append(item)
+            continue
+
+        if item.startswith("-"):
+            column_name = item[1:]
             desc = True
         else:
-            column_name = order_column
+            column_name = item
             desc = False
 
         if not hasattr(model, column_name):
@@ -281,7 +295,7 @@ async def fetch_one(
     *,
     columns: Sequence[str] | None = None,
     where: dict[str, Any] | ColumnElement[Any] | Sequence[ColumnElement[Any]] | None = None,
-    order_by: str | Sequence[str] | None = None,
+    order_by: str | ColumnElement[Any] | Sequence[str | ColumnElement[Any]] | None = None,
     converters: dict[str, Callable] | None = None,
 ) -> dict[str, Any] | None:
     """查询单条记录
@@ -295,7 +309,10 @@ async def fetch_one(
             - dict: {"name": "Tom", "age": 18}
             - ColumnElement: User.age > 18
             - Sequence[ColumnElement]: [User.age > 18, User.status == 1]
-        order_by: 排序字段，支持多字段。字符串前面加 "-" 表示降序
+        order_by: 排序字段，支持：
+            - str: "name" 升序，"-created_at" 降序
+            - ColumnElement: User.created_at.asc()
+            - Sequence: ["name", User.created_at.desc()] 混合使用
         converters: 字段转换器，{"column": func}
 
     Returns:
@@ -305,6 +322,9 @@ async def fetch_one(
 
         # 单字段排序
         user = await fetch_one(session, User, order_by="-created_at")
+
+        # 使用表达式排序
+        user = await fetch_one(session, User, order_by=User.created_at.desc())
 
         # 字段转换
         user = await fetch_one(
@@ -341,7 +361,7 @@ async def fetch_all(
     *,
     columns: Sequence[str] | None = None,
     where: dict[str, Any] | ColumnElement[Any] | Sequence[ColumnElement[Any]] | None = None,
-    order_by: str | Sequence[str] | None = None,
+    order_by: str | ColumnElement[Any] | Sequence[str | ColumnElement[Any]] | None = None,
     offset: int | None = None,
     limit: int | None = None,
     converters: dict[str, Callable] | None = None,
@@ -357,7 +377,10 @@ async def fetch_all(
             - dict: {"name": "Tom", "age": 18}
             - ColumnElement: User.age > 18
             - Sequence[ColumnElement]: [User.age > 18, User.status == 1]
-        order_by: 排序字段，支持 "-column" 降序
+        order_by: 排序字段，支持：
+            - str: "name" 升序，"-created_at" 降序
+            - ColumnElement: User.created_at.asc()
+            - Sequence: ["name", User.created_at.desc()] 混合使用
         offset: 分页偏移
         limit: 分页限制
         converters: 字段转换器，{"column": func}
@@ -369,6 +392,9 @@ async def fetch_all(
 
         # 基础查询
         users = await fetch_all(session, User, order_by="-created_at", limit=10)
+
+        # 使用表达式排序
+        users = await fetch_all(session, User, order_by=User.created_at.desc())
 
         # 字段转换
         users = await fetch_all(
@@ -1153,7 +1179,7 @@ class CRUDMixin:
         *,
         columns: Sequence[str] | None = None,
         where: dict[str, Any] | ColumnElement[Any] | Sequence[ColumnElement[Any]] | None = None,
-        order_by: str | Sequence[str] | None = None,
+        order_by: str | ColumnElement[Any] | Sequence[str | ColumnElement[Any]] | None = None,
         converters: dict[str, Callable] | None = None,
     ) -> dict[str, Any] | None:
         """查询单条记录
@@ -1166,7 +1192,10 @@ class CRUDMixin:
                 - dict: {"name": "Tom", "age": 18}
                 - ColumnElement: User.age > 18
                 - Sequence[ColumnElement]: [User.age > 18, User.status == 1]
-            order_by: 排序字段，支持多字段。字符串前面加 "-" 表示降序
+            order_by: 排序字段，支持：
+                - str: "name" 升序，"-created_at" 降序
+                - ColumnElement: User.created_at.asc()
+                - Sequence: ["name", User.created_at.desc()] 混合使用
             converters: 字段转换器，{"column": func}
 
         Returns:
@@ -1181,7 +1210,7 @@ class CRUDMixin:
         *,
         columns: Sequence[str] | None = None,
         where: dict[str, Any] | ColumnElement[Any] | Sequence[ColumnElement[Any]] | None = None,
-        order_by: str | Sequence[str] | None = None,
+        order_by: str | ColumnElement[Any] | Sequence[str | ColumnElement[Any]] | None = None,
         offset: int | None = None,
         limit: int | None = None,
         converters: dict[str, Callable] | None = None,
@@ -1196,7 +1225,10 @@ class CRUDMixin:
                 - dict: {"name": "Tom", "age": 18}
                 - ColumnElement: User.age > 18
                 - Sequence[ColumnElement]: [User.age > 18, User.status == 1]
-            order_by: 排序字段，支持 "-column" 降序
+            order_by: 排序字段，支持：
+                - str: "name" 升序，"-created_at" 降序
+                - ColumnElement: User.created_at.asc()
+                - Sequence: ["name", User.created_at.desc()] 混合使用
             offset: 分页偏移
             limit: 分页限制
             converters: 字段转换器，{"column": func}
