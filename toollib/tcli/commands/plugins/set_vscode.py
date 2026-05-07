@@ -240,64 +240,52 @@ class SetVSCode:
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "Python: 当前文件",
+      "name": "Python: 项目(导入/运行)",
       "type": "debugpy",
       "request": "launch",
       "program": "${file}",
+      "env": {
+        "PYTHONPATH": "${workspaceFolder}"
+      },
       "cwd": "${workspaceFolder}",
       "console": "integratedTerminal",
       "justMyCode": true
     },
     {
-      "name": "Python: 当前文件(切目录)",
+      "name": "Python: 当前(导入/运行)",
       "type": "debugpy",
       "request": "launch",
       "program": "${file}",
+      "env": {
+        "PYTHONPATH": "${fileDirname}"
+      },
       "cwd": "${fileDirname}",
       "console": "integratedTerminal",
       "justMyCode": true
     },
     {
-      "name": "Python: 当前模块",
+      "name": "Python: 混合(项目/当前)",
       "type": "debugpy",
       "request": "launch",
-      "module": "${relativeFileDirname}.${fileBasenameNoExtension}",
-      "cwd": "${workspaceFolder}",
+      "program": "${file}",
+      "env": {
+        "PYTHONPATH": "${workspaceFolder}"
+      },
+      "cwd": "${fileDirname}",
       "console": "integratedTerminal",
       "justMyCode": true
     },
     {
-      "name": "Python: 当前模块(带参数)",
+      "name": "Python: 混合(当前/项目)",
       "type": "debugpy",
       "request": "launch",
-      "module": "${relativeFileDirname}.${fileBasenameNoExtension}",
-      "cwd": "${workspaceFolder}",
-      "args": "${input:programArgs}",
-      "console": "integratedTerminal",
-      "justMyCode": true
-    },
-    {
-      "name": "Python: PYTEST(当前文件)",
-      "type": "debugpy",
-      "request": "launch",
-      "module": "pytest",
-      "args": ["${file}", "-s", "-vv"],
+      "program": "${file}",
+      "env": {
+        "PYTHONPATH": "${fileDirname}"
+      },
       "cwd": "${workspaceFolder}",
       "console": "integratedTerminal",
       "justMyCode": true
-    },
-    {
-      "name": "Python: 附加到(本地进程)",
-      "type": "debugpy",
-      "request": "attach",
-      "processId": "${command:pickProcess}"
-    }
-  ],
-  "inputs": [
-    {
-      "id": "programArgs",
-      "type": "promptString",
-      "description": "输入程序参数 (例如: --config config.yaml)"
     }
   ]
 }
