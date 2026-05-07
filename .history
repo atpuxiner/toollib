@@ -1,5 +1,8 @@
 # history
 
+## v2.2.0
+- add@增加JsonDiff
+
 ## v2.1.9
 - chg@调整日志
 - chg@数据库操作

@@ -42,6 +42,7 @@ __all__ = [
     "VConverter",
     "FrozenVar",
     "Undefined",
+    "JsonDiff",
 ]
 
 if TYPE_CHECKING:
@@ -78,6 +79,7 @@ if TYPE_CHECKING:
     )
     from toollib.utils._VersionCmper import VersionCmper
     from toollib.utils._writetemp import writetemp
+    from toollib.utils._JsonDiff import JsonDiff
 
 
 def __getattr__(name):
