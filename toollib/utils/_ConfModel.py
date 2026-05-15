@@ -30,6 +30,18 @@ class ConfModel:
         +++++[更多详见参数或源码]+++++
     """
 
+    def __getattr__(self, name: str):
+        raise AttributeError(f"'{self.__class__.__name__}' object has no attribute '{name}'")
+
+    def __setattr__(self, name: str, value):
+        self.__dict__[name] = value
+
+    def __delattr__(self, name: str):
+        try:
+            del self.__dict__[name]
+        except KeyError:
+            raise AttributeError(f"'{self.__class__.__name__}' object has no attribute '{name}'") from None
+
     def __init__(
         self,
         dotenv_path: str | Path | None = None,
