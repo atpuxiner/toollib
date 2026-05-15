@@ -4,15 +4,15 @@ from typing import Any
 
 class JsonDiff:
     """
-    Json差异检测
+    Json差异
 
     e.g.::
 
-        jd = JsonDiff()
+        jdiff = JsonDiff()
 
-        1. normalize: JSON 标准化
-        2. compare: 是否等价
-        3. diff: 结构差异分析
+        1. normalize: 规范化格式
+        2. compare: 比较等价
+        3. diff: 差异分析
 
         +++++[更多详见参数或源码]+++++
     """
@@ -45,7 +45,7 @@ class JsonDiff:
         obj: Any,
     ) -> Any:
         """
-        将 JSON 结构转换为 canonical form
+        规范化格式
         """
         return self._normalize(obj)
 
@@ -55,7 +55,7 @@ class JsonDiff:
         obj2: Any,
     ) -> bool:
         """
-        判断两个 JSON 是否等价
+        比较等价
         """
         return self.normalize(obj1) == self.normalize(obj2)
 
@@ -64,11 +64,10 @@ class JsonDiff:
         obj1: Any,
         obj2: Any,
         *,
-        int_as_float: bool | None = None,
         max_diffs: int | None = None,
     ) -> list[dict[str, Any]]:
         """
-        返回结构差异
+        差异分析
 
         max_diffs:
             None -> 全量 diff
@@ -130,9 +129,6 @@ class JsonDiff:
         return obj
 
     def _normalize_float(self, value: float) -> float:
-        """
-        float 精度统一
-        """
         quantize_str = "1." + ("0" * self.float_digits)
 
         return float(
