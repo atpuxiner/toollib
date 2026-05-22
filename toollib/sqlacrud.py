@@ -346,9 +346,9 @@ async def fetch_one(
 
     stmt = select(*selected_columns).select_from(model)
 
-    if where:  # type: ignore
+    if where is not None:
         stmt = stmt.where(*_build_where_clauses(model, where))
-    if order_by:
+    if order_by is not None:
         stmt = stmt.order_by(*_parse_order_by(model, order_by))
 
     result = await session.execute(stmt.limit(1))
@@ -416,9 +416,9 @@ async def fetch_all(
 
     stmt = select(*selected_columns).select_from(model)
 
-    if where:  # type: ignore
+    if where is not None:
         stmt = stmt.where(*_build_where_clauses(model, where))
-    if order_by:
+    if order_by is not None:
         stmt = stmt.order_by(*_parse_order_by(model, order_by))
     if offset is not None:
         stmt = stmt.offset(offset)
@@ -468,7 +468,7 @@ async def count(
         +++++[更多详见参数或源码]+++++
     """
     stmt = select(func.count()).select_from(model)
-    if where:  # type: ignore
+    if where is not None:
         stmt = stmt.where(*_build_where_clauses(model, where))
     result = await session.execute(stmt)
     return result.scalar() or 0
@@ -531,7 +531,7 @@ async def create(
 
         +++++[更多详见参数或源码]+++++
     """
-    if on_conflict and (existing := await fetch_one(session, model, where=on_conflict)):
+    if on_conflict is not None and (existing := await fetch_one(session, model, where=on_conflict)):
         return Created(ok=False, rowcount=0, data=existing)
 
     obj = model(**values)
