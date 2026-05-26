@@ -1,5 +1,8 @@
 # history
 
+## v2.2.3
+- add@增加docker.yaml配置
+
 ## v2.2.2
 - fix@数据库工具判断问题
 

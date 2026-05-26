@@ -117,7 +117,6 @@ services:
     #    - sudo mkdir -p /volumes/neo4j
     # 2. Adjust the ownership and permissions of the directory
     #    - sudo chown -R 7474:7474 /volumes/neo4j
-    #    - sudo chmod -R 770 /volumes/neo4j
 
   opensearch-single:
     image: opensearchproject/opensearch:latest
@@ -147,7 +146,6 @@ services:
     #    - sudo mkdir -p /volumes/opensearch-single
     # 2. Adjust the ownership and permissions of the directory
     #    - sudo chown -R 1000:1000 /volumes/opensearch-single
-    #    - sudo chmod -R 770 /volumes/opensearch-single
     # 3. vm-map config
     #   - template:
     #       - sudo sysctl -w vm.max_map_count=262144
@@ -276,6 +274,28 @@ services:
       - "9001:9001"
     command: server /data --console-address ":9001"
 
+  rustfs:
+    image: rustfs/rustfs:latest
+    container_name: rustfs
+    restart: unless-stopped
+    environment:
+      RUSTFS_VOLUMES: /data
+      RUSTFS_ADDRESS: 0.0.0.0:9000
+      RUSTFS_CONSOLE_ENABLE: true
+      RUSTFS_CONSOLE_ADDRESS: 0.0.0.0:9001
+      RUSTFS_ACCESS_KEY: admin
+      RUSTFS_SECRET_KEY: Mimmm@129
+    volumes:
+      - /volumes/rustfs/data:/data
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    # Before starting the container:
+    # 1. Create the directory (if it does not exist)
+    #    - sudo mkdir -p /volumes/rustfs/{data,logs}
+    # 2. Adjust the ownership and permissions of the directory
+    #    - sudo chown -R 10001:10001 /volumes/rustfs
+
   nginx:
     image: nginx:latest
     container_name: nginx
@@ -320,4 +340,3 @@ services:
     #    - sudo mkdir -p /volumes/jenkins
     # 2. Adjust the ownership and permissions of the directory
     #    - sudo chown -R 1000:1000 /volumes/jenkins
-    #    - sudo chmod -R 770 /volumes/jenkins
