@@ -183,6 +183,15 @@ class SetVSCode:
   "terminal.integrated.fontSize": 13,
   "terminal.integrated.lineHeight": 1.2,
   "terminal.integrated.enablePersistentSessions": true,
+  "terminal.integrated.scrollback": 30000,
+  "terminal.integrated.suggest.enabled": true,
+  "terminal.integrated.suggest.quickSuggestions": {
+    "commands": "on",
+    "arguments": "on",
+    "unknown": "off"
+  },
+  "terminal.integrated.suggest.selectionMode": "partial",
+  "terminal.integrated.suggest.suggestOnTriggerCharacters": true,
   "python.terminal.activateEnvironment": true,
   "python.terminal.executeInFileDir": true,
   "python.terminal.focusAfterLaunch": true,
