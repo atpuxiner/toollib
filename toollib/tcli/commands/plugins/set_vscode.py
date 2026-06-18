@@ -203,6 +203,24 @@ class SetVSCode:
   "basedpyright.analysis.inlayHints.variableTypes": false,
   "basedpyright.analysis.inlayHints.functionReturnTypes": false,
   "basedpyright.analysis.inlayHints.callArgumentNames": false,
+  // - Disable Pylance type checking
+  "python.analysis.typeCheckingMode": "off",
+  // - Disable Pylance diagnostic warnings
+  "python.analysis.diagnosticSeverityOverrides": {
+    "reportImportCycles": "none",
+    "reportMissingImports": "none",
+    "reportMissingModuleSource": "none",
+    "reportUnboundVariable": "none",
+    "reportUndefinedVariable": "none",
+    "reportUnusedImport": "none",
+    "reportUnusedVariable": "none",
+    "reportShadowedVariable": "none"
+  },
+  // - Disable Pylance autocompletion, hover tips and LSP language service
+  "python.analysis.completeFunctionParens": false,
+  "python.analysis.autoImportCompletions": false,
+  "python.analysis.indexing": false,
+  "python.languageServer": "None",
 
   // ================= Ruff =================
   "[python]": {
@@ -306,24 +324,22 @@ class SetVSCode:
         extensions_file = vscode_dir / self.ExtensionsFileName
         extensions_content = """{
   "recommendations": [
-    // ==================== Python开发 (必选) ====================
+    // ==================== Python Development (Required) ====================
     "ms-python.python",
     "ms-python.debugpy",
     "detachhead.basedpyright",
     "charliermarsh.ruff",
-    "njpwerner.autodocstring",
 
-    // ==================== 前端开发 (可选) ====================
+    // ==================== Frontend Development (Optional) ====================
     "esbenp.prettier-vscode",
     "vue.volar",
 
-    // ==================== 效率工具 (可选) ====================
+    // ==================== Productivity Tools (Optional) ====================
     "alefragnani.project-manager",
     "k--kato.intellij-idea-keybindings",
     "mhutchie.git-graph",
     "cweijan.vscode-database-client2",
-    "cweijan.dbclient-jdbc",
-    "alibaba-cloud.tongyi-lingma"
+    "cweijan.dbclient-jdbc"
   ]
 }
 """
@@ -332,7 +348,7 @@ class SetVSCode:
     @staticmethod
     def _get_pyproject_config(tool_name: str) -> str:
         if tool_name == "basedpyright":
-            return """# ==================== BasedPyright 配置 ====================
+            return """# ==================== BasedPyright ====================
 [tool.basedpyright]
 typeCheckingMode = "standard"
 include = [
@@ -367,7 +383,7 @@ reportUnknownParameterType = "none"
 reportMissingTypeStubs = "none"
 """
         elif tool_name == "ruff":
-            return """# ==================== Ruff 配置 ====================
+            return """# ==================== Ruff ====================
 [tool.ruff]
 line-length = 120
 
