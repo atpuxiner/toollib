@@ -11,4 +11,4 @@ from pathlib import Path
 
 here = Path(__file__).absolute().parent
 
-__version__ = "2.2.5"
+__version__ = "2.2.6"

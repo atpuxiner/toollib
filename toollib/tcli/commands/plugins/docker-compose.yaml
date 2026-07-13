@@ -1,31 +1,33 @@
 services:
 
   mysql57:
-    image: mysql:5.7
     container_name: mysql57
+    image: mysql:5.7
     restart: unless-stopped
+    ports:
+      - "3306:3306"
     environment:
       MYSQL_ROOT_PASSWORD: Mimmm@129
     volumes:
       - /volumes/mysql57:/var/lib/mysql
-    ports:
-      - "3306:3306"
 
   mysql80:
-    image: mysql:8.0
     container_name: mysql80
+    image: mysql:8.0
     restart: unless-stopped
+    ports:
+      - "3306:3306"
     environment:
       MYSQL_ROOT_PASSWORD: Mimmm@129
     volumes:
       - /volumes/mysql80:/var/lib/mysql
-    ports:
-      - "3306:3306"
 
   postgres:
-    image: postgres:latest
     container_name: postgres
+    image: postgres:latest
     restart: unless-stopped
+    ports:
+      - "5432:5432"
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: Mimmm@129
@@ -33,19 +35,21 @@ services:
       POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=C.UTF-8"
     volumes:
       - /volumes/postgres:/var/lib/postgresql
-    ports:
-      - "5432:5432"
     command: >
       postgres -c 'max_connections=200'
                -c 'shared_buffers=1GB'
                -c 'temp_buffers=8MB'
                -c 'work_mem=16MB'
                -c 'max_prepared_transactions=200'
+               -c 'maintenance_work_mem=1GB'
+               -c 'max_parallel_maintenance_workers=4'
 
   pgvector:
-    image: ankane/pgvector:latest
     container_name: pgvector
+    image: ankane/pgvector:latest
     restart: unless-stopped
+    ports:
+      - "5432:5432"
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: Mimmm@129
@@ -53,64 +57,91 @@ services:
       POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=C.UTF-8"
     volumes:
       - /volumes/pgvector:/var/lib/postgresql
-    ports:
-      - "5432:5432"
     command: >
       postgres -c 'max_connections=200'
                -c 'shared_buffers=1GB'
                -c 'temp_buffers=8MB'
                -c 'work_mem=16MB'
                -c 'max_prepared_transactions=200'
+               -c 'maintenance_work_mem=1GB'
+               -c 'max_parallel_maintenance_workers=4'
     # After started the container:
     # 1. Execute in PostgreSQL terminal
     #    - CREATE EXTENSION IF NOT EXISTS vector;
 
-  mongo:
-    image: mongo:latest
-    container_name: mongo
+  paradedb:
+    container_name: paradedb
+    image: paradedb/paradedb:latest
     restart: unless-stopped
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: Mimmm@129
+      POSTGRES_DB: postgres
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=C.UTF-8"
+    volumes:
+      - /volumes/paradedb:/var/lib/postgresql
+    command: >
+      postgres -c 'max_connections=200'
+               -c 'shared_buffers=1GB'
+               -c 'temp_buffers=8MB'
+               -c 'work_mem=16MB'
+               -c 'max_prepared_transactions=200'
+               -c 'maintenance_work_mem=1GB'
+               -c 'max_parallel_maintenance_workers=4'
+               -c 'shared_preload_libraries=pg_search,vector,pg_cron'
+    # After started the container:
+    # 1. Execute in PostgreSQL terminal
+    #    - CREATE EXTENSION IF NOT EXISTS vector;
+    #    - CREATE EXTENSION IF NOT EXISTS pg_search;
+
+  mongo:
+    container_name: mongo
+    image: mongo:latest
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
     environment:
       MONGO_INITDB_ROOT_USERNAME: root
       MONGO_INITDB_ROOT_PASSWORD: Mimmm@129
     volumes:
       - /volumes/mongo:/data/db
-    ports:
-      - "27017:27017"
 
   redis:
-    image: redis:latest
     container_name: redis
+    image: redis:latest
     restart: unless-stopped
-    volumes:
-      - /volumes/redis:/data
     ports:
       - "6379:6379"
+    volumes:
+      - /volumes/redis:/data
     command: redis-server --requirepass Mimmm@129
 
   rabbitmq:
-    image: rabbitmq:3-management
     container_name: rabbitmq
+    image: rabbitmq:3-management
     restart: unless-stopped
+    ports:
+      - "5672:5672"
+      - "15672:15672"
     environment:
       RABBITMQ_DEFAULT_USER: admin
       RABBITMQ_DEFAULT_PASS: Mimmm@129
     volumes:
       - /volumes/rabbitmq/data:/var/lib/rabbitmq
-    ports:
-      - "5672:5672"
-      - "15672:15672"
 
   neo4j:
-    image: neo4j:latest
     container_name: neo4j
+    image: neo4j:latest
     restart: unless-stopped
+    ports:
+      - "7474:7474"
+      - "7687:7687"
     environment:
       NEO4J_AUTH: neo4j/Mimmm@129
     volumes:
       - /volumes/neo4j:/data
-    ports:
-      - "7474:7474"
-      - "7687:7687"
     user: "neo4j"
     # Before starting the container:
     # 1. Create the directory (if it does not exist)
@@ -119,9 +150,12 @@ services:
     #    - sudo chown -R 7474:7474 /volumes/neo4j
 
   opensearch-single:
-    image: opensearchproject/opensearch:latest
     container_name: opensearch-single
+    image: opensearchproject/opensearch:latest
     restart: unless-stopped
+    ports:
+      - "9200:9200"
+      - "9300:9300"
     environment:
       cluster.name: opensearch-cluster
       node.name: opensearch-single
@@ -134,9 +168,6 @@ services:
       OPENSEARCH_INITIAL_ADMIN_PASSWORD: Mimmm@129
     volumes:
       - /volumes/opensearch-single:/usr/share/opensearch/data
-    ports:
-      - "9200:9200"
-      - "9300:9300"
     ulimits:
       memlock:
         soft: -1
@@ -154,9 +185,11 @@ services:
     #       - sudo sysctl -p
 
   zincsearch:
-    image: public.ecr.aws/zinclabs/zincsearch:latest
     container_name: zincsearch
+    image: public.ecr.aws/zinclabs/zincsearch:latest
     restart: unless-stopped
+    ports:
+      - "4080:4080"
     environment:
       ZINC_SERVER_ADDRESS: 0.0.0.0
       ZINC_DATA_PATH: "/data"
@@ -164,26 +197,26 @@ services:
       ZINC_FIRST_ADMIN_PASSWORD: Mimmm@129
     volumes:
       - /volumes/zincsearch:/data
-    ports:
-      - "4080:4080"
     # Before starting the container:
     # 1. Adjust permissions of the directory
     #    - sudo chmod a+rwx /volumes/zincsearch
 
   milvus-standalone:
-    image: milvusdb/milvus:v2.6.4
     container_name: milvus-standalone
+    image: milvusdb/milvus:v2.6.4
     restart: unless-stopped
+    depends_on:
+      - "milvus-etcd"
+      - "milvus-minio"
+    ports:
+      - "19530:19530"
+      - "9091:9091"
     environment:
       MINIO_REGION: us-east-1
       ETCD_ENDPOINTS: milvus-etcd:2379
       MINIO_ADDRESS: milvus-minio:9000
     volumes:
       - /volumes/milvus/standalone:/var/lib/milvus
-    ports:
-      - "19530:19530"
-      - "9091:9091"
-    command: [ "milvus", "run", "standalone" ]
     security_opt:
       - seccomp:unconfined
     healthcheck:
@@ -192,12 +225,10 @@ services:
       start_period: 90s
       timeout: 20s
       retries: 3
-    depends_on:
-      - "milvus-etcd"
-      - "milvus-minio"
+    command: [ "milvus", "run", "standalone" ]
   milvus-etcd:
-    image: quay.io/coreos/etcd:v3.5.18
     container_name: milvus-etcd
+    image: quay.io/coreos/etcd:v3.5.18
     restart: unless-stopped
     environment:
       - ETCD_AUTO_COMPACTION_MODE=revision
@@ -206,45 +237,49 @@ services:
       - ETCD_SNAPSHOT_COUNT=50000
     volumes:
       - /volumes/milvus/etcd:/etcd
-    command: etcd -advertise-client-urls=http://milvus-etcd:2379 -listen-client-urls http://0.0.0.0:2379 --data-dir /etcd
     healthcheck:
       test: [ "CMD", "etcdctl", "endpoint", "health" ]
       interval: 30s
       timeout: 20s
       retries: 3
+    command: etcd -advertise-client-urls=http://milvus-etcd:2379 -listen-client-urls http://0.0.0.0:2379 --data-dir /etcd
   milvus-minio:
-    image: minio/minio:RELEASE.2024-05-28T17-19-04Z
     container_name: milvus-minio
+    image: minio/minio:RELEASE.2024-05-28T17-19-04Z
     restart: unless-stopped
+    ports:
+      - "9001:9001"
+      - "9000:9000"
     environment:
       MINIO_ACCESS_KEY: minioadmin
       MINIO_SECRET_KEY: minioadmin
     volumes:
       - /volumes/milvus/minio:/minio_data
-    ports:
-      - "9001:9001"
-      - "9000:9000"
-    command: minio server /minio_data --console-address ":9001"
     healthcheck:
       test: [ "CMD", "curl", "-f", "http://localhost:9000/minio/health/live" ]
       interval: 30s
       timeout: 20s
       retries: 3
+    command: minio server /minio_data --console-address ":9001"
   milvus-attu:
-    image: zilliz/attu:v2.6
     container_name: milvus-attu
+    image: zilliz/attu:v2.6
     restart: unless-stopped
-    environment:
-      MILVUS_URL: localhost:19530
-    ports:
-      - "3000:3000"
     depends_on:
       - milvus-standalone
+    ports:
+      - "3000:3000"
+    environment:
+      MILVUS_URL: localhost:19530
 
   vsftpd:
-    image: fauria/vsftpd:latest
     container_name: vsftpd
+    image: fauria/vsftpd:latest
     restart: unless-stopped
+    ports:
+      - "9020:20/tcp"
+      - "9021:21/tcp"
+      - "21100-21110:21100-21110/tcp"
     environment:
       FTP_USER: admin
       FTP_PASS: Mimmm@129
@@ -253,15 +288,14 @@ services:
       UTF8_FILENAMES: YES
     volumes:
       - /volumes/vsftpd:/home/vsftpd
-    ports:
-      - "9020:20/tcp"
-      - "9021:21/tcp"
-      - "21100-21110:21100-21110/tcp"
 
   minio:
-    image: minio/minio:latest
     container_name: minio
+    image: minio/minio:latest
     restart: unless-stopped
+    ports:
+      - "9000:9000"
+      - "9001:9001"
     environment:
       MINIO_ROOT_USER: admin
       MINIO_ROOT_PASSWORD: Mimmm@129
@@ -269,15 +303,15 @@ services:
 #      MINIO_SECRET_KEY: YOUR_SECRET_KEY
     volumes:
       - /volumes/minio:/data
-    ports:
-      - "9000:9000"
-      - "9001:9001"
     command: server /data --console-address ":9001"
 
   rustfs:
-    image: rustfs/rustfs:latest
     container_name: rustfs
+    image: rustfs/rustfs:latest
     restart: unless-stopped
+    ports:
+      - "9000:9000"
+      - "9001:9001"
     environment:
       RUSTFS_VOLUMES: /data
       RUSTFS_ADDRESS: 0.0.0.0:9000
@@ -288,9 +322,6 @@ services:
     volumes:
       - /volumes/rustfs/data:/data
       - /volumes/rustfs/logs:/logs
-    ports:
-      - "9000:9000"
-      - "9001:9001"
     # Before starting the container:
     # 1. Create the directory (if it does not exist)
     #    - sudo mkdir -p /volumes/rustfs/{data,logs}
@@ -298,21 +329,25 @@ services:
     #    - sudo chown -R 10001:10001 /volumes/rustfs
 
   nginx:
-    image: nginx:latest
     container_name: nginx
+    image: nginx:latest
     restart: unless-stopped
+    ports:
+      - "80:80"
     volumes:
 #      - /volumes/nginx/conf/nginx.conf:/etc/nginx/nginx.conf
 #      - /volumes/nginx/html:/usr/share/nginx/html
       - /volumes/nginx/log:/var/log/nginx
-    ports:
-      - "80:80"
 
   gitlab:
-    image: gitlab/gitlab-ce:latest
     container_name: gitlab
+    image: gitlab/gitlab-ce:latest
     restart: unless-stopped
     hostname: gitlab.example.com
+    ports:
+      - "9080:80"
+      - "9443:443"
+      - "9022:22"
     environment:
       GITLAB_OMNIBUS_CONFIG: |
         external_url "http://gitlab.example.com"
@@ -321,21 +356,17 @@ services:
       - /volumes/gitlab/config:/etc/gitlab
       - /volumes/gitlab/data:/var/opt/gitlab
       - /volumes/gitlab/log:/var/log/gitlab
-    ports:
-      - "9080:80"
-      - "9443:443"
-      - "9022:22"
 
   jenkins:
-    image: jenkins/jenkins:lts
     container_name: jenkins
+    image: jenkins/jenkins:lts
     restart: unless-stopped
-    volumes:
-      - /volumes/jenkins/home:/var/jenkins_home
-      - /volumes/jenkins/docker.sock:/var/run/docker.sock
     ports:
       - "8080:8080"
       - "50000:50000"
+    volumes:
+      - /volumes/jenkins/home:/var/jenkins_home
+      - /volumes/jenkins/docker.sock:/var/run/docker.sock
     # Before starting the container:
     # 1. Create the directory (if it does not exist)
     #    - sudo mkdir -p /volumes/jenkins
