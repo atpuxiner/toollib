@@ -192,7 +192,7 @@ class SetVSCode:
   },
   "terminal.integrated.suggest.selectionMode": "partial",
   "terminal.integrated.suggest.suggestOnTriggerCharacters": true,
-  "python.terminal.activateEnvironment": true,
+  "python.terminal.activateEnvironment": false,
   "python.terminal.executeInFileDir": true,
   "python.terminal.focusAfterLaunch": true,
 
