@@ -335,7 +335,6 @@ class SetVSCode:
     "vue.volar",
 
     // ==================== Productivity Tools (Optional) ====================
-    "alefragnani.project-manager",
     "k--kato.intellij-idea-keybindings",
     "mhutchie.git-graph",
     "cweijan.vscode-database-client2",
