@@ -120,6 +120,6 @@ options:
   -h/--help             帮助
   -r/--requirements     依赖文件（默认requirements.txt）[可选]
   --skips               跳过（默认空，多个用`,`隔开）[可选]
-  --sep                 分隔符（默认==）[可选]
+  --sep                 分隔符（默认keep，表保留原运算符）[可选]
   --overwrite           是否覆盖[可选]
 """
