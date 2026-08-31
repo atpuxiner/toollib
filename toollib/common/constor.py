@@ -7,7 +7,7 @@
 @history
 """
 
-conda_conf = b"channels:\n  - https://mirrors.tuna.tsinghua.edu.cn/anaconda/pkgs/main/\n  - https://mirrors.tuna.tsinghua.edu.cn/anaconda/pkgs/free/\n  - https://mirrors.tuna.tsinghua.edu.cn/anaconda/pkgs/pro/\n  - https://mirrors.tuna.tsinghua.edu.cn/anaconda/pkgs/msys2/\n  - https://mirrors.tuna.tsinghua.edu.cn/anaconda/pkgs/r/\n  - https://mirrors.tuna.tsinghua.edu.cn/anaconda/pkgs/mro/\n  - https://mirrors.tuna.tsinghua.edu.cn/anaconda/cloud/conda-forge/\n  - https://mirrors.tuna.tsinghua.edu.cn/anaconda/cloud/msys2/\n  - https://mirrors.tuna.tsinghua.edu.cn/anaconda/cloud/pytorch/\n  - https://mirrors.tuna.tsinghua.edu.cn/anaconda/cloud/fastai/\n  - https://mirrors.tuna.tsinghua.edu.cn/anaconda/cloud/Paddle/\n  - https://mirrors.tuna.tsinghua.edu.cn/anaconda/cloud/menpo/\n  - https://mirrors.tuna.tsinghua.edu.cn/anaconda/cloud/bioconda/\n  - defaults\nshow_channel_urls: true"
+conda_conf = b'channels:\n  - defaults\nshow_channel_urls: true\ndefault_channels:\n  - https://mirrors.tuna.tsinghua.edu.cn/anaconda/pkgs/main\n  - https://mirrors.tuna.tsinghua.edu.cn/anaconda/pkgs/r\n  - https://mirrors.tuna.tsinghua.edu.cn/anaconda/pkgs/msys2\ncustom_channels:\n  conda-forge: https://mirrors.tuna.tsinghua.edu.cn/anaconda/cloud\n  msys2: https://mirrors.tuna.tsinghua.edu.cn/anaconda/cloud\n  bioconda: https://mirrors.tuna.tsinghua.edu.cn/anaconda/cloud\n  menpo: https://mirrors.tuna.tsinghua.edu.cn/anaconda/cloud\n  pytorch: https://mirrors.tuna.tsinghua.edu.cn/anaconda/cloud\n  fastai: https://mirrors.tuna.tsinghua.edu.cn/anaconda/cloud\n  Paddle: https://mirrors.tuna.tsinghua.edu.cn/anaconda/cloud\nremote_max_retries: 5\nremote_backoff_factor: 2\n'
 pyd_setup = b'import sys\nfrom distutils.core import setup, Extension\nfrom Cython.Build import cythonize\nsetup(ext_modules=cythonize(Extension(sys.argv.pop(), sources=[sys.argv.pop()]), language_level="3"))'
 docker_daemon = {
     "registry-mirrors": [
@@ -15,10 +15,10 @@ docker_daemon = {
         "https://docker.1ms.run",
         "https://docker.m.daocloud.io",
         "https://docker.1panel.live",
-        "https://docker.nju.edu.cn/",
-        "https://docker.mirrors.sjtug.sjtu.edu.cn/",
-        "https://mirror.ccs.tencentyun.com",
-        "https://dockerproxy.com/",
+        "https://docker.nju.edu.cn",
+        "https://docker.mirrors.sjtug.sjtu.edu.cn",
+        "https://dockerproxy.com",
+        "https://mirror.ccs.tencentyun.com"
     ],
-    "dns": ["8.8.8.8", "8.8.4.4", "223.5.5.5", "223.6.6.6"],
+    "dns": ["8.8.8.8", "8.8.4.4", "223.5.5.5", "223.6.6.6"]
 }
