@@ -12,8 +12,7 @@ from toollib.utils import FrozenVar, Undefined, VConverter, get_cls_attrs, parse
 
 class ConfModel:
     """
-    配置模型
-
+    配置模型（同时支持.env和.yaml文件）
     e.g.::
 
         class Config(ConfModel):
@@ -24,6 +23,8 @@ class ConfModel:
         # 注：
         #   - 参数 `prefer_env_attr` 优先env属性，如果环境变量中存在直接获取，否则从 v_from 中获取
         #   - 参数 `v_from` 值来源（默认从yaml文件加载），支持任意 dict（可从数据库等获取）
+        #   - 安装 orjson 后自动加速 JSON 解码；它把超过 64 位的整数解析为 float，
+        #     若配置中需保持大整数精度，请勿安装 orjson（不装则回退标准库 json）
         config = Config(yaml_path="./xxx.yaml", prefer_env_attr=True)
         print(config.attr1)
 
@@ -55,10 +56,7 @@ class ConfModel:
         skip_empty_env: bool = True,
         v_from: dict | None = None,
         v_converters: dict[str, VConverter] | None = None,
-        sep: str = ",",
-        kv_sep: str = ":",
-        ignore_unsupported_type: bool = True,
-        raise_on_error: bool = False,
+        arbitrary_types_allowed: bool = False,
     ):
         """
         初始化
@@ -73,14 +71,11 @@ class ConfModel:
         :param skip_empty_env: 跳过空字符串env
         :param v_from: 值来源（默认从yaml文件加载）
         :param v_converters: 值转换器
-        :param sep: 分隔符，针对list、tuple、set、dict
-        :param kv_sep: 键值分隔符，针对dict
-        :param ignore_unsupported_type: 忽略不支持的类型（直接设置原值）
-        :param raise_on_error: 遇错抛异常
+        :param arbitrary_types_allowed: 允许不支持的注解
         """
         if prefer_env_path:
             dotenv_path = os.environ.get("DOTENV_PATH") or dotenv_path
-        if dotenv_path is not None:
+        if dotenv_path:
             if not Path(dotenv_path).is_file():
                 raise ConfModelError(
                     f"The specified .env file does not exist or is not a regular file: {dotenv_path!r}"
@@ -99,7 +94,7 @@ class ConfModel:
         if prefer_env_path:
             self._yaml_path = os.environ.get("YAML_PATH") or self._yaml_path
             self._yaml_encoding = os.environ.get("YAML_ENCODING") or self._yaml_encoding
-        if self._yaml_path is not None and not Path(self._yaml_path).is_file():
+        if self._yaml_path and not Path(self._yaml_path).is_file():
             raise ConfModelError(
                 f"The specified yaml file does not exist or is not a regular file: {self._yaml_path!r}"
             )
@@ -108,10 +103,7 @@ class ConfModel:
             skip_empty_env=skip_empty_env,
             v_from=v_from,
             v_converters=v_converters,
-            sep=sep,
-            kv_sep=kv_sep,
-            ignore_unsupported_type=ignore_unsupported_type,
-            raise_on_error=raise_on_error,
+            arbitrary_types_allowed=arbitrary_types_allowed,
         )
 
     def load(
@@ -120,10 +112,7 @@ class ConfModel:
         skip_empty_env: bool = True,
         v_from: dict | None = None,
         v_converters: dict[str, VConverter] | None = None,
-        sep: str = ",",
-        kv_sep: str = ":",
-        ignore_unsupported_type: bool = True,
-        raise_on_error: bool = False,
+        arbitrary_types_allowed: bool = False,
     ):
         """
         加载
@@ -131,10 +120,7 @@ class ConfModel:
         :param skip_empty_env: 跳过空字符串env
         :param v_from: 值来源（默认从yaml文件加载）
         :param v_converters: 值转换器
-        :param sep: 分隔符，针对list、tuple、set、dict
-        :param kv_sep: 键值分隔符，针对dict
-        :param ignore_unsupported_type: 忽略不支持的类型（直接设置）
-        :param raise_on_error: 遇错抛异常
+        :param arbitrary_types_allowed: 允许不支持的注解
         :return:
         """
         v_converters = v_converters or {}
@@ -159,10 +145,7 @@ class ConfModel:
                 v_from=v_from,
                 default=v,
                 v_converter=v_converters.get(k),
-                sep=sep,
-                kv_sep=kv_sep,
-                ignore_unsupported_type=ignore_unsupported_type,
-                raise_on_error=raise_on_error,
+                arbitrary_types_allowed=arbitrary_types_allowed,
             )
             if v is Undefined:
                 raise ConfModelError(f"Missing required configuration: {k!r}")
