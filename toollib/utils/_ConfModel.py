@@ -17,16 +17,20 @@ class ConfModel:
 
         class Config(ConfModel):
             attr1: int  # 必填（需在[环境变量/配置文件]中设置）
-            attr2: FrozenVar[str] = "abc"  # 冻结（忽略[环境变量/配置文件]直接为初始值）
             attr3: str = "abc"  # 选填（若[环境变量/配置文件]未设置则为初始值）
+            attr2: FrozenVar[str] = "abc"  # 冻结（忽略[环境变量/配置文件]直接为初始值）
 
-        # 注：
-        #   - 参数 `prefer_env_attr` 优先env属性，如果环境变量中存在直接获取，否则从 v_from 中获取
-        #   - 参数 `v_from` 值来源（默认从yaml文件加载），支持任意 dict（可从数据库等获取）
-        #   - 安装 orjson 后自动加速 JSON 解码；它把超过 64 位的整数解析为 float，
-        #     若配置中需保持大整数精度，请勿安装 orjson（不装则回退标准库 json）
         config = Config(yaml_path="./xxx.yaml", prefer_env_attr=True)
         print(config.attr1)
+
+        # 注：
+        #   - 依赖：pip install python-dotenv PyYAML
+        #   - 参数 `prefer_env_attr` 优先env属性，如果环境变量中存在直接获取，否则从 v_from 中获取
+        #   - 参数 `v_from` 值来源（默认从yaml文件加载），支持任意 dict（可从数据库等获取）
+        #   - 安装 orjson 后自动加速 JSON 解码；它把超过 64 位的整数解析为 float（不装则回退标准库 json）
+        #   - list/tuple/set/dict 按 JSON 字符串解析，并按元素类型注解转换（tuple、set 与 list 一样使用 JSON 数组）
+        #       - MY_LIST='["a", "b", "c"]'          -> list[str]
+        #       - MY_DICT='{"key1": 1, "key2": 2}'   -> dict[str, int]
 
         +++++[更多详见参数或源码]+++++
     """

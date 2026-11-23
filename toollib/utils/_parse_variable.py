@@ -331,12 +331,11 @@ def parse_variable(
 
         value = utils.parse_variable(k="name", v_type=str, v_from=os.environ)
 
-        # list、tuple、set、dict 按 JSON 字符串解析，并按类型注解转换元素，如：
-        # MY_LIST='["a", "b", "c"]'          -> list[str]
-        # MY_DICT='{"key1": 1, "key2": 2}'   -> dict[str, int]
-
-        # 注：安装 orjson 后自动用它解码，否则回退标准库 json。
-        #     orjson 会把超过 64 位的整数解析为 float，依赖大整数精度时请勿安装 orjson。
+        # 注：
+        #   - 安装 orjson 后自动加速 JSON 解码；它把超过 64 位的整数解析为 float（不装则回退标准库 json）
+        #   - list/tuple/set/dict 按 JSON 字符串解析，并按元素类型注解转换（tuple、set 与 list 一样使用 JSON 数组）
+        #       - MY_LIST='["a", "b", "c"]'          -> list[str]
+        #       - MY_DICT='{"key1": 1, "key2": 2}'   -> dict[str, int]
 
         +++++[更多详见参数或源码]+++++
 

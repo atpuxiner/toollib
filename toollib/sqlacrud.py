@@ -1,18 +1,24 @@
 """
 @author axiner
-@version v1.0.0
+@version v1.1.0
 @created 2026/2/8 10:00
-@abstract SQLAlchemy 异步 CRUD 工具库（支持 PostgreSQL、MySQL、SQLite），其中 CRUDMixin 可集成到模型类
+@abstract SQLAlchemy 异步 CRUD 工具库（支持 PostgreSQL、MySQL、SQLite）
 @description
+- 提供查询、统计、增删改、upsert、批量插入与原生 SQL 执行的异步函数
+- CRUDMixin 可集成到模型类
 @history
+- v1.1.0 生产级加固：原子冲突处理、显式事务语义、SQLAlchemy 2.x 批量插入、列映射兼容与唯一键约束校验
+- v1.0.0 初始版本
 """
 
-from collections.abc import Callable, Mapping, Sequence
+from collections.abc import Callable, Iterable, Mapping, Sequence
 from dataclasses import dataclass, field
-from typing import Any
+from typing import Any, TypeAlias
 
 from sqlalchemy import (
+    ClauseElement,
     ColumnElement,
+    UniqueConstraint,
     func,
     inspect,
     select,
@@ -20,6 +26,9 @@ from sqlalchemy import (
 )
 from sqlalchemy import (
     delete as sa_delete,
+)
+from sqlalchemy import (
+    insert as sa_insert,
 )
 from sqlalchemy import (
     update as sa_update,
@@ -32,8 +41,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 __all__ = [
     "Created",
-    "Updated",
     "Deleted",
+    "Updated",
     "Upserted",
     "BatchCreated",
     "BulkInserted",
@@ -52,6 +61,11 @@ __all__ = [
     "CRUDMixin",
 ]
 
+WhereClause: TypeAlias = Mapping[str, Any] | ClauseElement | Iterable[ClauseElement] | None
+OrderBy: TypeAlias = str | ClauseElement | Iterable[str | ClauseElement] | None
+
+_NATIVE_INSERT_DIALECTS = frozenset({"postgresql", "mysql", "sqlite"})
+
 
 # -----------------------------------------------------------------------------
 # 返回类型定义
@@ -60,11 +74,20 @@ __all__ = [
 
 @dataclass(frozen=True, slots=True)
 class Created:
-    """创建操作结果"""
+    """`create()` 的返回结果。
 
-    ok: bool  # 是否成功
-    rowcount: int = 0  # 影响行数
-    data: dict[str, Any] | None = None  # 相关数据：创建成功时为新建数据，冲突时为已存在的数据
+    Attributes:
+        ok: 是否创建成功；`on_conflict` 命中时为 False。
+        rowcount: 创建结果计数，成功为 1，冲突为 0；回退路径未 flush 时表示计划创建数，
+            不等同于数据库实际 affected rows。
+        data: 成功时为新建数据；冲突时为已存在数据；`returning=False` 且成功时为 None。
+
+    可用 `if result:` 直接判断，语义等价于 `if result.ok:`。
+    """
+
+    ok: bool
+    rowcount: int = 0
+    data: dict[str, Any] | None = None
 
     def __bool__(self) -> bool:
         return self.ok
@@ -72,10 +95,15 @@ class Created:
 
 @dataclass(frozen=True, slots=True)
 class Deleted:
-    """删除操作结果"""
+    """`delete()` 的返回结果。
 
-    ok: bool  # 是否成功
-    rowcount: int = 0  # 删除行数
+    Attributes:
+        ok: 是否实际删除了记录，等价于 `rowcount > 0`。
+        rowcount: 删除的行数；未命中记录时为 0。
+    """
+
+    ok: bool
+    rowcount: int = 0
 
     def __bool__(self) -> bool:
         return self.ok
@@ -83,11 +111,18 @@ class Deleted:
 
 @dataclass(frozen=True, slots=True)
 class Updated:
-    """更新操作结果"""
+    """`update()` 的返回结果。
 
-    ok: bool  # 是否成功
-    rowcount: int = 0  # 影响行数
-    data: dict[str, Any] | None = None  # 更新后的数据
+    Attributes:
+        ok: 是否实际更新了记录，等价于 `rowcount > 0`。
+        rowcount: 受影响的行数；没有可更新字段或未命中记录时为 0。
+            MySQL 默认不统计“值未变化”的更新，此时可能为 0，而 PostgreSQL/SQLite 通常为 1。
+        data: `returning=True` 且命中记录时为更新后的数据，否则为 None。
+    """
+
+    ok: bool
+    rowcount: int = 0
+    data: dict[str, Any] | None = None
 
     def __bool__(self) -> bool:
         return self.ok
@@ -95,11 +130,17 @@ class Updated:
 
 @dataclass(frozen=True, slots=True)
 class Upserted:
-    """更新插入操作结果"""
+    """`upsert()` 的返回结果。
 
-    ok: bool  # 是否成功
-    rowcount: int = 0  # 影响行数
-    data: dict[str, Any] | None = None  # 操作后的数据
+    Attributes:
+        ok: 是否实际写入或更新了记录，等价于 `rowcount > 0`。
+        rowcount: 受影响行数；方言对“无变化更新”的计数可能不同。
+        data: `returning=True` 时为操作后的数据，否则为 None。
+    """
+
+    ok: bool
+    rowcount: int = 0
+    data: dict[str, Any] | None = None
 
     def __bool__(self) -> bool:
         return self.ok
@@ -107,10 +148,16 @@ class Upserted:
 
 @dataclass(frozen=True, slots=True)
 class BatchCreated:
-    """批量创建结果"""
+    """`batch_create()` 的返回结果。
 
-    ok: bool  # 是否全部成功
-    rowcount: int = 0  # 创建数量
+    Attributes:
+        ok: 是否全部创建成功；成功时为 True。
+        rowcount: 实际创建的记录数。
+        data: `returning=True` 时的创建结果列表，否则为空列表。
+    """
+
+    ok: bool
+    rowcount: int = 0
     data: list[dict[str, Any]] = field(default_factory=list)
 
     def __bool__(self) -> bool:
@@ -119,11 +166,18 @@ class BatchCreated:
 
 @dataclass(frozen=True, slots=True)
 class BulkInserted:
-    """高性能批量插入结果"""
+    """`bulk_insert()` 的返回结果。
 
-    ok: bool  # 是否成功
-    rowcount: int = 0  # 插入数量
-    data: list[dict[str, Any]] = field(default_factory=list)  # 插入的数据（可能包含默认值）
+    Attributes:
+        ok: 是否成功执行批量插入；成功时为 True。
+        rowcount: 实际插入的行数。
+        data: `return_defaults=True` 时包含数据库生成值的数据列表，否则为空列表。
+            PostgreSQL/SQLite 返回完整行；MySQL 等方言只保证补充主键。
+    """
+
+    ok: bool
+    rowcount: int = 0
+    data: list[dict[str, Any]] = field(default_factory=list)
 
     def __bool__(self) -> bool:
         return self.ok
@@ -134,104 +188,264 @@ class BulkInserted:
 # -----------------------------------------------------------------------------
 
 
-def _dialect(session: AsyncSession) -> str:
-    """获取数据库方言名称"""
-    return session.bind.dialect.name if session.bind else "unknown"
+def _mapper(model: Any):
+    inspected = inspect(model, raiseerr=False)
+    mapper = getattr(inspected, "mapper", None)
+    if mapper is None:
+        raise TypeError(f"{model!r} is not a mapped class or instance")
+    return mapper
 
 
-def _build_where_clauses(
-    model, where: dict[str, Any] | ColumnElement[Any] | Sequence[ColumnElement[Any]] | None = None
-) -> list[ColumnElement[Any]]:
-    """构建 where 条件列表
+def _model_name(model: Any) -> str:
+    return getattr(model, "__name__", type(model).__name__)
 
-    支持多种 where 格式：
-    - None: 返回空列表
-    - dict: {"name": "Tom", "age": 18} -> [User.name == "Tom", User.age == 18]
-    - ColumnElement: User.age > 18 -> [User.age > 18]
-    - Sequence[ColumnElement]: [User.age > 18, User.status == 1] -> [User.age > 18, User.status == 1]
-    """
+
+def _dialect(session: AsyncSession, model: Any | None = None) -> str:
+    bind = session.get_bind(mapper=model) if model is not None else session.get_bind()
+    return getattr(getattr(bind, "dialect", None), "name", "unknown")
+
+
+def _rowcount(result: Any) -> int:
+    return max(getattr(result, "rowcount", 0) or 0, 0)
+
+
+def _column_keys(model: Any) -> list[str]:
+    return list(_mapper(model).columns.keys())
+
+
+def _resolve_column_key(model: Any, name: str) -> str:
+    mapper = _mapper(model)
+    if not isinstance(name, str):
+        raise TypeError(f"Column name must be str, got {type(name).__name__}")
+    if name in mapper.columns:
+        return name
+    for key, column in mapper.columns.items():
+        if column.name == name:
+            return key
+    raise ValueError(f"Invalid column '{name}' for model {_model_name(model)}")
+
+
+def _resolve_column_keys(model: Any, names: Iterable[str], label: str) -> tuple[str, ...]:
+    if isinstance(names, (str, bytes)):
+        names = (names,)
+    return tuple(_resolve_column_key(model, name) for name in names)
+
+
+def _normalize_values(model: Any, values: Mapping[str, Any], label: str = "values") -> dict[str, Any]:
+    if not isinstance(values, Mapping):
+        raise TypeError(f"'{label}' must be a mapping, got {type(values).__name__}")
+
+    normalized: dict[str, Any] = {}
+    for key, value in values.items():
+        column_key = _resolve_column_key(model, key)
+        if column_key in normalized:
+            raise ValueError(f"'{label}' contains duplicate column: {column_key}")
+        normalized[column_key] = value
+    return normalized
+
+
+def _db_column_key_map(model: Any) -> dict[str, str]:
+    return {key: column.key for key, column in _mapper(model).columns.items()}
+
+
+def _normalize_db_values(model: Any, values: Mapping[str, Any], label: str = "values") -> dict[str, Any]:
+    key_map = _db_column_key_map(model)
+    return {key_map[key]: value for key, value in _normalize_values(model, values, label).items()}
+
+
+def _normalize_db_value_rows(model: Any, values: Sequence[Mapping[str, Any]]) -> list[dict[str, Any]]:
+    if isinstance(values, (str, bytes)) or not isinstance(values, Sequence):
+        raise TypeError(f"'values' must be a sequence of mappings, got {type(values).__name__}")
+
+    rows: list[dict[str, Any]] = []
+    for index, row in enumerate(values):
+        normalized = _normalize_db_values(model, row, f"values[{index}]")
+        if not normalized:
+            raise ValueError(f"'values[{index}]' must contain at least one column")
+        rows.append(normalized)
+    return rows
+
+
+def _normalize_value_rows(model: Any, values: Sequence[Mapping[str, Any]]) -> list[dict[str, Any]]:
+    if isinstance(values, (str, bytes)) or not isinstance(values, Sequence):
+        raise TypeError(f"'values' must be a sequence of mappings, got {type(values).__name__}")
+    return [_normalize_values(model, row, f"values[{index}]") for index, row in enumerate(values)]
+
+
+def _select_columns(model: Any, columns: Sequence[str] | None) -> tuple[tuple[ColumnElement[Any], ...], list[str]]:
+    keys = _column_keys(model)
+    if not columns:
+        selected = tuple(getattr(model, key).label(key) for key in keys)
+        return selected, keys
+
+    if isinstance(columns, (str, bytes)):
+        raise TypeError("'columns' must be a sequence of column names")
+
+    selected = []
+    labels: list[str] = []
+    seen: set[str] = set()
+    for column in columns:
+        key = _resolve_column_key(model, column)
+        if key in seen:
+            raise ValueError(f"'columns' contains duplicate column: {key}")
+        seen.add(key)
+        selected.append(getattr(model, key).label(column))
+        labels.append(column)
+    return tuple(selected), labels
+
+
+def _build_where_clauses(model: Any, where: WhereClause) -> list[ClauseElement]:
     if where is None:
         return []
 
-    # 情况1：字典 → 转成等值条件
     if isinstance(where, Mapping):
-        conditions = []
+        conditions: list[ClauseElement] = []
+        seen: set[str] = set()
         for key, value in where.items():
-            if not hasattr(model, key):
-                raise ValueError(f"Invalid column '{key}' for model {model.__name__}")
-            column = getattr(model, key)
-            conditions.append(column == value)
+            column_key = _resolve_column_key(model, key)
+            if column_key in seen:
+                raise ValueError(f"'where' contains duplicate column: {column_key}")
+            seen.add(column_key)
+            conditions.append(getattr(model, column_key) == value)
         return conditions
 
-    # 情况2：单个 ColumnElement
-    if isinstance(where, ColumnElement):
+    if isinstance(where, ClauseElement):
         return [where]
 
-    # 情况3：列表或元组（多个 ColumnElement）
-    if isinstance(where, (list, tuple)):
-        for i, expr in enumerate(where):
-            if not isinstance(expr, ColumnElement):
-                raise TypeError(f"where[{i}] is not a SQLAlchemy ColumnElement: {expr!r}")
-        return list(where)
+    if not isinstance(where, (str, bytes)) and isinstance(where, Iterable):
+        conditions = list(where)
+        for index, expr in enumerate(conditions):
+            if not isinstance(expr, ClauseElement):
+                raise TypeError(f"where[{index}] is not a SQLAlchemy ClauseElement: {expr!r}")
+        return conditions
 
-    raise TypeError(f"Unsupported where type: {type(where)}")
-
-
-def _columns(model) -> list[str]:
-    """获取模型所有列名"""
-    return [column.name for column in inspect(model).mapper.columns]
+    raise TypeError(f"Unsupported where type: {type(where).__name__}")
 
 
-def _to_dict(model, columns: Sequence[str] | None = None) -> dict[str, Any]:
-    """模型实例转字典"""
-    if not model:
+def _to_dict(model: Any, columns: Sequence[str] | None = None) -> dict[str, Any]:
+    if model is None:
         return {}
-    if columns is None:
-        columns = _columns(model)
-    return {col: getattr(model, col) for col in columns if hasattr(model, col)}
+    keys = _resolve_column_keys(model, columns, "columns") if columns else _column_keys(model)
+    return {key: getattr(model, key) for key in keys if hasattr(model, key)}
 
 
-def _parse_order_by(
-    model, order_by: str | ColumnElement[Any] | Sequence[str | ColumnElement[Any]] | None
-) -> list[ColumnElement[Any]]:
-    """解析排序字段
-
-    支持格式:
-    - "name" -> name ASC
-    - "-created_at" -> created_at DESC
-    - ("name", "-created_at") -> name ASC, created_at DESC
-    - ["name", "-created_at"] -> name ASC, created_at DESC
-    - Tb.CREATE_TIME.asc() -> 直接使用表达式
-    - [Tb.CREATE_TIME.desc(), "name"] -> 混合使用表达式和字符串
-    """
+def _parse_order_by(model: Any, order_by: OrderBy) -> list[ClauseElement]:
     if order_by is None:
         return []
 
-    if isinstance(order_by, ColumnElement):
+    if isinstance(order_by, ClauseElement):
         return [order_by]
 
     if isinstance(order_by, str):
-        order_by = (order_by,)
+        items: Iterable[str | ClauseElement] = (order_by,)
+    elif not isinstance(order_by, (str, bytes)) and isinstance(order_by, Iterable):
+        items = order_by
+    else:
+        raise TypeError(f"Unsupported order_by type: {type(order_by).__name__}")
 
-    result = []
-    for item in order_by:
-        if isinstance(item, ColumnElement):
+    result: list[ClauseElement] = []
+    for item in items:
+        if isinstance(item, ClauseElement):
             result.append(item)
             continue
+        if not isinstance(item, str):
+            raise TypeError(f"order_by item must be str or ClauseElement, got {type(item).__name__}")
 
-        if item.startswith("-"):
-            column_name = item[1:]
-            desc = True
-        else:
-            column_name = item
-            desc = False
-
-        if not hasattr(model, column_name):
-            raise ValueError(f"Invalid order_by column '{column_name}' for model {model.__name__}")
-        column = getattr(model, column_name)
-        result.append(column.desc() if desc else column.asc())
-
+        descending = item.startswith("-")
+        name = item[1:] if descending else item
+        if not name:
+            raise ValueError("order_by column name cannot be empty")
+        column = getattr(model, _resolve_column_key(model, name))
+        result.append(column.desc() if descending else column.asc())
     return result
+
+
+def _column_key_map(model: Any) -> dict[int, str]:
+    return {id(column): key for key, column in _mapper(model).columns.items()}
+
+
+def _mapped_key_list(model: Any, columns: Iterable[Any]) -> tuple[str, ...]:
+    key_map = _column_key_map(model)
+    return tuple(key_map[id(column)] for column in columns if id(column) in key_map)
+
+
+def _mapped_keys(model: Any, columns: Iterable[Any]) -> set[str]:
+    return set(_mapped_key_list(model, columns))
+
+
+def _primary_key_keys(model: Any) -> tuple[str, ...]:
+    return _mapped_key_list(model, _mapper(model).primary_key)
+
+
+def _unique_key_sets(model: Any) -> list[frozenset[str]]:
+    mapper = _mapper(model)
+    sets: list[frozenset[str]] = []
+
+    primary_keys = _primary_key_keys(model)
+    if primary_keys:
+        sets.append(frozenset(primary_keys))
+
+    for key, column in mapper.columns.items():
+        if column.unique:
+            sets.append(frozenset({key}))
+
+    for constraint in mapper.local_table.constraints:
+        if not isinstance(constraint, UniqueConstraint):
+            continue
+        keys = _mapped_keys(model, constraint.columns)
+        if keys:
+            sets.append(frozenset(keys))
+
+    for index in mapper.local_table.indexes:
+        if not index.unique:
+            continue
+        keys = _mapped_keys(model, index.columns)
+        if keys:
+            sets.append(frozenset(keys))
+    return sets
+
+
+def _is_unique_key_set(model: Any, keys: Sequence[str]) -> bool:
+    key_set = frozenset(keys)
+    return any(unique_keys <= key_set for unique_keys in _unique_key_sets(model))
+
+
+def _matches_unique_key(model: Any, keys: Sequence[str]) -> bool:
+    return frozenset(keys) in _unique_key_sets(model)
+
+
+def _create_conflict_stmt(
+    model: Any,
+    values: Mapping[str, Any],
+    keys: Sequence[str],
+    dialect: str,
+):
+    if dialect == "mysql":
+        return mysql_insert(model).values(**values).prefix_with("IGNORE")
+    stmt = pg_insert(model) if dialect == "postgresql" else sqlite_insert(model)
+    return stmt.values(**values).on_conflict_do_nothing(index_elements=[getattr(model, key) for key in keys])
+
+
+def _upsert_stmt(
+    model: Any,
+    values: Mapping[str, Any],
+    keys: Sequence[str],
+    update_data: Mapping[str, Any],
+    dialect: str,
+):
+    if dialect == "mysql":
+        stmt = mysql_insert(model).values(**values)
+        if update_data:
+            return stmt.on_duplicate_key_update(**update_data)
+        noop_key = next(iter(values))
+        return stmt.on_duplicate_key_update(**{noop_key: values[noop_key]})
+
+    stmt = pg_insert(model) if dialect == "postgresql" else sqlite_insert(model)
+    stmt = stmt.values(**values)
+    index_elements = [getattr(model, key) for key in keys]
+    if update_data:
+        return stmt.on_conflict_do_update(index_elements=index_elements, set_=dict(update_data))
+    return stmt.on_conflict_do_nothing(index_elements=index_elements)
 
 
 # -----------------------------------------------------------------------------
@@ -240,23 +454,34 @@ def _parse_order_by(
 
 
 def format_row(
-    row,
+    row: Any,
     columns: Sequence[str],
-    converters: dict[str, Callable] | None = None,
+    converters: dict[str, Callable[..., Any]] | None = None,
 ) -> dict[str, Any]:
-    """格式化单行结果
+    """把一行 SQLAlchemy 结果格式化为 dict。
 
     Args:
-        row: 数据库结果行
-        columns: 列名列表
-        converters: 字段转换器
+        row: `fetchone()` 返回的行；支持 `_mapping`、`_asdict()` 或按 `columns` 顺序解包的可迭代对象。
+             None 时返回空 dict。
+        columns: 列名顺序，用作回退解包顺序及结果键名。可传 ORM 属性名或数据库列名。
+        converters: 字段转换函数，如 `{"created_at": lambda v: v.isoformat()}`；仅转换结果中存在的键。
 
     Returns:
-        字典格式的单行数据
+        单行数据 dict；`row is None` 时为 `{}`。
+
+    e.g.::
+
+        row = await session.execute(select(User.id))
+        format_row(row.fetchone(), ["id"], {"id": str})
     """
-    if not row:
+    if row is None:
         return {}
-    data = row._asdict() if hasattr(row, "_asdict") else dict(zip(columns, row, strict=False))
+    if hasattr(row, "_mapping"):
+        data = dict(row._mapping)
+    elif hasattr(row, "_asdict"):
+        data = row._asdict()
+    else:
+        data = dict(zip(columns, row, strict=False))
     if converters:
         for key, converter in converters.items():
             if key in data:
@@ -265,21 +490,26 @@ def format_row(
 
 
 def format_rows(
-    rows,
+    rows: Iterable[Any] | None,
     columns: Sequence[str],
-    converters: dict[str, Callable] | None = None,
+    converters: dict[str, Callable[..., Any]] | None = None,
 ) -> list[dict[str, Any]]:
-    """格式化多行结果
+    """把多行 SQLAlchemy 结果格式化为 dict 列表。
 
     Args:
-        rows: 数据库结果行列表
-        columns: 列名列表
-        converters: 字段转换器
+        rows: `fetchall()` 返回的行序列；None 时返回空列表。
+        columns: 列名顺序，决定每行 dict 的键名；行对象支持 `_mapping` 时以行对象键名为准。
+        converters: 字段转换函数，如 `{"created_at": lambda v: v.isoformat()}`；逐行应用，仅转换存在的键。
 
     Returns:
-        字典列表格式的多行数据
+        dict 列表；空输入返回空列表。
+
+    e.g.::
+
+        rows = await session.execute(select(User.id, User.name))
+        format_rows(rows.fetchall(), ["id", "name"])
     """
-    if not rows:
+    if rows is None:
         return []
     return [format_row(row, columns, converters) for row in rows]
 
@@ -294,65 +524,52 @@ async def fetch_one(
     model,
     *,
     columns: Sequence[str] | None = None,
-    where: dict[str, Any] | ColumnElement[Any] | Sequence[ColumnElement[Any]] | None = None,
-    order_by: str | ColumnElement[Any] | Sequence[str | ColumnElement[Any]] | None = None,
-    converters: dict[str, Callable] | None = None,
+    where: WhereClause = None,
+    order_by: OrderBy = None,
+    converters: dict[str, Callable[..., Any]] | None = None,
 ) -> dict[str, Any] | None:
-    """查询单条记录
+    """查询单条记录并格式化为 dict。
 
     Args:
-        session: 数据库会话
-        model: SQLAlchemy 模型类
-        columns: 指定返回列，None 返回所有列
+        session: 异步会话。
+        model: SQLAlchemy 映射类。
+        columns: 指定返回列；None 或空序列表示全部列。元素可为 ORM 属性名或数据库列名。
         where: 过滤条件，支持：
-            - None: 无过滤条件
-            - dict: {"name": "Tom", "age": 18}
-            - ColumnElement: User.age > 18
-            - Sequence[ColumnElement]: [User.age > 18, User.status == 1]
-        order_by: 排序字段，支持：
-            - str: "name" 升序，"-created_at" 降序
-            - ColumnElement: User.created_at.asc()
-            - Sequence: ["name", User.created_at.desc()] 混合使用
-        converters: 字段转换器，{"column": func}
+            - dict：`{"name": "Tom", "age": 18}`，值为 None 时生成 IS NULL；
+            - ClauseElement：`User.age >= 18`、`text("name = :n")`；
+            - ClauseElement 可迭代对象：`[User.age >= 18, User.status == 1]`。
+        order_by: 排序，支持 `"name"`、`"-created_at"`、`User.created_at.desc()` 或混合序列；
+            不传时 LIMIT 1 的结果顺序不保证，需要确定性首行请显式排序。
+        converters: 字段转换函数，如 `{"created_at": lambda v: v.isoformat()}`。
 
     Returns:
-        单条记录字典
+        单行 dict；无匹配记录时为 None。
+
+    Raises:
+        ValueError: 列名或排序字段不属于模型。
+        TypeError: where/order_by 类型不受支持。
 
     e.g.::
 
-        # 单字段排序
-        user = await fetch_one(session, User, order_by="-created_at")
-
-        # 使用表达式排序
-        user = await fetch_one(session, User, order_by=User.created_at.desc())
-
-        # 字段转换
+        user = await fetch_one(session, User, where={"id": 1})
         user = await fetch_one(
             session, User,
-            where={"id": 1},
-            converters={"created_at": lambda x: x.isoformat(), "status": bool}
+            columns=["name", "created_at"],
+            where=User.status == 1,
+            order_by="-created_at",
+            converters={"created_at": lambda value: value.isoformat()},
         )
-
-        +++++[更多详见参数或源码]+++++
     """
-    model_columns = _columns(model)
-    if columns:
-        invalid_cols = [col for col in columns if col not in model_columns]
-        if invalid_cols:
-            raise ValueError(f"Invalid columns {invalid_cols} for model {model.__name__}")
-        selected_columns = tuple(getattr(model, col) for col in columns)
-    else:
-        selected_columns = tuple(getattr(model, col) for col in model_columns)
-
-    stmt = select(*selected_columns).select_from(model)
-
+    selected, output_columns = _select_columns(model, columns)
+    stmt = select(*selected).select_from(model)
     if where is not None:
         stmt = stmt.where(*_build_where_clauses(model, where))
     if order_by is not None:
         stmt = stmt.order_by(*_parse_order_by(model, order_by))
 
     result = await session.execute(stmt.limit(1))
-    return format_row(result.fetchone(), columns or model_columns, converters)
+    row = result.fetchone()
+    return None if row is None else format_row(row, output_columns, converters)
 
 
 async def fetch_all(
@@ -360,62 +577,42 @@ async def fetch_all(
     model,
     *,
     columns: Sequence[str] | None = None,
-    where: dict[str, Any] | ColumnElement[Any] | Sequence[ColumnElement[Any]] | None = None,
-    order_by: str | ColumnElement[Any] | Sequence[str | ColumnElement[Any]] | None = None,
+    where: WhereClause = None,
+    order_by: OrderBy = None,
     offset: int | None = None,
     limit: int | None = None,
-    converters: dict[str, Callable] | None = None,
+    converters: dict[str, Callable[..., Any]] | None = None,
 ) -> list[dict[str, Any]]:
-    """查询多条记录
+    """查询多条记录并格式化为 dict 列表。
 
     Args:
-        session: 数据库会话
-        model: SQLAlchemy 模型类
-        columns: 指定返回列
+        session: 异步会话。
+        model: SQLAlchemy 映射类。
+        columns: 指定返回列；None 或空序列表示全部列。元素可为 ORM 属性名或数据库列名。
         where: 过滤条件，支持：
-            - None: 无过滤条件
-            - dict: {"name": "Tom", "age": 18}
-            - ColumnElement: User.age > 18
-            - Sequence[ColumnElement]: [User.age > 18, User.status == 1]
-        order_by: 排序字段，支持：
-            - str: "name" 升序，"-created_at" 降序
-            - ColumnElement: User.created_at.asc()
-            - Sequence: ["name", User.created_at.desc()] 混合使用
-        offset: 分页偏移
-        limit: 分页限制
-        converters: 字段转换器，{"column": func}
+            - dict：`{"name": "Tom", "age": 18}`，值为 None 时生成 IS NULL；
+            - ClauseElement：`User.age >= 18`、`text("name = :n")`；
+            - ClauseElement 可迭代对象：`[User.age >= 18, User.status == 1]`；
+            - None：不过滤。
+        order_by: 排序，支持 `"name"` 升序、`"-created_at"` 降序、`User.created_at.desc()`
+            等 ClauseElement，或由字符串与 ClauseElement 混合组成的序列；None 表示不排序。
+        offset: 分页偏移；None 时不生成 OFFSET。
+        limit: 分页上限；None 时不生成 LIMIT。
+        converters: 字段转换函数，如 `{"created_at": lambda v: v.isoformat()}`；仅转换结果中存在的键。
 
     Returns:
-        记录字典列表
+        行 dict 列表；无匹配记录时为空列表。
+
+    Raises:
+        ValueError: 列名或排序字段不属于模型。
+        TypeError: where/order_by 类型不受支持。
 
     e.g.::
 
-        # 基础查询
-        users = await fetch_all(session, User, order_by="-created_at", limit=10)
-
-        # 使用表达式排序
-        users = await fetch_all(session, User, order_by=User.created_at.desc())
-
-        # 字段转换
-        users = await fetch_all(
-            session, User,
-            where={"status": 1},
-            converters={"created_at": lambda x: x.isoformat()}
-        )
-
-        +++++[更多详见参数或源码]+++++
+        users = await fetch_all(session, User, where={"status": 1}, order_by="-id", offset=20, limit=10)
     """
-    model_columns = _columns(model)
-    if columns:
-        invalid_cols = [col for col in columns if col not in model_columns]
-        if invalid_cols:
-            raise ValueError(f"Invalid columns {invalid_cols} for model {model.__name__}")
-        selected_columns = tuple(getattr(model, col) for col in columns)
-    else:
-        selected_columns = tuple(getattr(model, col) for col in model_columns)
-
-    stmt = select(*selected_columns).select_from(model)
-
+    selected, output_columns = _select_columns(model, columns)
+    stmt = select(*selected).select_from(model)
     if where is not None:
         stmt = stmt.where(*_build_where_clauses(model, where))
     if order_by is not None:
@@ -426,46 +623,35 @@ async def fetch_all(
         stmt = stmt.limit(limit)
 
     result = await session.execute(stmt)
-    return format_rows(result.fetchall(), columns or model_columns, converters)
+    return format_rows(result.fetchall(), output_columns, converters)
 
 
 async def count(
     session: AsyncSession,
     model,
     *,
-    where: dict[str, Any] | ColumnElement[Any] | Sequence[ColumnElement[Any]] | None = None,
+    where: WhereClause = None,
 ) -> int:
-    """统计记录数
-
-    返回符合条件的记录总数，用于分页等场景。
+    """按条件统计记录数，常用于分页总数。
 
     Args:
-        session: 数据库会话
-        model: SQLAlchemy 模型类
-        where: 过滤条件，支持：
-            - dict: {"name": "Tom", "age": 18}
-            - ColumnElement: User.age > 18
-            - Sequence[ColumnElement]: [User.age > 18, User.status == 1]
-            - None: 统计全部记录
+        session: 异步会话。
+        model: SQLAlchemy 映射类。
+        where: 过滤条件，支持 dict（如 `{"status": 1}`，值为 None 时生成 IS NULL）、
+            ClauseElement（如 `User.age >= 18` 或 `text("status = 1")`）、
+            ClauseElement 可迭代对象（如 `[User.age >= 18, User.status == 1]`）；
+            None 表示统计全表。
 
     Returns:
-        记录数量
+        符合条件的行数；数据库返回 NULL 时按 0 处理。
+
+    Raises:
+        TypeError: where 类型不受支持。
+        ValueError: where dict 中的字段不属于模型。
 
     e.g.::
 
-        # 统计所有用户
-        total = await count(session, User)
-
-        # 统计正常用户
-        active_count = await count(session, User, where={"status": 1})
-
-        # 使用表达式
-        adult_count = await count(session, User, where=User.age >= 18)
-
-        # 使用多个条件
-        count = await count(session, User, where=[User.age >= 18, User.status == 1])
-
-        +++++[更多详见参数或源码]+++++
+        total = await count(session, User, where={"status": 1})
     """
     stmt = select(func.count()).select_from(model)
     if where is not None:
@@ -483,136 +669,119 @@ async def create(
     session: AsyncSession,
     model,
     *,
-    values: dict[str, Any],
+    values: Mapping[str, Any],
     on_conflict: dict[str, Any] | None = None,
     returning: bool = True,
-    flush: bool = False,
 ) -> Created:
-    """创建单条记录
+    """创建单条记录，可选唯一键冲突时返回已存在记录。
 
-    根据提供的值创建新记录，如果 on_conflict 指定的条件已存在，
-    则返回冲突记录而不创建新记录。
+    `on_conflict` 是“是否已存在”的等值查询条件，不是写入值，且必须等于模型声明的主键或唯一键集合。
+    仅当 `values` 中对应字段与条件值一致时，PostgreSQL/SQLite 走原生 `ON CONFLICT DO NOTHING`，
+    MySQL 走 `INSERT IGNORE` 以规避竞态；不一致或其他方言回退为先查后插，保持“条件是条件、值是值”的语义。
+    MySQL 的 `INSERT IGNORE` 会把部分数据错误（如 NOT NULL、截断）降级为 warning，调用方应确保输入已校验。
 
     Args:
-        session: 数据库会话
-        model: SQLAlchemy 模型类
-        values: 要创建的数据字典
-        on_conflict: 唯一性冲突检查，如果存在则返回 False。
-                    如 {"email": "user@test.com"} 会检查邮箱是否已存在。
-        returning: 是否返回创建后的数据字典，False 时只返回 success 状态。
-        flush: 是否立即刷入数据库，默认 False 由调用方控制事务提交
+        session: 异步会话。
+        model: SQLAlchemy 映射类。
+        values: 创建数据；键可为 ORM 属性名或数据库列名。
+        on_conflict: 非空唯一键等值条件，如 `{"email": "a@b.com"}`；不能包含 NULL，None 表示不做冲突检查。
+        returning: 是否在成功创建时返回数据。True 时会先 flush，以便取得自增主键和服务端默认值；
+            False 时成功分支不返回数据。无 `on_conflict` 时只加入会话；`on_conflict` 走原生路径时立即执行，
+            回退路径只加入会话，可能延迟到调用方 flush/commit。冲突分支无论 returning 取值都会返回已存在数据。
 
     Returns:
-        Created: 创建操作结果
-            - ok: True 表示创建成功，False 表示记录已存在
-            - rowcount: 影响行数，成功为1，冲突为0
-            - data: 创建后的数据字典（returning=True 时）
+        `Created`：成功时 `ok=True`、`rowcount=1`，`data` 为新建数据；
+        冲突时 `ok=False`、`rowcount=0`，`data` 为已存在数据。
+
+    Raises:
+        TypeError: `values` 或 `on_conflict` 不是映射类型。
+        ValueError: `on_conflict` 为空、含 NULL、字段不属于模型，或未精确匹配主键/唯一键集合。
+        RuntimeError: 原生插入被其他唯一约束忽略，无法按 `on_conflict` 找到对应记录。
 
     e.g.::
 
-        # 创建新用户
-        created = await create(
-            session,
-            User,
-            values={"name": "Tom", "email": "tom@test.com"}
-        )
-        if created:
-            print(f"创建成功: {created.data}, 行数: {created.rowcount}")
+        result = await create(session, User, values={"name": "Tom"})
+        if result:
+            print(result.data["id"])
 
-        # 唯一冲突检查
-        created = await create(
-            session,
-            User,
-            values={"email": "existing@test.com", "name": "Bob"},
-            on_conflict={"email": "existing@test.com"}
+        result = await create(
+            session, User,
+            values={"email": "a@b.com", "name": "Tom"},
+            on_conflict={"email": "a@b.com"},
         )
-        if not created:
-            print(f"记录已存在，行数: {created.rowcount}")
-
-        +++++[更多详见参数或源码]+++++
     """
-    if on_conflict is not None and (existing := await fetch_one(session, model, where=on_conflict)):
-        return Created(ok=False, rowcount=0, data=existing)
+    values = _normalize_values(model, values)
+
+    if on_conflict is not None:
+        if not isinstance(on_conflict, Mapping):
+            raise TypeError(f"'on_conflict' must be a mapping, got {type(on_conflict).__name__}")
+        if not on_conflict:
+            raise ValueError("'on_conflict' must not be empty")
+        conflict = dict(on_conflict)
+        conflict_keys = _resolve_column_keys(model, conflict, "on_conflict")
+        conflict_values = _normalize_values(model, conflict, "on_conflict")
+        if not _matches_unique_key(model, conflict_keys):
+            raise ValueError("'on_conflict' must match a primary key or unique key declared on the model")
+        if any(value is None for value in conflict_values.values()):
+            raise ValueError("'on_conflict' values cannot be NULL")
+        conflict_matches_values = all(
+            key in values and values[key] == value for key, value in conflict_values.items()
+        )
+        dialect = _dialect(session, model)
+
+        if dialect in _NATIVE_INSERT_DIALECTS and conflict_matches_values:
+            insert_db_values = _normalize_db_values(model, values)
+            result = await session.execute(_create_conflict_stmt(model, insert_db_values, conflict_keys, dialect))
+            if _rowcount(result) > 0:
+                row = await fetch_one(session, model, where=conflict_values) if returning else None
+                return Created(ok=True, rowcount=1, data=row)
+
+            existing = await fetch_one(session, model, where=conflict_values)
+            if existing is None:
+                raise RuntimeError("create was ignored by another unique constraint")
+            return Created(ok=False, rowcount=0, data=existing)
+
+        existing = await fetch_one(session, model, where=conflict_values)
+        if existing is not None:
+            return Created(ok=False, rowcount=0, data=existing)
 
     obj = model(**values)
     session.add(obj)
-    if flush:
+    if returning:
         await session.flush()
-
-    return Created(
-        ok=True,
-        rowcount=1,
-        data=_to_dict(obj) if returning else None,
-    )
+    return Created(ok=True, rowcount=1, data=_to_dict(obj) if returning else None)
 
 
 async def delete(
     session: AsyncSession,
     model,
     *,
-    where: dict[str, Any] | ColumnElement[Any] | Sequence[ColumnElement[Any]] | None = None,
+    where: WhereClause = None,
     allow_all: bool = False,
-    flush: bool = False,
 ) -> Deleted:
-    """删除记录
-
-    根据条件删除记录。默认情况下需要提供 where 条件，防止误删全表。
-    如需删除全部记录，请设置 allow_all=True。
+    """按条件删除记录，默认拒绝无条件的全表删除。
 
     Args:
-        session: 数据库会话
-        model: SQLAlchemy 模型类
-        where: 过滤条件，支持：
-            - None: 删除全部记录（需 allow_all=True）
-            - dict: {"id": 1}
-            - ColumnElement: User.id == 1
-            - Sequence[ColumnElement]: [User.age < 18, User.status == 0]
-        allow_all: 是否允许无条件删除（全表删除），默认 False
-        flush: 是否立即刷入数据库，默认 False 由调用方控制事务提交
+        session: 异步会话。
+        model: SQLAlchemy 映射类。
+        where: 过滤条件，支持 dict（如 `{"id": 1}`，值为 None 时生成 IS NULL）、
+            ClauseElement（如 `User.age < 18` 或 `text("status = 0")`）、
+            ClauseElement 可迭代对象（如 `[User.age < 18, User.status == 0]`）；
+            None 表示全表，需配合 `allow_all=True`。
+        allow_all: 是否允许无条件全表删除；为 False 且 where 为空时抛错。
 
     Returns:
-        Deleted: 删除操作结果
-            - ok: True 表示删除成功（rowcount > 0），False 表示未找到匹配记录
-            - rowcount: 删除的行数
+        `Deleted`：`ok` 等价于 `rowcount > 0`；未命中记录时 rowcount 为 0。
+
+    Raises:
+        TypeError: where 类型不受支持。
+        ValueError: 无 where 且未设置 `allow_all=True`，或 where dict 中的字段不属于模型。
 
     e.g.::
 
-        # 删除单个用户
-        deleted = await delete(
-            session,
-            User,
-            where={"id": 1}
-        )
-        if deleted:
-            print(f"已删除 {deleted.rowcount} 条记录")
-
-        # 批量删除
-        deleted = await delete(
-            session,
-            User,
-            where={"status": 2}
-        )
-        print(f"已清理 {deleted.rowcount} 条失效记录")
-
-        # 使用表达式
-        deleted = await delete(
-            session,
-            User,
-            where=User.age < 18
-        )
-
-        # 使用多个条件
-        deleted = await delete(
-            session,
-            User,
-            where=[User.age < 18, User.status == 0]
-        )
-
-        # 全表删除（需显式声明）
-        deleted = await delete(session, User, allow_all=True)
-        print(f"已清空 {deleted.rowcount} 条记录")
-
-        +++++[更多详见参数或源码]+++++
+        await delete(session, User, where={"id": 1})
+        await delete(session, User, where=[User.age < 18, User.status == 0])
+        await delete(session, User, allow_all=True)
     """
     clauses = _build_where_clauses(model, where)
     if not clauses and not allow_all:
@@ -621,11 +790,7 @@ async def delete(
     stmt = sa_delete(model)
     if clauses:
         stmt = stmt.where(*clauses)
-    result = await session.execute(stmt)
-    if flush:
-        await session.flush()
-
-    rowcount = result.rowcount or 0  # type: ignore
+    rowcount = _rowcount(await session.execute(stmt))
     return Deleted(ok=rowcount > 0, rowcount=rowcount)
 
 
@@ -633,108 +798,97 @@ async def update(
     session: AsyncSession,
     model,
     *,
-    values: dict[str, Any],
-    where: dict[str, Any] | ColumnElement[Any] | Sequence[ColumnElement[Any]] | None = None,
+    values: Mapping[str, Any],
+    where: WhereClause = None,
     allow_all: bool = False,
     exclude_none: bool = True,
+    null_columns: Sequence[str] | None = None,
     returning: bool = False,
-    flush: bool = False,
 ) -> Updated:
-    """更新记录
+    """按条件更新记录，默认拒绝无条件的全表更新。
 
-    根据条件更新符合条件的记录。默认情况下需要提供 where 条件，防止误更新全表。
-    如需更新全部记录，请设置 allow_all=True。
+    `exclude_none=True` 会跳过值为 None 的字段；若要显式置 NULL，请设置 `exclude_none=False`
+    或用 `null_columns` 指定允许置空的字段。`returning=True` 要求 `where` 为 dict，且覆盖模型声明
+    的主键或唯一键（值不能为 NULL），避免多行命中时返回歧义数据；不能同时更新主键，但可以更新
+    `where` 中用到的其他唯一键，返回数据会按更新前的主键重新查询。
 
     Args:
-        session: 数据库会话
-        model: SQLAlchemy 模型类
-        values: 要更新的数据字典
-        where: 过滤条件，支持：
-            - None: 更新全部记录（需 allow_all=True）
-            - dict: {"id": 1}
-            - ColumnElement: User.id == 1
-            - Sequence[ColumnElement]: [User.age < 18, User.status == 0]
-        allow_all: 是否允许无条件更新（全表更新），默认 False
-        exclude_none: 是否自动排除值为 None 的字段，True 时跳过 None 值
-        returning: 是否返回更新后的数据字典（不支持全表更新）。需要额外查询。
-        flush: 是否立即刷入数据库，默认 False 由调用方控制事务提交
+        session: 异步会话。
+        model: SQLAlchemy 映射类。
+        values: 待更新字段；键可为 ORM 属性名或数据库列名。
+        where: 过滤条件，支持 dict（如 `{"id": 1}`，值为 None 时生成 IS NULL）、
+            ClauseElement（如 `User.last_login < cutoff` 或 `text("status = 1")`）、
+            ClauseElement 可迭代对象（如 `[User.age < 18, User.status == 1]`）；
+            None 表示全表，需配合 `allow_all=True`。
+        allow_all: 是否允许无条件全表更新。
+        exclude_none: 是否跳过值为 None 的字段。
+        null_columns: 即使 `exclude_none=True` 也允许写入 NULL 的字段名列表。
+        returning: 是否查询并返回更新后的数据；不能与更新主键同时使用。
 
     Returns:
-        Updated: 更新操作结果
-            - ok: True 表示更新成功（rowcount > 0），False 表示未找到匹配记录
-            - rowcount: 受影响的行数
-            - data: 更新后的数据字典（returning=True 时，不支持全表更新）
+        `Updated`：`ok` 等价于 `rowcount > 0`；`data` 仅在 `returning=True` 且命中时有值。
+        若过滤掉所有字段后无可更新内容，返回 `Updated(ok=False, rowcount=0)`。
+        MySQL 默认不统计“值未变化”的更新，此时 `rowcount` 可能为 0，而 PostgreSQL/SQLite 通常为 1。
+
+    Raises:
+        TypeError: `values` 不是映射类型。
+        ValueError: 无 where 且未设置 `allow_all`；returning 条件不满足；字段、null_columns 或主键更新非法。
 
     e.g.::
 
-        # 更新单个用户
-        updated = await update(
-            session,
-            User,
-            values={"name": "New Name", "email": "new@test.com"},
-            where={"id": 1}
-        )
-        if updated:
-            print(f"更新了 {updated.rowcount} 条记录")
-
-        # 获取更新后的数据
-        updated = await update(
-            session,
-            User,
-            values={"name": "New Name"},
+        await update(session, User, values={"name": "New"}, where={"id": 1})
+        await update(
+            session, User,
+            values={"note": None},
             where={"id": 1},
-            returning=True
+            null_columns=["note"],
+            returning=True,
         )
-        print(updated.data)  # 更新后的完整记录
-
-        # 使用表达式
-        updated = await update(
-            session,
-            User,
-            values={"status": 0},
-            where=User.last_login < datetime(2025, 1, 1)
-        )
-
-        # 使用多个条件
-        updated = await update(
-            session,
-            User,
-            values={"status": 0},
-            where=[User.age < 18, User.status == 1]
-        )
-
-        # 全表更新（需显式声明）
-        updated = await update(
-            session,
-            User,
-            values={"status": 0},
-            allow_all=True
-        )
-
-        +++++[更多详见参数或源码]+++++
     """
     clauses = _build_where_clauses(model, where)
     if not clauses and not allow_all:
         raise ValueError("'where' is required, or set allow_all=True for full-table update")
-
-    # 全表更新不支持 returning
     if not clauses and returning:
         raise ValueError("'returning' is not supported for full-table update")
+    if returning and clauses:
+        if not isinstance(where, Mapping):
+            raise ValueError("'returning' requires 'where' to be a dict covering a primary key or unique key")
+        lookup_keys = _resolve_column_keys(model, where, "where")
+        if not _is_unique_key_set(model, lookup_keys):
+            raise ValueError("'returning' requires 'where' to cover a primary key or unique key")
+        if any(value is None for value in where.values()):
+            raise ValueError("'returning' lookup values cannot be NULL")
 
-    data = {k: v for k, v in values.items() if v is not None} if exclude_none else values
+    data = _normalize_values(model, values)
+    null_keys = set(_resolve_column_keys(model, null_columns, "null_columns")) if null_columns else set()
+    extra_null_keys = null_keys - data.keys()
+    if extra_null_keys:
+        raise ValueError(f"'null_columns' must be present in values: {sorted(extra_null_keys)}")
+    if exclude_none:
+        data = {key: value for key, value in data.items() if key in null_keys or value is not None}
     if not data:
         return Updated(ok=False, rowcount=0)
+
+    returning_where: dict[str, Any] | None = None
+    if returning:
+        primary_keys = _primary_key_keys(model)
+        if not primary_keys:
+            raise ValueError("'returning' requires the model to declare a primary key")
+        updated_primary_keys = [key for key in primary_keys if key in data]
+        if updated_primary_keys:
+            raise ValueError(f"'returning' cannot update primary key columns: {updated_primary_keys}")
+        current = await fetch_one(session, model, where=where, columns=primary_keys)
+        if current is None:
+            return Updated(ok=False, rowcount=0)
+        returning_where = {key: current[key] for key in primary_keys}
 
     stmt = sa_update(model).values(**data)
     if clauses:
         stmt = stmt.where(*clauses)
-    result = await session.execute(stmt)
-    if flush:
-        await session.flush()
-
-    rowcount = result.rowcount or 0  # type: ignore
-    updated_data = await fetch_one(session, model, where=where) if (returning and rowcount > 0 and clauses) else None
-
+    rowcount = _rowcount(await session.execute(stmt))
+    updated_data = (
+        await fetch_one(session, model, where=returning_where) if returning and returning_where and rowcount > 0 else None
+    )
     return Updated(ok=rowcount > 0, rowcount=rowcount, data=updated_data)
 
 
@@ -742,216 +896,174 @@ async def upsert(
     session: AsyncSession,
     model,
     *,
-    values: dict[str, Any],
+    values: Mapping[str, Any],
     keys: Sequence[str],
     updates: Sequence[str] | None = None,
     returning: bool = False,
-    flush: bool = False,
 ) -> Upserted:
-    """存在则更新，不存在则创建（Upsert）
+    """按唯一键执行 upsert：存在则更新，不存在则创建。
 
-    根据唯一键判断记录是否存在，不存在则创建，存在则更新。
-    自动根据数据库方言选择最优实现：
-    - PostgreSQL/SQLite: INSERT ... ON CONFLICT DO UPDATE
-    - MySQL: INSERT ... ON DUPLICATE KEY UPDATE
-    - 其他: 先查后改（fallback）
+    PostgreSQL/SQLite 使用 `ON CONFLICT`，MySQL 使用 `ON DUPLICATE KEY UPDATE`（无更新字段时执行无操作更新），
+    其他方言回退为先查后改。`keys` 必须存在于 `values`，且必须等于模型声明的主键或唯一键集合；
+    `updates` 中若包含 `keys` 会被忽略，避免修改冲突目标列；`updates` 中的其他字段必须存在于
+    `values`，且不能是主键。`rowcount` 表示
+    受影响行数，方言对“无变化更新”的计数可能不同（MySQL 的 2 会归一化为 1）。
 
     Args:
-        session: 数据库会话
-        model: SQLAlchemy 模型类
-        values: 完整数据字典
-        keys: 唯一键字段列表，用于判断记录是否存在，如 ("id",), ("email",)
-        updates: 指定更新时的字段列表，None 表示更新除 keys 外的所有字段
-        returning: 是否返回操作后的数据字典，需要额外查询
-        flush: 是否立即刷入数据库，默认 False 由调用方控制事务提交
+        session: 异步会话。
+        model: SQLAlchemy 映射类。
+        values: 完整数据；键可为 ORM 属性名或数据库列名。
+        keys: 唯一键字段名，如 `("id",)` 或 `["email"]`。
+        updates: 冲突时更新的字段，必须同时存在于 values；None 表示更新除 keys 和主键外的所有字段。
+        returning: 是否查询并返回操作后的数据；True 时回退路径会先 flush 以获取生成值。
 
     Returns:
-        Upserted: Upsert 操作结果
-            - ok: True 表示操作成功（新建或更新），False 表示无修改
-            - rowcount: 影响行数（1 表示有变化，0 表示无变化）
-            - data: 操作后的数据字典（returning=True 时）
+        `Upserted`：`ok` 等价于 `rowcount > 0`；`data` 仅在 `returning=True` 时有值。
+
+    Raises:
+        TypeError: `values` 不是映射类型。
+        ValueError: `keys` 为空、不在 values 中或未精确匹配主键/唯一键集合；
+            `updates` 含非法列、缺失于 values 或包含主键。
+        RuntimeError: 插入/更新命中了其他唯一键，无法按 `keys` 找到对应记录。
 
     e.g.::
 
-        # 按 id upsert
-        upserted = await upsert(
-            session,
-            User,
+        result = await upsert(
+            session, User,
             values={"id": 1, "name": "Tom", "email": "tom@test.com"},
-            keys=("id",)
-        )
-        if upserted:
-            print(f"操作成功，影响 {upserted.rowcount} 条记录")
-
-        # 只更新特定字段
-        upserted = await upsert(
-            session,
-            User,
-            values={"id": 1, "name": "Updated", "email": "new@test.com"},
             keys=("id",),
-            updates=("name",)  # 只更新 name，email 不变
+            updates=("name",),
+            returning=True,
         )
-
-        # 获取更新后的数据
-        upserted = await upsert(
-            session,
-            User,
-            values={"id": 1, "name": "New"},
-            keys=("id",),
-            returning=True
-        )
-        print(upserted.data)  # 更新后的完整记录
-
-        +++++[更多详见参数或源码]+++++
     """
-    if not keys or not all(key in values for key in keys):
-        raise ValueError("'keys' must be non-empty and exist in values")
+    normalized = _normalize_values(model, values)
+    key_columns = _resolve_column_keys(model, keys, "keys")
+    if not key_columns:
+        raise ValueError("'keys' must be non-empty")
+    missing_keys = [key for key in key_columns if key not in normalized]
+    if missing_keys:
+        raise ValueError(f"'keys' must exist in values: {missing_keys}")
+    if not _matches_unique_key(model, key_columns):
+        raise ValueError("'keys' must match a primary key or unique key declared on the model")
 
-    dialect = _dialect(session)
+    primary_keys = set(_primary_key_keys(model))
+    if updates is None:
+        update_columns = tuple(
+            key for key in normalized if key not in key_columns and key not in primary_keys
+        )
+    else:
+        requested_updates = _resolve_column_keys(model, updates, "updates")
+        missing_updates = [key for key in requested_updates if key not in normalized]
+        if missing_updates:
+            raise ValueError(f"'updates' must exist in values: {missing_updates}")
+        primary_updates = [key for key in requested_updates if key in primary_keys and key not in key_columns]
+        if primary_updates:
+            raise ValueError(f"'updates' cannot include primary key columns: {primary_updates}")
+        update_columns = tuple(key for key in requested_updates if key not in key_columns)
+    update_data = {key: normalized[key] for key in update_columns}
 
-    if dialect in ("postgresql", "mysql", "sqlite"):
-        return await _upsert_native(session, model, values, keys, updates, dialect, returning, flush)
-    return await _upsert_fallback(session, model, values, keys, updates, returning, flush)
+    dialect = _dialect(session, model)
+    if dialect in _NATIVE_INSERT_DIALECTS:
+        key_map = _db_column_key_map(model)
+        normalized_db = {key_map[key]: value for key, value in normalized.items()}
+        update_data_db = {key_map[key]: value for key, value in update_data.items()}
+        return await _upsert_native(session, model, normalized_db, key_columns, update_data_db, dialect, returning)
+    return await _upsert_fallback(session, model, normalized, key_columns, update_data, returning)
 
 
 async def _upsert_native(
     session: AsyncSession,
     model,
-    values: dict[str, Any],
-    keys: Sequence[str],
-    updates: Sequence[str] | None,
+    values: Mapping[str, Any],
+    keys: tuple[str, ...],
+    update_data: dict[str, Any],
     dialect: str,
-    returning: bool = False,
-    flush: bool = False,
+    returning: bool,
 ) -> Upserted:
-    """使用数据库原生 upsert 语法实现
+    result = await session.execute(_upsert_stmt(model, values, keys, update_data, dialect))
+    rowcount = _rowcount(result)
+    if dialect == "mysql" and rowcount > 1:
+        rowcount = 1
 
-    根据数据库方言使用对应的 upsert 语法。
-    """
-    update_cols = updates if updates is not None else tuple(col for col in values if col not in keys)
-    update_data = {col: values[col] for col in update_cols if col in values}
-
-    # 选择 insert 构造器
-    insert_map = {
-        "postgresql": pg_insert,
-        "mysql": mysql_insert,
-        "sqlite": sqlite_insert,
-    }
-    insert_func = insert_map.get(dialect, pg_insert)
-
-    stmt = insert_func(model).values(**values)
-
-    if update_data:
-        if dialect == "mysql":
-            stmt = stmt.on_duplicate_key_update(**update_data)
-        else:
-            stmt = stmt.on_conflict_do_update(index_elements=keys, set_=update_data)
-    else:
-        stmt = stmt.prefix_with("IGNORE") if dialect == "mysql" else stmt.on_conflict_do_nothing(index_elements=keys)
-
-    result = await session.execute(stmt)
-    if flush:
-        await session.flush()
-
-    rowcount = getattr(result, "rowcount", 0)
-    updated_data = None
-    if returning:
-        where = {k: values[k] for k in keys if k in values}
-        updated_data = await fetch_one(session, model, where=where)
-
-    return Upserted(ok=rowcount > 0, rowcount=rowcount, data=updated_data)
+    data = None
+    if returning or rowcount == 0 or dialect == "mysql":
+        key_map = _db_column_key_map(model)
+        where = {key_map[key]: values[key_map[key]] for key in keys}
+        current = await fetch_one(session, model, where=where)
+        if current is None:
+            raise RuntimeError("upsert did not match keys; another unique constraint may have matched")
+        if returning:
+            data = current
+    return Upserted(ok=rowcount > 0, rowcount=rowcount, data=data)
 
 
 async def _upsert_fallback(
     session: AsyncSession,
     model,
-    values: dict[str, Any],
-    keys: Sequence[str],
-    updates: Sequence[str] | None,
-    returning: bool = False,
-    flush: bool = False,
+    values: Mapping[str, Any],
+    keys: tuple[str, ...],
+    update_data: dict[str, Any],
+    returning: bool,
 ) -> Upserted:
-    """Upsert 的通用 fallback 实现（先查后改）
-
-    先查询记录是否存在，存在则更新，不存在则创建。
-    用于不支持原生 upsert 语法的数据库。
-    """
-    where = {k: values[k] for k in keys if k in values}
+    where = {key: values[key] for key in keys}
     existing = await fetch_one(session, model, where=where)
 
-    if existing:
-        update_cols = updates if updates is not None else tuple(col for col in values if col not in keys)
-        update_data = {col: values[col] for col in update_cols if col in values}
-        if update_data:
-            stmt = sa_update(model).where(*_build_where_clauses(model, where)).values(**update_data)
-            await session.execute(stmt)
-            if flush:
-                await session.flush()
-            updated_data = await fetch_one(session, model, where=where) if returning else None
-            return Upserted(ok=True, rowcount=1, data=updated_data)
-        return Upserted(ok=False, rowcount=0, data=existing if returning else None)
+    if existing is not None:
+        if not update_data:
+            return Upserted(ok=False, rowcount=0, data=existing if returning else None)
+        stmt = sa_update(model).where(*_build_where_clauses(model, where)).values(**update_data)
+        rowcount = _rowcount(await session.execute(stmt))
+        data = await fetch_one(session, model, where=where) if returning and rowcount > 0 else None
+        return Upserted(ok=rowcount > 0, rowcount=rowcount, data=data)
 
     obj = model(**values)
     session.add(obj)
-    if flush:
+    if returning:
         await session.flush()
-    return Upserted(ok=True, rowcount=1, data=_to_dict(obj) if returning else None)
+    data = await fetch_one(session, model, where=where) if returning else None
+    return Upserted(ok=True, rowcount=1, data=data)
 
 
 async def batch_create(
     session: AsyncSession,
     model,
     *,
-    values: list[dict[str, Any]],
+    values: Sequence[Mapping[str, Any]],
     returning: bool = True,
-    flush: bool = False,
 ) -> BatchCreated:
-    """批量创建多条记录
-
-    一次性创建多条记录，性能优于循环调用 create()。
+    """通过 ORM `add_all()` 批量创建多条记录，会触发 ORM 事件与关系级联。
 
     Args:
-        session: 数据库会话
-        model: SQLAlchemy 模型类
-        values: 数据字典列表，每个字典创建一条记录
-        returning: 是否返回创建后的数据字典列表，False 时只返回 count。
-        flush: 是否立即刷入数据库，默认 False 由调用方控制事务提交
+        session: 异步会话。
+        model: SQLAlchemy 映射类。
+        values: 每行数据的映射列表；键可为 ORM 属性名或数据库列名。
+        returning: 是否返回创建结果。True 时会先 flush，以便取得自增主键和服务端默认值；
+            False 时只加入会话，由调用方控制后续 flush/commit。
 
     Returns:
-        BatchCreated: 批量创建结果
-            - ok: 总是 True
-            - rowcount: 实际创建的记录数
-            - data: 创建后的数据列表（returning=True 时）
+        `BatchCreated`：`ok=True`，`rowcount` 为创建数量，`data` 为结果列表或空列表。
+
+    Raises:
+        TypeError: values 不是映射序列。
+        ValueError: 某行含不属于模型的字段。
 
     e.g.::
 
-        # 批量创建用户
-        batch = await batch_create(
-            session,
-            User,
-            values=[
-                {"name": "Alice", "email": "alice@test.com"},
-                {"name": "Bob", "email": "bob@test.com"},
-            ]
-        )
-        print(f"成功创建 {batch.rowcount} 条记录")
-        for user in batch.data:
-            print(user["name"])
-
-        +++++[更多详见参数或源码]+++++
+        batch = await batch_create(session, User, values=[{"name": "Alice"}, {"name": "Bob"}])
+        print(batch.rowcount, batch.data[0]["id"])
     """
-    if not values:
+    rows = _normalize_value_rows(model, values)
+    if not rows:
         return BatchCreated(ok=True, rowcount=0)
 
-    objs = [model(**value) for value in values]
-    session.add_all(objs)
-    if flush:
+    objects = [model(**row) for row in rows]
+    session.add_all(objects)
+    if returning:
         await session.flush()
-
     return BatchCreated(
         ok=True,
-        rowcount=len(objs),
-        data=[_to_dict(obj) for obj in objs] if returning else [],
+        rowcount=len(objects),
+        data=[_to_dict(obj) for obj in objects] if returning else [],
     )
 
 
@@ -959,74 +1071,70 @@ async def bulk_insert(
     session: AsyncSession,
     model,
     *,
-    values: list[dict[str, Any]],
+    values: Sequence[Mapping[str, Any]],
     return_defaults: bool = False,
-    flush: bool = False,
 ) -> BulkInserted:
-    """高性能批量插入记录
+    """高性能批量插入记录，跳过 ORM 事件、关系处理和级联。
 
-    使用 SQLAlchemy 的 bulk_insert_mappings 实现，跳过 ORM 的事件监听和关系处理，
-    性能显著优于 batch_create()，适合大数据量导入场景。
-
-    注意：此方法不会触发 ORM 事件（如 @event.listens_for）、不会处理关系关联、
-    不会自动处理关联对象的级联操作。如需完整 ORM 功能，请使用 batch_create()。
+    使用 SQLAlchemy 2.x 的 `insert(model).values(rows)`。`return_defaults=True` 时，
+    PostgreSQL/SQLite 通过 `RETURNING` 返回完整数据；MySQL 等方言逐行插入并读取
+    `inserted_primary_key` 补充主键，其他服务端默认值不保证返回。MySQL 逐行路径若中途失败，
+    已执行的行仍留在当前事务中，调用方应回滚事务。
 
     Args:
-        session: 数据库会话
-        model: SQLAlchemy 模型类
-        values: 数据字典列表，每个字典插入一条记录
-        return_defaults: 是否获取数据库生成的默认值（如自增主键）。
-                        True 时会在返回结果中包含这些值，但会有轻微性能损耗。
-        flush: 是否立即刷入数据库，默认 False 由调用方控制事务提交
+        session: 异步会话。
+        model: SQLAlchemy 映射类。
+        values: 每行数据的映射列表；键可为 ORM 属性名或数据库列名。建议各行键集合一致；
+            缺失列会按 NULL 绑定，可能绕过 `server_default`。
+        return_defaults: 是否返回数据库生成值；开启后可能有额外开销。
 
     Returns:
-        BulkInserted: 批量插入结果
-            - ok: 总是 True（除非发生异常）
-            - rowcount: 实际插入的记录数
-            - data: 插入的数据列表（return_defaults=True 时包含生成的默认值）
+        `BulkInserted`：`ok=True`，`rowcount` 为插入行数；`data` 仅在 `return_defaults=True` 时有值。
+        PostgreSQL/SQLite 返回完整行，MySQL 等方言只补充主键，其他服务端默认值不保证返回。
+
+    Raises:
+        TypeError: values 不是映射序列。
+        ValueError: 某行含不属于模型的字段。
 
     e.g.::
 
-        # 基础用法 - 高性能批量插入
-        result = await bulk_insert(
-            session,
-            User,
-            values=[
-                {"name": "Alice", "email": "alice@test.com"},
-                {"name": "Bob", "email": "bob@test.com"},
-            ]
-        )
-        print(f"成功插入 {result.rowcount} 条")
-
-        # 获取自增主键
-        result = await bulk_insert(
-            session,
-            User,
-            values=[{"name": "Charlie"}],
-            return_defaults=True
-        )
-        print(result.data[0].get("id"))  # 获取生成的 ID
-
-        # 大数据量导入（如数据迁移）
-        batch_size = 1000
-        for i in range(0, len(all_data), batch_size):
-            batch = all_data[i:i + batch_size]
-            await bulk_insert(session, User, values=batch, flush=True)
-
-        +++++[更多详见参数或源码]+++++
+        result = await bulk_insert(session, User, values=[{"name": "A"}, {"name": "B"}])
+        result = await bulk_insert(session, User, values=[{"name": "C"}], return_defaults=True)
+        print(result.data[0]["id"])
     """
-    if not values:
+    rows = _normalize_db_value_rows(model, values)
+    if not rows:
         return BulkInserted(ok=True, rowcount=0)
 
-    def _bulk_insert(sync_session):
-        return sync_session.bulk_insert_mappings(model, values, return_defaults=return_defaults)
+    reverse_key_map = {db_key: attr_key for attr_key, db_key in _db_column_key_map(model).items()}
+    primary_keys = _primary_key_keys(model)
+    dialect_obj = session.get_bind(mapper=model).dialect
+    use_returning = return_defaults and bool(getattr(dialect_obj, "insert_returning", False))
 
-    await session.run_sync(_bulk_insert)
+    if return_defaults and not use_returning:
+        data: list[dict[str, Any]] = []
+        rowcount = 0
+        for row in rows:
+            result = await session.execute(sa_insert(model).values(**row))
+            rowcount += _rowcount(result)
+            item = {reverse_key_map.get(key, key): value for key, value in row.items()}
+            primary_key = getattr(result, "inserted_primary_key", None)
+            if primary_keys and primary_key:
+                for key, value in zip(primary_keys, primary_key, strict=False):
+                    if value is not None:
+                        item[key] = value
+            data.append(item)
+        return BulkInserted(ok=True, rowcount=rowcount, data=data)
 
-    if flush:
-        await session.flush()
+    stmt = sa_insert(model).values(rows)
+    if use_returning:
+        selected, _ = _select_columns(model, None)
+        stmt = stmt.returning(*selected)
 
-    return BulkInserted(ok=True, rowcount=len(values), data=values if return_defaults else [])
+    result = await session.execute(stmt)
+    rowcount = _rowcount(result) or len(rows)
+    data = [dict(row) for row in result.mappings().all()] if use_returning else []
+    return BulkInserted(ok=True, rowcount=rowcount, data=data)
 
 
 # -----------------------------------------------------------------------------
@@ -1037,138 +1145,125 @@ async def bulk_insert(
 async def raw(
     session: AsyncSession,
     sql: str,
-    params: dict[str, Any] | None = None,
+    params: Mapping[str, Any] | None = None,
     *,
     autocommit: bool = False,
-    flush: bool = False,
+    commit: bool | None = None,
 ) -> Result:
-    """执行原生 SQL 语句
+    """执行原生 SQL 语句，使用命名参数占位符 `:name` 防止 SQL 注入。
+
+    `commit=True`（或兼容参数 `autocommit=True`）会提交当前会话中所有未提交的更改，
+    而不只是本条语句；事务边界仍由调用方显式控制。
 
     Args:
-        session: 数据库会话
-        sql: SQL 语句，支持命名参数占位符 :name
-        params: 参数字典
-        autocommit: 自动提交事务（非查询语句）
-        flush: 刷入数据库但不提交
+        session: 异步会话。
+        sql: SQL 文本，不能为空或全空白。
+        params: 命名参数字典；None 表示无参数。
+        autocommit: 兼容参数，等价于 `commit`；当 `commit` 显式传入时以 `commit` 为准。
+        commit: 是否在 execute 后调用 `session.commit()`。
 
     Returns:
-        SQLAlchemy Result 对象，常用方法：
-            - fetchall() / fetchone() 获取结果
-            - rowcount 影响行数
-            - returns_rows 是否返回数据
-            - async for row in result 流式遍历
+        SQLAlchemy `Result`。常用方法：`fetchall()`、`fetchone()`、`scalar()`、`rowcount`、`mappings()`；
+        `commit=True` 后仍可继续读取已缓冲的结果行。
+
+    Raises:
+        ValueError: SQL 为空。
+        TypeError: params 不是 dict/Mapping/None。
 
     e.g.::
 
-        # SELECT
         result = await raw(session, "SELECT * FROM users WHERE id = :id", {"id": 1})
-        users = [r._asdict() for r in result.fetchall()]
+        users = [dict(row._mapping) for row in result.fetchall()]
 
-        # 流式查询
-        result = await raw(session, "SELECT * FROM large_table")
-        async for row in result:
-            process(row._asdict())
-
-        # INSERT/UPDATE/DELETE
-        result = await raw(session, "DELETE FROM users WHERE id = :id", {"id": 1}, autocommit=True)
-        print(f"删除 {result.rowcount} 条")
+        await raw(session, "DELETE FROM users WHERE id = :id", {"id": 1}, commit=True)
     """
     if not sql or not sql.strip():
         raise ValueError("SQL statement cannot be empty")
-
-    if params is not None and not isinstance(params, dict):
+    if params is not None and not isinstance(params, Mapping):
         raise TypeError(f"params must be dict or None, got {type(params).__name__}")
 
     result = await session.execute(text(sql), params)
-
-    if autocommit:
+    should_commit = autocommit if commit is None else commit
+    if should_commit:
         await session.commit()
-    elif flush:
-        await session.flush()
-
     return result
 
 
 # -----------------------------------------------------------------------------
-# CRUD Mixin - 供 DeclarativeBase 继承，使模型自带 CRUD 方法
+# CRUD Mixin - 显式类方法，保证 IDE 静态可见签名和文档
 # -----------------------------------------------------------------------------
 
 
 class CRUDMixin:
-    """CRUD Mixin 类，供 SQLAlchemy DeclarativeBase 继承
+    """把模块级 CRUD 函数绑定为模型类方法的 Mixin。
 
-    使模型类自带异步 CRUD 操作方法，无需显式传递 model 参数
+    继承本类后，模型可直接调用 `format_row()`、`format_rows()`、`fetch_one()`、`fetch_all()`、
+    `count()`、`create()`、`delete()`、`update()`、`upsert()`、`batch_create()`、`bulk_insert()` 和 `raw()`。
+    类方法/静态方法与独立函数使用相同签名和文档；类方法调用时无需传 `model`，当前模型类会作为 `cls` 自动传入。
 
     e.g.::
 
-        from sqlalchemy import BigInteger, String
-        from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
+        from sqlalchemy import Integer, String
+        from sqlalchemy.orm import DeclarativeBase, mapped_column
         from toollib.sqlacrud import CRUDMixin
 
-        class DeclBase(DeclarativeBase, CRUDMixin):
+        class Base(CRUDMixin, DeclarativeBase):
             pass
 
-
-        class User(DeclBase):
+        class User(Base):
             __tablename__ = "users"
+            id = mapped_column(Integer, primary_key=True)
+            name = mapped_column(String(50))
 
-            id = mapped_column(BigInteger, primary_key=True, comment="主键")
-            name = mapped_column(String(50), nullable=True, comment="名称")
-
-
-        # 使用
-        async def example(session: AsyncSession):
-            # 查询
-            user = await User.fetch_one(session, where={"id": 1})
-            users = await User.fetch_all(session, limit=10)
-
-            # 创建
-            created = await User.create(session, values={"name": "Tom"})
-
-            # 删除
-            deleted = await User.delete(session, where={"id": 1})
-
-            # 更新
-            updated = await User.update(session, values={"name": "New"}, where={"id": 1})
-
-            # ...
-
-        +++++[更多详见参数或源码]+++++
+        user = await User.fetch_one(session, where={"id": 1})
+        created = await User.create(session, values={"name": "Tom"})
+        await User.update(session, values={"name": "Jerry"}, where={"id": 1})
     """
 
     @staticmethod
     def format_row(
-        row,
+        row: Any,
         columns: Sequence[str],
-        converters: dict[str, Callable] | None = None,
+        converters: dict[str, Callable[..., Any]] | None = None,
     ) -> dict[str, Any]:
-        """格式化单行结果
+        """把一行 SQLAlchemy 结果格式化为 dict。
 
         Args:
-            row: 数据库结果行
-            columns: 列名列表
-            converters: 字段转换器
+            row: `fetchone()` 返回的行；支持 `_mapping`、`_asdict()` 或按 `columns` 顺序解包的可迭代对象。
+                 None 时返回空 dict。
+            columns: 列名顺序，用作回退解包顺序及结果键名。可传 ORM 属性名或数据库列名。
+            converters: 字段转换函数，如 `{"created_at": lambda v: v.isoformat()}`；仅转换结果中存在的键。
 
         Returns:
-            字典格式的单行数据
+            单行数据 dict；`row is None` 时为 `{}`。
+
+        e.g.::
+
+            row = await session.execute(select(User.id))
+            User.format_row(row.fetchone(), ["id"], {"id": str})
         """
         return format_row(row, columns, converters)
 
     @staticmethod
     def format_rows(
-        rows,
+        rows: Iterable[Any] | None,
         columns: Sequence[str],
-        converters: dict[str, Callable] | None = None,
+        converters: dict[str, Callable[..., Any]] | None = None,
     ) -> list[dict[str, Any]]:
-        """格式化多行结果
+        """把多行 SQLAlchemy 结果格式化为 dict 列表。
 
         Args:
-            rows: 数据库结果行列表
-            columns: 列名列表
-            converters: 字段转换器
+            rows: `fetchall()` 返回的行序列；None 时返回空列表。
+            columns: 列名顺序，决定每行 dict 的键名；行对象支持 `_mapping` 时以行对象键名为准。
+            converters: 字段转换函数，如 `{"created_at": lambda v: v.isoformat()}`；逐行应用，仅转换存在的键。
 
         Returns:
-            字典列表格式的多行数据
+            dict 列表；空输入返回空列表。
+
+        e.g.::
+
+            rows = await session.execute(select(User.id, User.name))
+            User.format_rows(rows.fetchall(), ["id", "name"])
         """
         return format_rows(rows, columns, converters)
 
@@ -1178,28 +1273,40 @@ class CRUDMixin:
         session: AsyncSession,
         *,
         columns: Sequence[str] | None = None,
-        where: dict[str, Any] | ColumnElement[Any] | Sequence[ColumnElement[Any]] | None = None,
-        order_by: str | ColumnElement[Any] | Sequence[str | ColumnElement[Any]] | None = None,
-        converters: dict[str, Callable] | None = None,
+        where: WhereClause = None,
+        order_by: OrderBy = None,
+        converters: dict[str, Callable[..., Any]] | None = None,
     ) -> dict[str, Any] | None:
-        """查询单条记录
+        """查询单条记录并格式化为 dict。
 
         Args:
-            session: 数据库会话
-            columns: 指定返回列，None 返回所有列
+            session: 异步会话。
+            columns: 指定返回列；None 或空序列表示全部列。元素可为 ORM 属性名或数据库列名。
             where: 过滤条件，支持：
-                - None: 无过滤条件
-                - dict: {"name": "Tom", "age": 18}
-                - ColumnElement: User.age > 18
-                - Sequence[ColumnElement]: [User.age > 18, User.status == 1]
-            order_by: 排序字段，支持：
-                - str: "name" 升序，"-created_at" 降序
-                - ColumnElement: User.created_at.asc()
-                - Sequence: ["name", User.created_at.desc()] 混合使用
-            converters: 字段转换器，{"column": func}
+                - dict：`{"name": "Tom", "age": 18}`，值为 None 时生成 IS NULL；
+                - ClauseElement：`User.age >= 18`、`text("name = :n")`；
+                - ClauseElement 可迭代对象：`[User.age >= 18, User.status == 1]`。
+            order_by: 排序，支持 `"name"`、`"-created_at"`、`User.created_at.desc()` 或混合序列；
+                不传时 LIMIT 1 的结果顺序不保证，需要确定性首行请显式排序。
+            converters: 字段转换函数，如 `{"created_at": lambda v: v.isoformat()}`。
 
         Returns:
-            单条记录字典
+            单行 dict；无匹配记录时为 None。
+
+        Raises:
+            ValueError: 列名或排序字段不属于模型。
+            TypeError: where/order_by 类型不受支持。
+
+        e.g.::
+
+            user = await User.fetch_one(session, where={"id": 1})
+            user = await User.fetch_one(
+                session,
+                columns=["name", "created_at"],
+                where=User.status == 1,
+                order_by="-created_at",
+                converters={"created_at": lambda value: value.isoformat()},
+            )
         """
         return await fetch_one(session, cls, columns=columns, where=where, order_by=order_by, converters=converters)
 
@@ -1209,32 +1316,38 @@ class CRUDMixin:
         session: AsyncSession,
         *,
         columns: Sequence[str] | None = None,
-        where: dict[str, Any] | ColumnElement[Any] | Sequence[ColumnElement[Any]] | None = None,
-        order_by: str | ColumnElement[Any] | Sequence[str | ColumnElement[Any]] | None = None,
+        where: WhereClause = None,
+        order_by: OrderBy = None,
         offset: int | None = None,
         limit: int | None = None,
-        converters: dict[str, Callable] | None = None,
+        converters: dict[str, Callable[..., Any]] | None = None,
     ) -> list[dict[str, Any]]:
-        """查询多条记录
+        """查询多条记录并格式化为 dict 列表。
 
         Args:
-            session: 数据库会话
-            columns: 指定返回列
+            session: 异步会话。
+            columns: 指定返回列；None 或空序列表示全部列。元素可为 ORM 属性名或数据库列名。
             where: 过滤条件，支持：
-                - None: 无过滤条件
-                - dict: {"name": "Tom", "age": 18}
-                - ColumnElement: User.age > 18
-                - Sequence[ColumnElement]: [User.age > 18, User.status == 1]
-            order_by: 排序字段，支持：
-                - str: "name" 升序，"-created_at" 降序
-                - ColumnElement: User.created_at.asc()
-                - Sequence: ["name", User.created_at.desc()] 混合使用
-            offset: 分页偏移
-            limit: 分页限制
-            converters: 字段转换器，{"column": func}
+                - dict：`{"name": "Tom", "age": 18}`，值为 None 时生成 IS NULL；
+                - ClauseElement：`User.age >= 18`、`text("name = :n")`；
+                - ClauseElement 可迭代对象：`[User.age >= 18, User.status == 1]`；
+                - None：不过滤。
+            order_by: 排序，支持 `"name"` 升序、`"-created_at"` 降序、`User.created_at.desc()`
+                等 ClauseElement，或由字符串与 ClauseElement 混合组成的序列；None 表示不排序。
+            offset: 分页偏移；None 时不生成 OFFSET。
+            limit: 分页上限；None 时不生成 LIMIT。
+            converters: 字段转换函数，如 `{"created_at": lambda v: v.isoformat()}`；仅转换结果中存在的键。
 
         Returns:
-            记录字典列表
+            行 dict 列表；无匹配记录时为空列表。
+
+        Raises:
+            ValueError: 列名或排序字段不属于模型。
+            TypeError: where/order_by 类型不受支持。
+
+        e.g.::
+
+            users = await User.fetch_all(session, where={"status": 1}, order_by="-id", offset=20, limit=10)
         """
         return await fetch_all(
             session,
@@ -1252,22 +1365,27 @@ class CRUDMixin:
         cls,
         session: AsyncSession,
         *,
-        where: dict[str, Any] | ColumnElement[Any] | Sequence[ColumnElement[Any]] | None = None,
+        where: WhereClause = None,
     ) -> int:
-        """统计记录数
-
-        返回符合条件的记录总数，用于分页等场景。
+        """按条件统计记录数，常用于分页总数。
 
         Args:
-            session: 数据库会话
-            where: 过滤条件，支持：
-                - dict: {"name": "Tom", "age": 18}
-                - ColumnElement: User.age > 18
-                - Sequence[ColumnElement]: [User.age > 18, User.status == 1]
-                - None: 统计全部记录
+            session: 异步会话。
+            where: 过滤条件，支持 dict（如 `{"status": 1}`，值为 None 时生成 IS NULL）、
+                ClauseElement（如 `User.age >= 18` 或 `text("status = 1")`）、
+                ClauseElement 可迭代对象（如 `[User.age >= 18, User.status == 1]`）；
+                None 表示统计全表。
 
         Returns:
-            记录数量
+            符合条件的行数；数据库返回 NULL 时按 0 处理。
+
+        Raises:
+            TypeError: where 类型不受支持。
+            ValueError: where dict 中的字段不属于模型。
+
+        e.g.::
+
+            total = await User.count(session, where={"status": 1})
         """
         return await count(session, cls, where=where)
 
@@ -1276,105 +1394,131 @@ class CRUDMixin:
         cls,
         session: AsyncSession,
         *,
-        values: dict[str, Any],
+        values: Mapping[str, Any],
         on_conflict: dict[str, Any] | None = None,
         returning: bool = True,
-        flush: bool = False,
     ) -> Created:
-        """创建单条记录
+        """创建单条记录，可选唯一键冲突时返回已存在记录。
 
-        根据提供的值创建新记录，如果 on_conflict 指定的条件已存在，
-        则返回冲突记录而不创建新记录。
+        `on_conflict` 是“是否已存在”的等值查询条件，不是写入值，且必须等于模型声明的主键或唯一键集合。
+        仅当 `values` 中对应字段与条件值一致时，PostgreSQL/SQLite 走原生 `ON CONFLICT DO NOTHING`，
+        MySQL 走 `INSERT IGNORE` 以规避竞态；不一致或其他方言回退为先查后插，保持“条件是条件、值是值”的语义。
+        MySQL 的 `INSERT IGNORE` 会把部分数据错误（如 NOT NULL、截断）降级为 warning，调用方应确保输入已校验。
 
         Args:
-            session: 数据库会话
-            values: 要创建的数据字典
-            on_conflict: 唯一性冲突检查，如果存在则返回 False。
-                        如 {"email": "user@test.com"} 会检查邮箱是否已存在。
-            returning: 是否返回创建后的数据字典，False 时只返回 success 状态。
-            flush: 是否立即刷入数据库，默认 False 由调用方控制事务提交
+            session: 异步会话。
+            values: 创建数据；键可为 ORM 属性名或数据库列名。
+            on_conflict: 非空唯一键等值条件，如 `{"email": "a@b.com"}`；不能包含 NULL，None 表示不做冲突检查。
+            returning: 是否在成功创建时返回数据。True 时会先 flush，以便取得自增主键和服务端默认值；
+                False 时成功分支不返回数据。无 `on_conflict` 时只加入会话；`on_conflict` 走原生路径时立即执行，
+                回退路径只加入会话，可能延迟到调用方 flush/commit。冲突分支无论 returning 取值都会返回已存在数据。
 
         Returns:
-            Created: 创建操作结果
-                - ok: True 表示创建成功，False 表示记录已存在
-                - rowcount: 影响行数，成功为1，冲突为0
-                - data: 创建后的数据字典（returning=True 时）
+            `Created`：成功时 `ok=True`、`rowcount=1`，`data` 为新建数据；
+            冲突时 `ok=False`、`rowcount=0`，`data` 为已存在数据。
+
+        Raises:
+            TypeError: `values` 或 `on_conflict` 不是映射类型。
+            ValueError: `on_conflict` 为空、含 NULL、字段不属于模型，或未精确匹配主键/唯一键集合。
+            RuntimeError: 原生插入被其他唯一约束忽略，无法按 `on_conflict` 找到对应记录。
+
+        e.g.::
+
+            result = await User.create(session, values={"name": "Tom"})
+            if result:
+                print(result.data["id"])
+
+            result = await User.create(
+                session,
+                values={"email": "a@b.com", "name": "Tom"},
+                on_conflict={"email": "a@b.com"},
+            )
         """
-        return await create(
-            session,
-            cls,
-            values=values,
-            on_conflict=on_conflict,
-            returning=returning,
-            flush=flush,
-        )
+        return await create(session, cls, values=values, on_conflict=on_conflict, returning=returning)
 
     @classmethod
     async def delete(
         cls,
         session: AsyncSession,
         *,
-        where: dict[str, Any] | ColumnElement[Any] | Sequence[ColumnElement[Any]] | None = None,
+        where: WhereClause = None,
         allow_all: bool = False,
-        flush: bool = False,
     ) -> Deleted:
-        """删除记录
-
-        根据条件删除记录。默认情况下需要提供 where 条件，防止误删全表。
-        如需删除全部记录，请设置 allow_all=True。
+        """按条件删除记录，默认拒绝无条件的全表删除。
 
         Args:
-            session: 数据库会话
-            where: 过滤条件，支持：
-                - None: 删除全部记录（需 allow_all=True）
-                - dict: {"id": 1}
-                - ColumnElement: User.id == 1
-                - Sequence[ColumnElement]: [User.age < 18, User.status == 0]
-            allow_all: 是否允许无条件删除（全表删除），默认 False
-            flush: 是否立即刷入数据库，默认 False 由调用方控制事务提交
+            session: 异步会话。
+            where: 过滤条件，支持 dict（如 `{"id": 1}`，值为 None 时生成 IS NULL）、
+                ClauseElement（如 `User.age < 18` 或 `text("status = 0")`）、
+                ClauseElement 可迭代对象（如 `[User.age < 18, User.status == 0]`）；
+                None 表示全表，需配合 `allow_all=True`。
+            allow_all: 是否允许无条件全表删除；为 False 且 where 为空时抛错。
 
         Returns:
-            Deleted: 删除操作结果
-                - ok: True 表示删除成功（rowcount > 0），False 表示未找到匹配记录
-                - rowcount: 删除的行数
+            `Deleted`：`ok` 等价于 `rowcount > 0`；未命中记录时 rowcount 为 0。
+
+        Raises:
+            TypeError: where 类型不受支持。
+            ValueError: 无 where 且未设置 `allow_all=True`，或 where dict 中的字段不属于模型。
+
+        e.g.::
+
+            await User.delete(session, where={"id": 1})
+            await User.delete(session, where=[User.age < 18, User.status == 0])
+            await User.delete(session, allow_all=True)
         """
-        return await delete(session, cls, where=where, allow_all=allow_all, flush=flush)
+        return await delete(session, cls, where=where, allow_all=allow_all)
 
     @classmethod
     async def update(
         cls,
         session: AsyncSession,
         *,
-        values: dict[str, Any],
-        where: dict[str, Any] | ColumnElement[Any] | Sequence[ColumnElement[Any]] | None = None,
+        values: Mapping[str, Any],
+        where: WhereClause = None,
         allow_all: bool = False,
         exclude_none: bool = True,
+        null_columns: Sequence[str] | None = None,
         returning: bool = False,
-        flush: bool = False,
     ) -> Updated:
-        """更新记录
+        """按条件更新记录，默认拒绝无条件的全表更新。
 
-        根据条件更新符合条件的记录。默认情况下需要提供 where 条件，防止误更新全表。
-        如需更新全部记录，请设置 allow_all=True。
+        `exclude_none=True` 会跳过值为 None 的字段；若要显式置 NULL，请设置 `exclude_none=False`
+        或用 `null_columns` 指定允许置空的字段。`returning=True` 要求 `where` 为 dict，且覆盖模型声明
+        的主键或唯一键（值不能为 NULL），避免多行命中时返回歧义数据；不能同时更新主键，但可以更新
+        `where` 中用到的其他唯一键，返回数据会按更新前的主键重新查询。
 
         Args:
-            session: 数据库会话
-            values: 要更新的数据字典
-            where: 过滤条件，支持：
-                - None: 更新全部记录（需 allow_all=True）
-                - dict: {"id": 1}
-                - ColumnElement: User.id == 1
-                - Sequence[ColumnElement]: [User.age < 18, User.status == 0]
-            allow_all: 是否允许无条件更新（全表更新），默认 False
-            exclude_none: 是否自动排除值为 None 的字段，True 时跳过 None 值
-            returning: 是否返回更新后的数据字典（不支持全表更新）。需要额外查询。
-            flush: 是否立即刷入数据库，默认 False 由调用方控制事务提交
+            session: 异步会话。
+            values: 待更新字段；键可为 ORM 属性名或数据库列名。
+            where: 过滤条件，支持 dict（如 `{"id": 1}`，值为 None 时生成 IS NULL）、
+                ClauseElement（如 `User.last_login < cutoff` 或 `text("status = 1")`）、
+                ClauseElement 可迭代对象（如 `[User.age < 18, User.status == 1]`）；
+                None 表示全表，需配合 `allow_all=True`。
+            allow_all: 是否允许无条件全表更新。
+            exclude_none: 是否跳过值为 None 的字段。
+            null_columns: 即使 `exclude_none=True` 也允许写入 NULL 的字段名列表。
+            returning: 是否查询并返回更新后的数据；不能与更新主键同时使用。
 
         Returns:
-            Updated: 更新操作结果
-                - ok: True 表示更新成功（rowcount > 0），False 表示未找到匹配记录
-                - rowcount: 受影响的行数
-                - data: 更新后的数据字典（returning=True 时，不支持全表更新）
+            `Updated`：`ok` 等价于 `rowcount > 0`；`data` 仅在 `returning=True` 且命中时有值。
+            若过滤掉所有字段后无可更新内容，返回 `Updated(ok=False, rowcount=0)`。
+            MySQL 默认不统计“值未变化”的更新，此时 `rowcount` 可能为 0，而 PostgreSQL/SQLite 通常为 1。
+
+        Raises:
+            TypeError: `values` 不是映射类型。
+            ValueError: 无 where 且未设置 `allow_all`；returning 条件不满足；字段、null_columns 或主键更新非法。
+
+        e.g.::
+
+            await User.update(session, values={"name": "New"}, where={"id": 1})
+            await User.update(
+                session,
+                values={"note": None},
+                where={"id": 1},
+                null_columns=["note"],
+                returning=True,
+            )
         """
         return await update(
             session,
@@ -1383,8 +1527,8 @@ class CRUDMixin:
             where=where,
             allow_all=allow_all,
             exclude_none=exclude_none,
+            null_columns=null_columns,
             returning=returning,
-            flush=flush,
         )
 
     @classmethod
@@ -1392,119 +1536,149 @@ class CRUDMixin:
         cls,
         session: AsyncSession,
         *,
-        values: dict[str, Any],
+        values: Mapping[str, Any],
         keys: Sequence[str],
         updates: Sequence[str] | None = None,
         returning: bool = False,
-        flush: bool = False,
     ) -> Upserted:
-        """存在则更新，不存在则创建（Upsert）
+        """按唯一键执行 upsert：存在则更新，不存在则创建。
 
-        根据唯一键判断记录是否存在，不存在则创建，存在则更新。
-        自动根据数据库方言选择最优实现：
-        - PostgreSQL/SQLite: INSERT ... ON CONFLICT DO UPDATE
-        - MySQL: INSERT ... ON DUPLICATE KEY UPDATE
-        - 其他: 先查后改（fallback）
+        PostgreSQL/SQLite 使用 `ON CONFLICT`，MySQL 使用 `ON DUPLICATE KEY UPDATE`（无更新字段时执行无操作更新），
+        其他方言回退为先查后改。`keys` 必须存在于 `values`，且必须等于模型声明的主键或唯一键集合；
+        `updates` 中若包含 `keys` 会被忽略，避免修改冲突目标列；`updates` 中的其他字段必须存在于
+        `values`，且不能是主键。`rowcount` 表示
+        受影响行数，方言对“无变化更新”的计数可能不同（MySQL 的 2 会归一化为 1）。
 
         Args:
-            session: 数据库会话
-            values: 完整数据字典
-            keys: 唯一键字段列表，用于判断记录是否存在，如 ("id",), ("email",)
-            updates: 指定更新时的字段列表，None 表示更新除 keys 外的所有字段
-            returning: 是否返回操作后的数据字典，需要额外查询
-            flush: 是否立即刷入数据库，默认 False 由调用方控制事务提交
+            session: 异步会话。
+            values: 完整数据；键可为 ORM 属性名或数据库列名。
+            keys: 唯一键字段名，如 `("id",)` 或 `["email"]`。
+            updates: 冲突时更新的字段，必须同时存在于 values；None 表示更新除 keys 和主键外的所有字段。
+            returning: 是否查询并返回操作后的数据；True 时回退路径会先 flush 以获取生成值。
 
         Returns:
-            Upserted: Upsert 操作结果
-                - ok: True 表示操作成功（新建或更新），False 表示无修改
-                - rowcount: 影响行数（1 表示有变化，0 表示无变化）
-                - data: 操作后的数据字典（returning=True 时）
+            `Upserted`：`ok` 等价于 `rowcount > 0`；`data` 仅在 `returning=True` 时有值。
+
+        Raises:
+            TypeError: `values` 不是映射类型。
+            ValueError: `keys` 为空、不在 values 中或未精确匹配主键/唯一键集合；
+                `updates` 含非法列、缺失于 values 或包含主键。
+            RuntimeError: 插入/更新命中了其他唯一键，无法按 `keys` 找到对应记录。
+
+        e.g.::
+
+            result = await User.upsert(
+                session,
+                values={"id": 1, "name": "Tom", "email": "tom@test.com"},
+                keys=("id",),
+                updates=("name",),
+                returning=True,
+            )
         """
-        return await upsert(session, cls, values=values, keys=keys, updates=updates, returning=returning, flush=flush)
+        return await upsert(session, cls, values=values, keys=keys, updates=updates, returning=returning)
 
     @classmethod
     async def batch_create(
         cls,
         session: AsyncSession,
         *,
-        values: list[dict[str, Any]],
+        values: Sequence[Mapping[str, Any]],
         returning: bool = True,
-        flush: bool = False,
     ) -> BatchCreated:
-        """批量创建多条记录
-
-        一次性创建多条记录，性能优于循环调用 create()。
+        """通过 ORM `add_all()` 批量创建多条记录，会触发 ORM 事件与关系级联。
 
         Args:
-            session: 数据库会话
-            values: 数据字典列表，每个字典创建一条记录
-            returning: 是否返回创建后的数据字典列表，False 时只返回 count。
-            flush: 是否立即刷入数据库，默认 False 由调用方控制事务提交
+            session: 异步会话。
+            values: 每行数据的映射列表；键可为 ORM 属性名或数据库列名。
+            returning: 是否返回创建结果。True 时会先 flush，以便取得自增主键和服务端默认值；
+                False 时只加入会话，由调用方控制后续 flush/commit。
 
         Returns:
-            BatchCreated: 批量创建结果
-                - ok: 总是 True
-                - rowcount: 实际创建的记录数
-                - data: 创建后的数据列表（returning=True 时）
+            `BatchCreated`：`ok=True`，`rowcount` 为创建数量，`data` 为结果列表或空列表。
+
+        Raises:
+            TypeError: values 不是映射序列。
+            ValueError: 某行含不属于模型的字段。
+
+        e.g.::
+
+            batch = await User.batch_create(session, values=[{"name": "Alice"}, {"name": "Bob"}])
+            print(batch.rowcount, batch.data[0]["id"])
         """
-        return await batch_create(session, cls, values=values, returning=returning, flush=flush)
+        return await batch_create(session, cls, values=values, returning=returning)
 
     @classmethod
     async def bulk_insert(
         cls,
         session: AsyncSession,
         *,
-        values: list[dict[str, Any]],
+        values: Sequence[Mapping[str, Any]],
         return_defaults: bool = False,
-        flush: bool = False,
     ) -> BulkInserted:
-        """高性能批量插入记录
+        """高性能批量插入记录，跳过 ORM 事件、关系处理和级联。
 
-        使用 SQLAlchemy 的 bulk_insert_mappings 实现，跳过 ORM 的事件监听和关系处理，
-        性能显著优于 batch_create()，适合大数据量导入场景。
-
-        注意：此方法不会触发 ORM 事件（如 @event.listens_for）、不会处理关系关联、
-        不会自动处理关联对象的级联操作。如需完整 ORM 功能，请使用 batch_create()。
+        使用 SQLAlchemy 2.x 的 `insert(model).values(rows)`。`return_defaults=True` 时，
+        PostgreSQL/SQLite 通过 `RETURNING` 返回完整数据；MySQL 等方言逐行插入并读取
+        `inserted_primary_key` 补充主键，其他服务端默认值不保证返回。MySQL 逐行路径若中途失败，
+        已执行的行仍留在当前事务中，调用方应回滚事务。
 
         Args:
-            session: 数据库会话
-            values: 数据字典列表，每个字典插入一条记录
-            return_defaults: 是否获取数据库生成的默认值（如自增主键）。
-                            True 时会在返回结果中包含这些值，但会有轻微性能损耗。
-            flush: 是否立即刷入数据库，默认 False 由调用方控制事务提交
+            session: 异步会话。
+            values: 每行数据的映射列表；键可为 ORM 属性名或数据库列名。建议各行键集合一致；
+                缺失列会按 NULL 绑定，可能绕过 `server_default`。
+            return_defaults: 是否返回数据库生成值；开启后可能有额外开销。
 
         Returns:
-            BulkInserted: 批量插入结果
-                - ok: 总是 True（除非发生异常）
-                - rowcount: 实际插入的记录数
-                - data: 插入的数据列表（return_defaults=True 时包含生成的默认值）
+            `BulkInserted`：`ok=True`，`rowcount` 为插入行数；`data` 仅在 `return_defaults=True` 时有值。
+            PostgreSQL/SQLite 返回完整行，MySQL 等方言只补充主键，其他服务端默认值不保证返回。
+
+        Raises:
+            TypeError: values 不是映射序列。
+            ValueError: 某行含不属于模型的字段。
+
+        e.g.::
+
+            result = await User.bulk_insert(session, values=[{"name": "A"}, {"name": "B"}])
+            result = await User.bulk_insert(session, values=[{"name": "C"}], return_defaults=True)
+            print(result.data[0]["id"])
         """
-        return await bulk_insert(session, cls, values=values, return_defaults=return_defaults, flush=flush)
+        return await bulk_insert(session, cls, values=values, return_defaults=return_defaults)
 
     @classmethod
     async def raw(
         cls,
         session: AsyncSession,
         sql: str,
-        params: dict[str, Any] | None = None,
+        params: Mapping[str, Any] | None = None,
         *,
         autocommit: bool = False,
-        flush: bool = False,
+        commit: bool | None = None,
     ) -> Result:
-        """执行原生 SQL 语句
+        """执行原生 SQL 语句，使用命名参数占位符 `:name` 防止 SQL 注入。
+
+        `commit=True`（或兼容参数 `autocommit=True`）会提交当前会话中所有未提交的更改，
+        而不只是本条语句；事务边界仍由调用方显式控制。
 
         Args:
-            session: 数据库会话
-            sql: SQL 语句，支持命名参数占位符 :name
-            params: 参数字典
-            autocommit: 自动提交事务（非查询语句）
-            flush: 刷入数据库但不提交
+            session: 异步会话。
+            sql: SQL 文本，不能为空或全空白。
+            params: 命名参数字典；None 表示无参数。
+            autocommit: 兼容参数，等价于 `commit`；当 `commit` 显式传入时以 `commit` 为准。
+            commit: 是否在 execute 后调用 `session.commit()`。
 
         Returns:
-            SQLAlchemy Result 对象，常用方法：
-                - fetchall() / fetchone() 获取结果
-                - rowcount 影响行数
-                - returns_rows 是否返回数据
-                - async for row in result 流式遍历
+            SQLAlchemy `Result`。常用方法：`fetchall()`、`fetchone()`、`scalar()`、`rowcount`、`mappings()`；
+            `commit=True` 后仍可继续读取已缓冲的结果行。
+
+        Raises:
+            ValueError: SQL 为空。
+            TypeError: params 不是 dict/Mapping/None。
+
+        e.g.::
+
+            result = await User.raw(session, "SELECT * FROM users WHERE id = :id", {"id": 1})
+            users = [dict(row._mapping) for row in result.fetchall()]
+
+            await User.raw(session, "DELETE FROM users WHERE id = :id", {"id": 1}, commit=True)
         """
-        return await raw(session, sql, params, autocommit=autocommit, flush=flush)
+        return await raw(session, sql, params, autocommit=autocommit, commit=commit)
