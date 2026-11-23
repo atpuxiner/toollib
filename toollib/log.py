@@ -30,6 +30,7 @@ except ImportError:
 
 __all__ = [
     "LogFormatter",
+    "ContextVarsFilter",
     "init_logger",
 ]
 
@@ -46,23 +47,14 @@ class LogFormatter(logging.Formatter):
         validate=True,
         *,
         defaults=None,
-        request_id_var: ContextVar | None = None,
-        fmt_with_request_id: str = "%(asctime)s %(levelname)s %(request_id)s %(name)s %(filename)s:%(lineno)d %(message)s",
+        context_vars: dict[str, ContextVar] | None = None,
         serialize: bool = False,
     ):
-        self.request_id_var = request_id_var
-        if self.request_id_var:
-            fmt = fmt_with_request_id
+        self.context_vars = context_vars or {}
         self.serialize = serialize
         super().__init__(fmt, datefmt, style, validate, defaults=defaults)
 
     def format(self, record):
-        if self.request_id_var:
-            try:
-                request_id = self.request_id_var.get()
-            except LookupError:
-                request_id = "N/A"
-            record.request_id = request_id
         if self.serialize:
             log_entry = {
                 "timestamp": self.formatTime(record, self.datefmt),
@@ -72,8 +64,8 @@ class LogFormatter(logging.Formatter):
                 "lineno": record.lineno,
                 "message": record.getMessage(),
             }
-            if hasattr(record, "request_id"):
-                log_entry["request_id"] = record.request_id
+            for key in self.context_vars:
+                log_entry[key] = getattr(record, key, "N/A")
             if record.exc_info:
                 exc_type, exc_value, exc_tb = record.exc_info
                 log_entry["exception"] = {
@@ -90,14 +82,35 @@ class LogFormatter(logging.Formatter):
             return super().format(record)
 
 
+class ContextVarsFilter(logging.Filter):
+    """
+    上下文变量过滤器（把 ContextVar 值注入日志记录）
+
+    :note: 注入发生在记录日志的线程（而非格式化线程），因此兼容 enqueue 队列模式；
+        挂在 handler 上时，子 logger 传播过来的记录同样会被注入
+    """
+
+    def __init__(self, context_vars: dict[str, ContextVar] | None = None):
+        self.context_vars = context_vars or {}
+        super().__init__()
+
+    def filter(self, record: logging.LogRecord) -> bool:
+        for key, var in self.context_vars.items():
+            try:
+                value = var.get()
+            except LookupError:
+                value = "N/A"
+            setattr(record, key, value)
+        return True
+
+
 def init_logger(
     name: str | None = None,
     level: str | int = "INFO",
+    context_vars: dict[str, ContextVar] | None = None,
     fmt: str = "%(asctime)s %(levelname)s %(name)s %(filename)s:%(lineno)d %(message)s",
     datefmt: str | None = None,
     msecfmt: str = "%s.%03d",
-    request_id_var: ContextVar | None = None,
-    fmt_with_request_id: str = "%(asctime)s %(levelname)s %(request_id)s %(name)s %(filename)s:%(lineno)d %(message)s",
     serialize: bool = False,
     formatter: Callable | None = None,
     clear_handlers: bool = True,
@@ -135,15 +148,24 @@ def init_logger(
         logger = logging.getLogger(__name__)
         logger.info("hello")
 
+        # 上下文变量（如 request_id / client_ip）
+        from contextvars import ContextVar
+
+        request_id_var = ContextVar("request_id", default="-")
+        client_ip_var = ContextVar("client_ip", default="-")
+        logger = log.init_logger(
+            context_vars={"request_id": request_id_var, "client_ip": client_ip_var},
+            fmt="%(asctime)s %(levelname)s %(request_id)s %(client_ip)s %(name)s %(filename)s:%(lineno)d %(message)s",
+        )
+
         +++++[更多详见参数或源码]+++++
 
     :param name: 名称
     :param level: 日志等级
+    :param context_vars: 上下文变量映射（如 {"request_id": request_id_var, "client_ip": client_ip_var}），fmt 需含对应 %(key)s 占位符
     :param fmt: 日志格式
     :param datefmt: 时间格式
     :param msecfmt: 时间毫秒格式
-    :param request_id_var: 请求id变量
-    :param fmt_with_request_id: 带request_id的日志格式
     :param serialize: 序列化
     :param formatter: 格式化实例
     :param clear_handlers: 清除handlers
@@ -171,6 +193,10 @@ def init_logger(
     if clear_handlers:
         logger.handlers.clear()
     logger.setLevel(level=level)
+    # 过滤器必须挂在记录日志一侧的 handler 上（enqueue 时是 QueueHandler，否则是实际 handler），
+    # 这样上下文在入队前注入；若挂到监听线程的 handler 上，会读到错误线程的 ContextVar
+    context_filter = ContextVarsFilter(context_vars) if context_vars else None
+
     if not formatter:
         if msecfmt:
             LogFormatter.default_msec_format = msecfmt
@@ -178,8 +204,7 @@ def init_logger(
             fmt=fmt,
             datefmt=datefmt,
             serialize=serialize,
-            request_id_var=request_id_var,
-            fmt_with_request_id=fmt_with_request_id,
+            context_vars=context_vars,
         )
 
     actual_handlers = []
@@ -245,9 +270,13 @@ def init_logger(
 
         queue_handler = logging.handlers.QueueHandler(_QUEUES[key])
         queue_handler.setLevel(logging.DEBUG)
+        if context_filter:
+            queue_handler.addFilter(context_filter)
         logger.addHandler(queue_handler)
     else:
         for h in actual_handlers:
+            if context_filter:
+                h.addFilter(context_filter)
             logger.addHandler(h)
 
     logger.propagate = propagate

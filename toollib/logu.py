@@ -14,6 +14,7 @@ import traceback
 from collections.abc import Callable
 from contextvars import ContextVar
 from pathlib import Path
+from typing import cast
 
 from loguru import logger
 from loguru._logger import Logger
@@ -29,6 +30,7 @@ except ImportError:
 
 __all__ = [
     "LogFormatter",
+    "ContextVarsFilter",
     "InterceptionHandler",
     "init_logger",
 ]
@@ -40,27 +42,18 @@ class LogFormatter:
         fmt: str = "{time:YYYY-MM-DD HH:mm:ss.SSS} {level} {name} {file}:{line} {message}",
         datefmt: str = "%Y-%m-%d %H:%M:%S.%f",
         msecfmt: int = 3,
-        request_id_var: ContextVar | None = None,
-        fmt_with_request_id: str = "{time:YYYY-MM-DD HH:mm:ss.SSS} {level} {extra[request_id]} {name} {file}:{line} {message}",
+        context_vars: dict[str, ContextVar] | None = None,
         serialize: bool = False,
     ):
         self.fmt = fmt
         self.datefmt = datefmt
         self.msecfmt = msecfmt
-        self.request_id_var = request_id_var
-        if self.request_id_var:
-            self.fmt = fmt_with_request_id
+        self.context_vars = context_vars or {}
         if self.fmt:
             self.fmt = self.fmt.rstrip("\n") + "\n"
         self.serialize = serialize
 
     def __call__(self, record, *args, **kwargs):
-        if self.request_id_var:
-            try:
-                request_id = self.request_id_var.get()
-            except LookupError:
-                request_id = "N/A"
-            record["extra"].setdefault("request_id", request_id)
         if self.serialize:
             timestamp = record["time"].strftime(self.datefmt)
             if ".%f" in self.datefmt:
@@ -73,8 +66,8 @@ class LogFormatter:
                 "lineno": record["line"],
                 "message": record["message"],
             }
-            if request_id := record["extra"].get("request_id"):
-                log_entry["request_id"] = request_id
+            for key in self.context_vars:
+                log_entry[key] = record["extra"].get(key, "N/A")
             if exc := record.get("exception"):
                 log_entry["exception"] = {
                     "type": None if exc.type is None else exc.type.__name__,
@@ -90,6 +83,30 @@ class LogFormatter:
         if record["exception"] and "{exception}" not in fmt:
             fmt += "{exception}"
         return fmt
+
+
+class ContextVarsFilter:
+    """
+    上下文变量过滤器（把 ContextVar 值注入 loguru record extra）
+
+    这里的 __call__ 即 loguru 的 patcher 入口，作用等同于 log.py 中的 filter()。
+
+    :note: 注入发生在记录日志的线程（patcher 在 enqueue 工作线程格式化之前执行），因此兼容 enqueue=True；
+        显式 bind 的同名值优先（setdefault 语义）
+    """
+
+    def __init__(self, context_vars: dict[str, ContextVar] | None = None):
+        self.context_vars = context_vars or {}
+
+    def __call__(self, record: dict):
+        # loguru 的 patcher 接收 record 字典；在此读取 ContextVar 并写入 extra，
+        # 后续 enqueue 工作线程格式化时可直接从 extra 取到值
+        for key, var in self.context_vars.items():
+            try:
+                value = var.get()
+            except LookupError:
+                value = "N/A"
+            record["extra"].setdefault(key, value)
 
 
 class InterceptionHandler(logging.Handler):
@@ -163,11 +180,10 @@ class InterceptionHandler(logging.Handler):
 def init_logger(
     name: str | None = None,
     level: str | int = "INFO",
+    context_vars: dict[str, ContextVar] | None = None,
     fmt: str = "{time:YYYY-MM-DD HH:mm:ss.SSS} {level} {name} {file}:{line} {message}",
     datefmt: str = "%Y-%m-%d %H:%M:%S.%f",
     msecfmt: int = 3,
-    request_id_var: ContextVar | None = None,
-    fmt_with_request_id: str = "{time:YYYY-MM-DD HH:mm:ss.SSS} {level} {extra[request_id]} {name} {file}:{line} {message}",
     serialize: bool = False,
     formatter: Callable | None = None,
     clear_handlers: bool = True,
@@ -204,15 +220,24 @@ def init_logger(
 
         logger.info("hello")
 
+        # 上下文变量（如 request_id / client_ip）
+        from contextvars import ContextVar
+
+        request_id_var = ContextVar("request_id", default="-")
+        client_ip_var = ContextVar("client_ip", default="-")
+        logger = logu.init_logger(
+            context_vars={"request_id": request_id_var, "client_ip": client_ip_var},
+            fmt="{time:YYYY-MM-DD HH:mm:ss.SSS} {level} {extra[request_id]} {extra[client_ip]} {name} {file}:{line} {message}",
+        )
+
         +++++[更多详见参数或源码]+++++
 
     :param name: 名称（无用）
     :param level: 日志等级
+    :param context_vars: 上下文变量映射（如 {"request_id": request_id_var, "client_ip": client_ip_var}），fmt 需含对应 {extra[key]} 占位符
     :param fmt: 日志格式
     :param datefmt: 时间格式
     :param msecfmt: 时间毫秒格式
-    :param request_id_var: 请求id变量
-    :param fmt_with_request_id: 带request_id的日志格式
     :param serialize: 序列化
     :param formatter: 格式化实例
     :param clear_handlers: 清除handlers
@@ -258,12 +283,14 @@ def init_logger(
         else:
             interception_handler = interception()
         root_logger.addHandler(interception_handler)
+    # patcher 在记录日志的线程执行、早于 enqueue 入队；不在 LogFormatter 中读 ContextVar，
+    # 否则 enqueue=True 时格式化线程读不到业务线程的上下文
+    logger.configure(patcher=ContextVarsFilter(context_vars) if context_vars else None)
     formatter = formatter or LogFormatter(
         fmt=fmt,
         datefmt=datefmt,
         msecfmt=msecfmt,
-        request_id_var=request_id_var,
-        fmt_with_request_id=fmt_with_request_id,
+        context_vars=context_vars,
         serialize=serialize,
     )
 
@@ -315,4 +342,4 @@ def init_logger(
             catch=catch,
         )
 
-    return logger
+    return cast(Logger, logger)
